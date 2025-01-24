@@ -4,12 +4,11 @@ from openpyxl.styles import Alignment, Font
 from openpyxl.utils import get_column_letter
 
 
-def read_data(year):
-    base_path = pathlib.Path(f"../data/nordic/data_{year}")
+def read_data(case):
+    base_path = pathlib.Path(f"../case_{case}/data/system")
     generator_file = base_path / "generator.csv"
     consumer_file = base_path / "consumer.csv"  # Legger til consumer-filen
     return pd.read_csv(generator_file), pd.read_csv(consumer_file)
-
 
 def ensure_all_types_present(data, group_col, all_types):
     """
@@ -38,7 +37,6 @@ def ensure_all_types_present(data, group_col, all_types):
 
     # Kombinerer eksisterende data med de manglende typene
     return pd.concat(complete_data, ignore_index=True)
-
 
 def process_grouped_data(data, group_col):
     """
@@ -100,7 +98,6 @@ def process_grouped_data(data, group_col):
     combined.sort_values(by=['Type', 'Metric'], inplace=True)
     return combined
 
-
 def add_demand_to_summary(summary_table, demand_data, group_col):
     """
     Legger til demand_avg som en ekstra rad i summary-tabellen med teksten 'load' i 'Type'-kolonnen.
@@ -121,7 +118,6 @@ def add_demand_to_summary(summary_table, demand_data, group_col):
     # Legg til raden nederst
     summary_table = pd.concat([summary_table, pd.DataFrame([demand_row])], ignore_index=True)
     return summary_table
-
 
 def process_total_data(generator_data, consumer_data):
     """
@@ -172,15 +168,11 @@ def process_total_data(generator_data, consumer_data):
     gen_total.drop(columns=['SortOrder'], inplace=True)  # Fjern SortOrder før lagring
     return gen_total
 
-
-
-
-
-def save_to_excel(gen_node, gen_zone, gen_country, gen_total, year):
+def save_to_excel(gen_node, gen_zone, gen_country, gen_total, case):
     """
     Lagrer data til Excel med riktig formatering.
     """
-    output_path = f"generator_summary_case_{year}.xlsx"
+    output_path = pathlib.Path(f"../case_{case}/data/case_doc_{case}.xlsx")
     with pd.ExcelWriter(output_path, engine='openpyxl') as writer:
         # Skriv hvert nivå til sitt eget ark
         sheets = {
@@ -194,7 +186,6 @@ def save_to_excel(gen_node, gen_zone, gen_country, gen_total, year):
             format_worksheet(writer.sheets[sheet_name])
 
     print(f"Data lagret til {output_path}")
-
 
 def format_worksheet(worksheet):
     """
@@ -224,12 +215,11 @@ def format_worksheet(worksheet):
         max_length = max(len(str(cell.value)) if cell.value else 0 for cell in col_cells)
         worksheet.column_dimensions[get_column_letter(col_idx)].width = max_length + 2
 
-
-def create_case_doc(year):
+def create_case_doc(case):
     """
     Hovedfunksjon for å lese, prosessere og lagre dokumentasjon.
     """
-    generator_df, consumer_df = read_data(year)
+    generator_df, consumer_df = read_data(case)
 
     # Prosesser generator-data
     gen_node = process_grouped_data(generator_df, 'node')
@@ -249,11 +239,11 @@ def create_case_doc(year):
     gen_country = add_demand_to_summary(gen_country, consumer_df, 'country')
 
     # Lagre til Excel
-    save_to_excel(gen_node, gen_zone, gen_country, gen_total, year)
+    save_to_excel(gen_node, gen_zone, gen_country, gen_total, case)
 
 
 
 
 # Kjør programmet
-create_case_doc(2025)
+create_case_doc('BM')
 

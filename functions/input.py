@@ -4,12 +4,15 @@ import folium
 import pandas as pd
 import os
 
+from pygments.styles.dracula import yellow
+
+
 # from networkx.classes import nodes
 # from pandas.io.formats.style import color
 
 
-def read_data(year):
-    base_path = pathlib.Path(f"../data/nordic/data_{year}")
+def read_data(case):
+    base_path = pathlib.Path(f"../case_{case}/data/system/")
     system_data = powergama.GridData()
     system_data.readGridData(nodes=base_path/"node.csv",
                         ac_branches=base_path/"branch.csv",
@@ -72,10 +75,13 @@ def node_plot(scenario_data):
         <b>Installed Capacity:</b><br>{generator_info}<br><br>
         <b>Average Demand:</b><br>{consumer_info}
         """
+        marker_color = "orange" if "SMR" in row['id'] else "purple" if "data_centre" in row['id'] else "blue"
+
 
         folium.Marker(
             location=[row['lat'], row['lon']],
-            popup=folium.Popup(popup_text, max_width=400)
+            popup=folium.Popup(popup_text, max_width=400),
+            icon=folium.Icon(color=marker_color, icon="")
         ).add_to(map)
 
     return map
@@ -129,11 +135,15 @@ def grid_plot(scenario_data):
     return map
 
 def main():
-    year = 2025
-    scenario_data = read_data(year)
+    case = 'xx'
+    # year = 2025
+    scenario_data = read_data(case)
     grid_map = grid_plot(scenario_data)
-    grid_map.save(os.path.join("..", "plots", "input", f"grid_plot_{year}.html"))
-    print(f"Grid plot saved to plots --> input --> grid_plot_{year}.html")
+
+    output_dir = os.path.join("..", f"case_{case}", "results", "input")
+    output_file = os.path.join(output_dir, f"grid_plot_case_{case}.html")
+    grid_map.save(output_file)
+    print(f"Grid plot saved to {output_file}")
 
 if __name__ == "__main__":
     main()

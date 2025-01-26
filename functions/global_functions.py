@@ -31,9 +31,9 @@ def read_grid_data(year, date_start, date_end, data_path):
         powergama.GridData: An instance of GridData containing the processed grid data.
     """
     # Calculate and print the number of simulation hours and years
-    datapath_GridData = pathlib.Path().parent / data_path / f"data_{year}"
-    file_storval_filling = pathlib.Path(data_path / "data_storagevalues/profiles_storval_filling.csv")
-    file_30y_profiles = pathlib.Path(data_path / "data_timeseries/timeseries_profiles.csv")
+    datapath_GridData = data_path/ "system"
+    file_storval_filling = pathlib.Path(data_path / "storage/profiles_storval_filling.csv")
+    file_30y_profiles = pathlib.Path(data_path / "timeseries_profiles.csv")
 
     # Initialize GridData object
     data = powergama.GridData()

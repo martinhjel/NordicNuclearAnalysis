@@ -1,14 +1,15 @@
 # Imports
 import os
 from powergama.database import Database  # Import Database-Class specifically
-from global_functions import *  # Functions like 'read_grid_data', 'solve_lp' m.m.
+from functions.global_functions import *
 
 
 # Define global variables
 YEAR_SCENARIO = 2025
+case = 'BM'
 YEAR_START = 2020
 YEAR_END = 2020
-SQL_FILE = f"powergama_{YEAR_SCENARIO}.sqlite"
+SQL_FILE = f"powergama_{case}_v1.sqlite"
 # SQL_FILE = "powergama_2025_30y_v1.sqlite"
 DATE_START = f"{YEAR_START}-01-01"
 DATE_END = f"{YEAR_END}-01-02"
@@ -16,10 +17,11 @@ loss_method = 0
 new_scenario = False
 save_scenario = False
 
+
 # File paths
-DATA_PATH = pathlib.Path().parent / "data/nordic"
-OUTPUT_PATH = pathlib.Path().parent / "results/preliminary_case"
-OUTPUT_PATH_PLOTS = pathlib.Path().parent / "results/preliminary_case/plots"
+DATA_PATH = pathlib.Path().parent / "data"
+OUTPUT_PATH = pathlib.Path().parent / "results"
+OUTPUT_PATH_PLOTS = pathlib.Path().parent / "results/plots"
 
 
 # %%
@@ -35,7 +37,7 @@ print(f"Mean area price {sum(res.getAreaPricesAverage().values()) / len(res.getA
 
 # Database instance
 database = Database(SQL_FILE)
-grid_data_path = pathlib.Path().parent / DATA_PATH / f"data_{YEAR_SCENARIO}"
+grid_data_path = pathlib.Path().parent / DATA_PATH / "system"
 # %%
 
 output_path = os.path.join(OUTPUT_PATH, 'prices_and_branch_utilization_map.html')
@@ -44,7 +46,7 @@ create_price_and_utilization_map(data, res, time_max_min=time_max_min, output_pa
 
 # %% Plot import/ export load flow with respect to time for all cross-border interconnections
 
-time_max_min = [0, 262968]
+# time_max_min = [0, 24]
 by_year = False
 duration_curve = True
 duration_relative = True   # Hours(False) or Percentage(True)

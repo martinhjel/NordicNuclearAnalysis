@@ -7,21 +7,21 @@ from functions.global_functions import *
 # Define global variables
 YEAR_SCENARIO = 2025
 case = 'BM'
-YEAR_START = 2020
+YEAR_START = 1991
 YEAR_END = 2020
 SQL_FILE = f"powergama_{case}_v1.sqlite"
 # SQL_FILE = "powergama_2025_30y_v1.sqlite"
 DATE_START = f"{YEAR_START}-01-01"
-DATE_END = f"{YEAR_END}-01-02"
+DATE_END = f"{YEAR_END}-12-31"
 loss_method = 0
 new_scenario = False
 save_scenario = False
 
 
 # File paths
-DATA_PATH = pathlib.Path().parent / "data"
-OUTPUT_PATH = pathlib.Path().parent / "results"
-OUTPUT_PATH_PLOTS = pathlib.Path().parent / "results/plots"
+DATA_PATH = pathlib.Path("data")
+OUTPUT_PATH = pathlib.Path("results")
+OUTPUT_PATH_PLOTS = pathlib.Path("results/plots")
 
 
 # %%

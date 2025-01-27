@@ -143,6 +143,11 @@ else:
         plt.setp(ax.xaxis.get_majorticklabels(), rotation=45)
         ax.set_xlim(0, 364)
 
+    if relative:
+        ax.set_yticks([0, 20, 40, 60, 80, 100])
+        ax.set_yticklabels(['0%', '20%', '40%', '60%', '80%', '100%'])
+        ax.set_ylim(0, 100)
+
     # Add legend and title
     lines, labels = ax.get_legend_handles_labels()
     print("Lines:", lines)

@@ -17,12 +17,13 @@ import branca.colormap as cm
 from powergama.GIS import _pointBetween
 
 
-def read_grid_data(year, date_start, date_end, data_path):
+def read_grid_data(year, version, date_start, date_end, data_path):
     """
     Reads and processes grid data for a specified year and date range.
 
     Parameters:
         year (int): The year for which data should be loaded.
+        version (str): The version of the dataset to be used.
         date_start (str): The start date of the simulation period in 'YYYY-MM-DD' format.
         date_end (str): The end date of the simulation period in 'YYYY-MM-DD' format.
         data_path (str or pathlib.Path): The base path to the data directory.
@@ -32,7 +33,7 @@ def read_grid_data(year, date_start, date_end, data_path):
     """
     # Calculate and print the number of simulation hours and years
     datapath_GridData = data_path/ "system"
-    file_storval_filling = pathlib.Path(data_path / "storage/profiles_storval_filling.csv")
+    file_storval_filling = data_path / f"storage/profiles_storval_filling_{version}.csv"
     file_30y_profiles = pathlib.Path(data_path / "timeseries_profiles.csv")
 
     # Initialize GridData object
@@ -74,7 +75,7 @@ def read_grid_data(year, date_start, date_end, data_path):
 
 
 # Read and configure grid
-def setup_grid(year, date_start, date_end, data_path, new_scenario, save_scenario):
+def setup_grid(year, version, date_start, date_end, data_path, new_scenario, save_scenario):
     """
     Set up grid data and initialize a simulation scenario.
 
@@ -83,6 +84,7 @@ def setup_grid(year, date_start, date_end, data_path, new_scenario, save_scenari
 
     Parameters:
         year (int): The year for which data should be loaded.
+        version (str): The version of the dataset to be used.
         date_start (str): The start date of the simulation period.
         date_end (str): The end date of the simulation period.
 
@@ -90,7 +92,7 @@ def setup_grid(year, date_start, date_end, data_path, new_scenario, save_scenari
         data (Scenario): Configured grid data for simulation.
         time_max_min (list): List containing the start and end indices for the simulation timeframe.
     """
-    data = read_grid_data(year, date_start, date_end, data_path)
+    data = read_grid_data(year, version, date_start, date_end, data_path)
     time_max_min = [0, len(data.timerange)]
     scenario_file = pathlib.Path(data_path / f"scenario_{year}.csv")
     if new_scenario:
@@ -852,7 +854,7 @@ def plot_production(df_gen_resampled, df_prices_resampled, DATE_START, DATE_END,
 ###############################################################################################################
 
 """Flow Based Functions"""
-def create_price_and_utilization_map(data, res, time_max_min, output_path, eur_to_nok):
+def create_price_and_utilization_map(data, res, time_max_min, output_path, eur_to_nok, version):
     """
     Generate a folium map displaying nodal prices and branch utilization.
 

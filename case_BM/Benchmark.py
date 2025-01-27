@@ -7,12 +7,13 @@ from functions.global_functions import *
 # Define global variables
 YEAR_SCENARIO = 2025
 case = 'BM'
-YEAR_START = 1991
+version = 'test'
+YEAR_START = 2020
 YEAR_END = 2020
-SQL_FILE = f"powergama_{case}_v1.sqlite"
+SQL_FILE = f"powergama_{case}_{version}.sqlite"
 # SQL_FILE = "powergama_2025_30y_v1.sqlite"
 DATE_START = f"{YEAR_START}-01-01"
-DATE_END = f"{YEAR_END}-12-31"
+DATE_END = f"{YEAR_END}-01-02"
 loss_method = 0
 new_scenario = False
 save_scenario = False
@@ -27,7 +28,7 @@ OUTPUT_PATH_PLOTS = pathlib.Path("results/plots")
 # %%
 # Configure grid and run simulation
 
-data, time_max_min = setup_grid(YEAR_SCENARIO, DATE_START, DATE_END, DATA_PATH, new_scenario, save_scenario)
+data, time_max_min = setup_grid(YEAR_SCENARIO, version, DATE_START, DATE_END, DATA_PATH, new_scenario, save_scenario)
 res = solve_lp(data, SQL_FILE, loss_method, replace=True)
 
 # %% Print results
@@ -40,8 +41,8 @@ database = Database(SQL_FILE)
 grid_data_path = pathlib.Path().parent / DATA_PATH / "system"
 # %%
 
-output_path = os.path.join(OUTPUT_PATH, 'prices_and_branch_utilization_map.html')
-create_price_and_utilization_map(data, res, time_max_min=time_max_min, output_path=output_path, eur_to_nok=11.7)
+output_path = os.path.join(OUTPUT_PATH, f'prices_and_branch_utilization_map_{version}.html')
+create_price_and_utilization_map(data, res, time_max_min=time_max_min, output_path=output_path, eur_to_nok=11.7, version=version)
 
 
 # %% Plot import/ export load flow with respect to time for all cross-border interconnections

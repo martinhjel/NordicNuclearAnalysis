@@ -1,5 +1,5 @@
 # Imports
-import os
+
 from powergama.database import Database  # Import Database-Class specifically
 from functions.global_functions import *
 
@@ -12,17 +12,28 @@ YEAR_START = 2020
 YEAR_END = 2020
 SQL_FILE = f"powergama_{case}_{version}.sqlite"
 # SQL_FILE = "powergama_2025_30y_v1.sqlite"
-DATE_START = f"{YEAR_START}-01-01"
-DATE_END = f"{YEAR_END}-01-02"
+# DATE_START = f"{YEAR_START}-01-01"
+DATE_START = pd.Timestamp(f'{YEAR_START}-01-01 00:00:00', tz='UTC')
+# DATE_END = f"{YEAR_END}-12-31"
+DATE_END = pd.Timestamp(f'{YEAR_END}-12-31 23:00:00', tz='UTC')
 loss_method = 0
 new_scenario = False
 save_scenario = False
 
 
+# Get the base directory
+try:
+    # For scripts
+    BASE_DIR = pathlib.Path(__file__).parent
+except NameError:
+    # For notebooks or interactive shells
+    BASE_DIR = pathlib.Path().cwd()
+    BASE_DIR = BASE_DIR / f'case_{case}'
+
 # File paths
-DATA_PATH = pathlib.Path("data")
-OUTPUT_PATH = pathlib.Path("results")
-OUTPUT_PATH_PLOTS = pathlib.Path("results/plots")
+DATA_PATH = BASE_DIR / 'data'
+OUTPUT_PATH = BASE_DIR / 'results'
+OUTPUT_PATH_PLOTS = BASE_DIR / 'results' / 'plots'
 
 
 # %%
@@ -38,10 +49,10 @@ print(f"Mean area price {sum(res.getAreaPricesAverage().values()) / len(res.getA
 
 # Database instance
 database = Database(SQL_FILE)
-grid_data_path = pathlib.Path().parent / DATA_PATH / "system"
+grid_data_path = DATA_PATH / 'system'
 # %%
 
-output_path = os.path.join(OUTPUT_PATH, f'prices_and_branch_utilization_map_{version}.html')
+output_path = OUTPUT_PATH / f'prices_and_branch_utilization_map_{version}.html'
 create_price_and_utilization_map(data, res, time_max_min=time_max_min, output_path=output_path, eur_to_nok=11.7, version=version)
 
 
@@ -142,6 +153,11 @@ else:
         ax.xaxis.set_major_formatter(mdates.DateFormatter('%b'))
         plt.setp(ax.xaxis.get_majorticklabels(), rotation=45)
         ax.set_xlim(0, 364)
+
+    if relative:
+        ax.set_yticks([0, 20, 40, 60, 80, 100])
+        ax.set_yticklabels(['0%', '20%', '40%', '60%', '80%', '100%'])
+        ax.set_ylim(0, 100)
 
     # Add legend and title
     lines, labels = ax.get_legend_handles_labels()

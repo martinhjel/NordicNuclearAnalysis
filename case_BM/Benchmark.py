@@ -19,10 +19,19 @@ new_scenario = False
 save_scenario = False
 
 
+# Get the base directory
+try:
+    # For scripts
+    BASE_DIR = pathlib.Path(__file__).parent
+except NameError:
+    # For notebooks or interactive shells
+    BASE_DIR = pathlib.Path().cwd()
+    BASE_DIR = BASE_DIR / f'case_{case}'
+
 # File paths
-DATA_PATH = pathlib.Path("data")
-OUTPUT_PATH = pathlib.Path("results")
-OUTPUT_PATH_PLOTS = pathlib.Path("results/plots")
+DATA_PATH = BASE_DIR / 'data'
+OUTPUT_PATH = BASE_DIR / 'results'
+OUTPUT_PATH_PLOTS = BASE_DIR / 'results' / 'plots'
 
 
 # %%

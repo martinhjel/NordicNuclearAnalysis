@@ -32,7 +32,7 @@ def read_grid_data(year, version, date_start, date_end, data_path):
         powergama.GridData: An instance of GridData containing the processed grid data.
     """
     # Calculate and print the number of simulation hours and years
-    datapath_GridData = data_path/ "system"
+    datapath_GridData = data_path / "system"
     file_storval_filling = data_path / f"storage/profiles_storval_filling_{version}.csv"
     file_30y_profiles = pathlib.Path(data_path / "timeseries_profiles.csv")
 
@@ -47,7 +47,7 @@ def read_grid_data(year, version, date_start, date_end, data_path):
     # Read and process 30-year profiles
     profiles_30y = pd.read_csv(file_30y_profiles, index_col=0, parse_dates=True)
     profiles_30y["const"] = 1
-    data.profiles = profiles_30y[(profiles_30y.index >= date_start) & (profiles_30y.index < date_end)].reset_index()
+    data.profiles = profiles_30y[(profiles_30y.index >= date_start) & (profiles_30y.index <= date_end)].reset_index()
     data.storagevalue_time = data.profiles[["const"]]
 
     # Read storage value filling data
@@ -59,7 +59,7 @@ def read_grid_data(year, version, date_start, date_end, data_path):
     data.timeDelta = 1.0  # hourly data
 
     # Calculate and print the number of simulation hours and years
-    num_hours = data.timerange[-1] - data.timerange[0]
+    num_hours = len(data.profiles) # data.timerange[-1] - data.timerange[0]
     print(f'Simulation hours: {num_hours}')
     num_years = num_hours / (365.2425 * 24)
     print(f'Simulation years: {np.round(num_years, 3)}')

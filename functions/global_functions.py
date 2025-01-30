@@ -584,7 +584,7 @@ def calculate_Hydro_Res_Inflow(res, data, DATE_START, area_OP, genType, time_max
 
 
 
-def calculate_Hydro_Res_Inflow_FromDB(data: GridData, db: Database, DATE_START, area_OP, genType, time_max_min, include_pump):
+def calculate_Hydro_Res_Inflow_FromDB(data: GridData, db: Database, DATE_START, area_OP, genType, time_max_min, relative_storage, include_pump):
     """
     Calculate hydro reservoir inflow, production, and storage filling.
 
@@ -612,13 +612,15 @@ def calculate_Hydro_Res_Inflow_FromDB(data: GridData, db: Database, DATE_START, 
         inflow_value = data.profiles[inflowProfile[gen]]
         inflow_df[gen] = [i * prodCap * inflowFactor for i in inflow_value]
     inflow = inflow_df.sum(axis=1)
+    # Slice the inflow series using index-based selection
+    inflow = inflow.iloc[time_max_min[0]:time_max_min[1]]  # +1 to include the max index
     print(f"Total inflow: {sum(inflow) / 1e6:.2f} TWh")
 
     # Hydro production
     hydro_production_sum = pd.DataFrame(db.getResultGeneratorPower(genTypeIdx, time_max_min)).sum(axis=1)
 
     # Storage filling
-    storage_filling = getStorageFillingInAreasFromDB(data, db, areas=['NO'], generator_type="hydro", relative_storage=False, timeMaxMin=time_max_min)
+    storage_filling = getStorageFillingInAreasFromDB(data, db, areas=['NO'], generator_type="hydro", relative_storage=relative_storage, timeMaxMin=time_max_min)
     storage_filling_percentage = [value * 100 for value in storage_filling]
 
     if include_pump:
@@ -631,10 +633,10 @@ def calculate_Hydro_Res_Inflow_FromDB(data: GridData, db: Database, DATE_START, 
     # Create DataFrame
     df = pd.DataFrame({
         'Reservoir Filling': storage_filling_percentage,
-        'Hydro Production': hydro_production_sum,
-        'Inflow': inflow
+        'Hydro Production': hydro_production_sum.reset_index(drop=True),
+        'Inflow': inflow.reset_index(drop=True)
     })
-    df.index = pd.date_range(DATE_START, periods=time_max_min[-1], freq='h')  # Set index to date range
+    df.index = pd.date_range(DATE_START, periods=(time_max_min[-1] - time_max_min[0]), freq='h')  # Set index to date range
     print(f"Total Hydro production: {hydro_production_sum.sum() / 1e6:.2f} TWh")
     # Resample the data
     df_resampled = df.resample('7D').agg({
@@ -700,7 +702,7 @@ def plot_hydro_prod_res_inflow(df, DATE_START, DATE_END, interval, TITLE, OUTPUT
         else:
             ax2.legend(lines1 + lines2, labels1 + labels2, loc='lower left', bbox_to_anchor=(1, 0))
 
-        plt.title(TITLE + f'for weather years in period {DATE_START[0:4]}-{DATE_END[0:4]}')
+        plt.title(TITLE + f'for weather years in period {DATE_START.year}-{DATE_END.year}')
     else:
         for year in df['year'].unique():
             year_data = df[df['year'] == year]
@@ -793,10 +795,11 @@ def calc_PLP(res, area_OP, DATE_START, time_max_min):
 
 
 def calc_PLP_FromDB(data: GridData, db: Database, area_OP, DATE_START, time_max_min):
+    time_period = time_max_min[-1] - time_max_min[0]
     nodes_in_zone_2 = data.node[data.node['area'] == area_OP].index.tolist()
     # Get nodal prices for all nodes in the zone in one step and apply conversion factor
     node_prices_2 = pd.DataFrame({node: getNodalPricesFromDB(db, node, time_max_min) for node in nodes_in_zone_2})
-    node_prices_2.index = pd.date_range(DATE_START, periods=time_max_min[-1], freq='h')
+    node_prices_2.index = pd.date_range(DATE_START, periods=time_period, freq='h')
     avg_node_prices_2 = node_prices_2.sum(axis=1) / len(nodes_in_zone_2)
 
     # Load demand
@@ -804,7 +807,7 @@ def calc_PLP_FromDB(data: GridData, db: Database, area_OP, DATE_START, time_max_
 
     genHydroIdx = data.getGeneratorsPerAreaAndType()[area_OP]['hydro']
     hydro_production_sum = pd.DataFrame(db.getResultGeneratorPower(genHydroIdx, time_max_min)).sum(axis=1)
-    hydro_production_sum.index = pd.date_range(DATE_START, periods=time_max_min[-1], freq='h')
+    hydro_production_sum.index = pd.date_range(DATE_START, periods=time_period, freq='h')
 
     df_plp = pd.DataFrame({
         'Production': hydro_production_sum,
@@ -812,7 +815,7 @@ def calc_PLP_FromDB(data: GridData, db: Database, area_OP, DATE_START, time_max_
         'Price': avg_node_prices_2
     })
 
-    df_plp.index = pd.date_range(DATE_START, periods=time_max_min[-1], freq='h')
+    df_plp.index = pd.date_range(DATE_START, periods=time_period, freq='h')
 
     df_plp_resampled = df_plp.resample('7D').agg({
         'Production': 'sum',
@@ -1003,7 +1006,7 @@ def get_production_by_type(res, area_OP, time_max_min, DATE_START):
     return df_gen_resampled, df_prices_resampled, total_production
 
 def get_production_by_type_FromDB(data: GridData, db: Database, area_OP, time_max_min, DATE_START):
-
+    time_period = time_max_min[-1] - time_max_min[0]
     # Get Generation by type
     genHydro = 'hydro'
     genHydroIdx = data.getGeneratorsPerAreaAndType()[area_OP][genHydro]
@@ -1027,7 +1030,7 @@ def get_production_by_type_FromDB(data: GridData, db: Database, area_OP, time_ma
     # Get Avg Price for Area
     nodes_in_area = data.node[data.node['area'] == area_OP].index.tolist()
     node_prices_3 = pd.DataFrame({node: getNodalPricesFromDB(db, node=node, timeMaxMin=time_max_min) for node in nodes_in_area})
-    node_prices_3.index = pd.date_range(DATE_START, periods=time_max_min[-1], freq='h')
+    node_prices_3.index = pd.date_range(DATE_START, periods=time_period, freq='h')
     avg_area_prices = node_prices_3.sum(axis=1) / len(nodes_in_area)
 
     # Create DataFrame
@@ -1038,7 +1041,7 @@ def get_production_by_type_FromDB(data: GridData, db: Database, area_OP, time_ma
         'Gas Production': all_gas_production,
         'Load': load_demand['sum']
     })
-    df_gen.index = pd.date_range(DATE_START, periods=time_max_min[-1], freq='h')
+    df_gen.index = pd.date_range(DATE_START, periods=time_period, freq='h')
 
     # Resample the data
     df_gen_resampled = df_gen.resample('7D').agg({
@@ -1052,7 +1055,7 @@ def get_production_by_type_FromDB(data: GridData, db: Database, area_OP, time_ma
     df_prices = pd.DataFrame({
         'Price': avg_area_prices
     })
-    df_prices.index = pd.date_range(DATE_START, periods=time_max_min[-1], freq='h')
+    df_prices.index = pd.date_range(DATE_START, periods=time_period, freq='h')
     df_prices_resampled = df_prices.resample('1D').agg({
         'Price': 'mean'
     })
@@ -1184,7 +1187,7 @@ def plot_production(df_gen_resampled, df_prices_resampled, DATE_START, DATE_END,
 ###############################################################################################################
 
 """Flow Based Functions"""
-def create_price_and_utilization_map(data, res, time_max_min, output_path, eur_to_nok, version):
+def create_price_and_utilization_map(data, res, time_max_min, output_path):
     """
     Generate a folium map displaying nodal prices and branch utilization.
 
@@ -1196,7 +1199,6 @@ def create_price_and_utilization_map(data, res, time_max_min, output_path, eur_t
         res (Result):           Result object with nodal prices, utilization, and flows.
         time_max_min (list):    List specifying the start and end time steps for the simulation.
         output_path (str):      Path where the HTML map file will be saved.
-        eur_to_nok (float):     Conversion rate from EUR to NOK for price display.
 
     Returns:
         None
@@ -1217,7 +1219,7 @@ def create_price_and_utilization_map(data, res, time_max_min, output_path, eur_t
     colormap.add_to(m)
 
     for i, price in enumerate(nodal_prices):
-        add_node_marker(data, i, price, avg_area_price, m, colormap, eur_to_nok)
+        add_node_marker(data, i, price, avg_area_price, m, colormap)
 
     line_colormap = cm.LinearColormap(['green', 'yellow', 'red'], vmin=0, vmax=1)
     line_colormap.caption = 'Branch Utilisation'
@@ -1317,7 +1319,7 @@ def add_node_marker(data, index, price, avg_national_prices, m, colormap):
         f"<b>Node id:</b> {node_id}<br>"
         f"<b>Zone:</b> {node_zone}<br>"
         f"<b>Price:</b> {price:.2f} EUR/MWh<br>"
-        f"<b>National Price:</b> {f'{area_price:.2f} øre/kWh' if isinstance(area_price, (int, float)) else 'N/A'}<br>",
+        f"<b>National Price:</b> {f'{area_price:.2f} EUR/MWh' if isinstance(area_price, (int, float)) else 'N/A'}<br>",
         max_width=200
     )
     folium.CircleMarker(

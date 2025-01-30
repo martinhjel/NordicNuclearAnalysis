@@ -14,7 +14,7 @@ SQL_FILE = f"powergama_{case}_{version}.sqlite"
 # SQL_FILE = "powergama_2025_30y_v1.sqlite"
 # DATE_START = f"{YEAR_START}-01-01"
 DATE_START = pd.Timestamp(f'{YEAR_START}-01-01 00:00:00', tz='UTC')
-# DATE_END = f"{YEAR_END}-12-31"
+# DATE_END = f"{YEAR_END}-02-01"
 DATE_END = pd.Timestamp(f'{YEAR_END}-12-31 23:00:00', tz='UTC')
 loss_method = 0
 new_scenario = False
@@ -53,7 +53,7 @@ grid_data_path = DATA_PATH / 'system'
 # %%
 
 output_path = OUTPUT_PATH / f'prices_and_branch_utilization_map_{version}.html'
-create_price_and_utilization_map(data, res, time_max_min=time_max_min, output_path=output_path, eur_to_nok=11.7, version=version)
+create_price_and_utilization_map(data, res, time_max_min=time_max_min, output_path=output_path)
 
 
 # %% Plot import/ export load flow with respect to time for all cross-border interconnections

@@ -73,7 +73,7 @@ plot_by_year = True    # True: Split plot by year, or False: Plot all years in o
 duration_curve = False  # True: Plot duration curve, or False: Plot storage filling over time
 save_plot_SF = False    # True: Save plot as pdf
 
-time_SF = get_time_steps_for_period(2000, 2003) # eller time_max_min
+time_SF = get_time_steps_for_period(2000, 2001) # eller time_max_min
 
 for area in areas:
     storfilling[area] = getStorageFillingInAreasFromDB(data=data,
@@ -119,7 +119,7 @@ save_plot_nodal = True                 # Save plot as pdf
 plot_by_year_nodal = False              # Plot all years in one plot(False) or split plot by year(True)
 duration_curve_nodal = False            # Plot duration curve(False) or nodal prices over year(True)
 
-time_NP = get_time_steps_for_period(2000, 2003)
+time_NP = get_time_steps_for_period(2000, 2001)
 
 nodes_in_zone = data.node[data.node['zone'] == zone].index.tolist() # Get all nodes in the zone
 # Get nodal prices for all nodes in the zone in one step node_prices
@@ -149,12 +149,13 @@ plot_nodal_prices_FromDB(data=data,
 # %% Hydro production, reservoir filling, inflow
 area_OP = 'NO'
 genType = 'hydro'
-save_plot_HRI = True
+save_plot_HRI = False
 interval = 12
 box_in_frame = True
 plot_full_timeline = True       # Plot full timeline or by year
+relative_storage = True         # Relative storage filling, True gives percentage
 
-time_HRI = get_time_steps_for_period(2000, 2003)
+time_HRI = get_time_steps_for_period(2000, 2001)
 
 correct_date_start_HRI = DATE_START + pd.Timedelta(hours=time_HRI[0])
 correct_date_end_HRI = DATE_START + pd.Timedelta(hours=time_HRI[-1])
@@ -165,6 +166,7 @@ df_resampled = calculate_Hydro_Res_Inflow_FromDB(data,
                                                  area_OP,
                                                  genType,
                                                  time_HRI,
+                                                 relative_storage,
                                                  include_pump=False)
 df_resampled['year'] = df_resampled.index.year
 title_HRI = 'Hydro Production, Reservoir Filling and Inflow'
@@ -192,12 +194,18 @@ save_fig_PDP = False
 interval = 1
 box_in_frame = True
 resample = True
-df_plp, df_plp_resampled = calc_PLP_FromDB(data, database, area_OP, DATE_START, time_max_min)
+
+time_PLP = get_time_steps_for_period(2000, 2001)
+correct_date_start_PLP = DATE_START + pd.Timedelta(hours=time_PLP[0])
+correct_date_end_PLP = DATE_START + pd.Timedelta(hours=time_PLP[-1])
+
+
+df_plp, df_plp_resampled = calc_PLP_FromDB(data, database, area_OP, correct_date_start_PLP, time_PLP)
 plot_hydro_prod_demand_price(df_plp=df_plp,
                              df_plp_resampled=df_plp_resampled,
                              resample=resample,
-                             DATE_START=DATE_START,
-                             DATE_END=DATE_END,
+                             DATE_START=correct_date_start_PLP,
+                             DATE_END=correct_date_end_PLP,
                              interval=interval,
                              TITLE=title,
                              save_fig=save_fig_PDP,
@@ -214,19 +222,25 @@ area_OP = 'NO'
 title_gen = f'Production, Consumption and Price in {area_OP}'
 interval = 12
 figsize = (10, 6)
+
+time_LGT = get_time_steps_for_period(2000, 2003)
+correct_date_start_LGT = DATE_START + pd.Timedelta(hours=time_LGT[0])
+correct_date_end_LGT = DATE_START + pd.Timedelta(hours=time_LGT[-1])
+
+
 df_gen_resampled, df_prices_resampled, total_production = get_production_by_type_FromDB(data,
                                                                                         database,
                                                                                         area_OP,
-                                                                                        time_max_min,
-                                                                                        DATE_START)
+                                                                                        time_LGT,
+                                                                                        correct_date_start_LGT)
 plot_full_timeline = True
 plot_duration_curve = False
 save_plot_LG = True
 box_in_frame_LG = False
 plot_production(df_gen_resampled=df_gen_resampled,
                 df_prices_resampled=df_prices_resampled,
-                DATE_START=DATE_START,
-                DATE_END=DATE_END,
+                DATE_START=correct_date_start_LGT,
+                DATE_END=correct_date_end_LGT,
                 interval=interval,
                 fig_size=figsize,
                 TITLE=title_gen,

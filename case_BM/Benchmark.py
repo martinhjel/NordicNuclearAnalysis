@@ -91,7 +91,7 @@ for area in areas:
     storfilling[area] = res.getStorageFillingInAreas(areas=[area], generator_type="hydro", relative_storage=relative)
 storfilling.index = pd.date_range(DATE_START, periods=time_max_min[-1], freq='h')
 storfilling['year'] = storfilling.index.year    # Add year column to DataFrame
-title_storage_filling = f'Reservoir Filling in {areas} for period {DATE_START[0:4]}-{DATE_END[0:4]}'
+title_storage_filling = f'Reservoir Filling in {areas} for period {DATE_START.year}-{DATE_END.year}'
 plot_storage_filling_area(storfilling=storfilling,
                           DATE_START=DATE_START,
                           DATE_END=DATE_END,

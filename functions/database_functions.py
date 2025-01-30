@@ -66,7 +66,7 @@ def getAverageNodalPricesFromDB(db: Database, timeMaxMin):
     return avg_prices
 
 
-def getNodalPricesFromDB(db: Database, node, timeMaxMin):
+def getNodalPricesFromDB(db: Database, node, timeMaxMin = None):
     """
     Get nodal prices for a given node over a given time period
 
@@ -91,7 +91,7 @@ def getNodalPricesFromDB(db: Database, node, timeMaxMin):
 
 
 
-def getAreaPricesAverageFromDB(data: GridData, db: Database, areas, timeMaxMin):
+def getAreaPricesAverageFromDB(data: GridData, db: Database, areas=None, timeMaxMin=None):
     """
     Time average of weighted average nodal price per area
 
@@ -546,7 +546,7 @@ def getAllGeneratorProductionOBSOLETEFromDB(data: GridData, db:Database, timeMax
 
 
 
-def getAverageInterareaBranchFlowFromDB(db: Database, filename=None, timeMaxMin):
+def getAverageInterareaBranchFlowFromDB(db: Database, filename, timeMaxMin):
     """Calculate average flow in each direction and total flow for
     inter-area branches. Requires sqlite version newer than 3.6
 

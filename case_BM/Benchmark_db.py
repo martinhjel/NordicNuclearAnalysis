@@ -48,6 +48,12 @@ print(f"Time steps for years: {list_of_years}")
 
 # %%
 
+print(1512%168)
+
+
+
+# %%
+
 time_SC = get_time_steps_for_period(2000, 2000) # eller time_max_min
 print(f"System cost {sum(getSystemCostFromDB(data=data, db=database, timeMaxMin=time_SC).values()):.2f} EUR, or {sum(getSystemCostFromDB(data=data, db=database, timeMaxMin=time_SC).values())/1e9:.2f} Billion EUR")
 

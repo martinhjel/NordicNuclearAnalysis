@@ -39,7 +39,7 @@ OUTPUT_PATH_PLOTS = BASE_DIR / 'results' / 'plots'
 
 # %%
 # Configure grid and run simulation
-create_case_doc('BM')
+create_case_doc('BM') # Create case documentation
 data, time_max_min = setup_grid(YEAR_SCENARIO, version, DATE_START, DATE_END, DATA_PATH, new_scenario, save_scenario)
 res = solve_lp(data, SQL_FILE, loss_method, replace=True)
 

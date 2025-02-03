@@ -1,5 +1,5 @@
 # Imports
-import os
+
 from powergama.database import Database  # Import Database-Class specifically
 from functions.global_functions import *
 
@@ -12,17 +12,28 @@ YEAR_START = 2020
 YEAR_END = 2020
 SQL_FILE = f"powergama_{case}_{version}.sqlite"
 # SQL_FILE = "powergama_2025_30y_v1.sqlite"
-DATE_START = f"{YEAR_START}-01-01"
-DATE_END = f"{YEAR_END}-01-02"
+# DATE_START = f"{YEAR_START}-01-01"
+DATE_START = pd.Timestamp(f'{YEAR_START}-01-01 00:00:00', tz='UTC')
+# DATE_END = f"{YEAR_END}-02-01"
+DATE_END = pd.Timestamp(f'{YEAR_END}-12-31 23:00:00', tz='UTC')
 loss_method = 0
 new_scenario = False
 save_scenario = False
 
 
+# Get the base directory
+try:
+    # For scripts
+    BASE_DIR = pathlib.Path(__file__).parent
+except NameError:
+    # For notebooks or interactive shells
+    BASE_DIR = pathlib.Path().cwd()
+    BASE_DIR = BASE_DIR / f'case_{case}'
+
 # File paths
-DATA_PATH = pathlib.Path("data")
-OUTPUT_PATH = pathlib.Path("results")
-OUTPUT_PATH_PLOTS = pathlib.Path("results/plots")
+DATA_PATH = BASE_DIR / 'data'
+OUTPUT_PATH = BASE_DIR / 'results'
+OUTPUT_PATH_PLOTS = BASE_DIR / 'results' / 'plots'
 
 
 # %%
@@ -38,11 +49,11 @@ print(f"Mean area price {sum(res.getAreaPricesAverage().values()) / len(res.getA
 
 # Database instance
 database = Database(SQL_FILE)
-grid_data_path = pathlib.Path().parent / DATA_PATH / "system"
+grid_data_path = DATA_PATH / 'system'
 # %%
 
-output_path = os.path.join(OUTPUT_PATH, f'prices_and_branch_utilization_map_{version}.html')
-create_price_and_utilization_map(data, res, time_max_min=time_max_min, output_path=output_path, eur_to_nok=11.7, version=version)
+output_path = OUTPUT_PATH / f'prices_and_branch_utilization_map_{version}.html'
+create_price_and_utilization_map(data, res, time_max_min=time_max_min, output_path=output_path)
 
 
 # %% Plot import/ export load flow with respect to time for all cross-border interconnections
@@ -80,7 +91,7 @@ for area in areas:
     storfilling[area] = res.getStorageFillingInAreas(areas=[area], generator_type="hydro", relative_storage=relative)
 storfilling.index = pd.date_range(DATE_START, periods=time_max_min[-1], freq='h')
 storfilling['year'] = storfilling.index.year    # Add year column to DataFrame
-title_storage_filling = f'Reservoir Filling in {areas} for period {DATE_START[0:4]}-{DATE_END[0:4]}'
+title_storage_filling = f'Reservoir Filling in {areas} for period {DATE_START.year}-{DATE_END.year}'
 plot_storage_filling_area(storfilling=storfilling,
                           DATE_START=DATE_START,
                           DATE_END=DATE_END,

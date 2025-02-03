@@ -1,21 +1,24 @@
 # Imports
-
 from powergama.database import Database  # Import Database-Class specifically
 from functions.global_functions import *
+from scripts.case_doc import *
 
 
 # Define global variables
 YEAR_SCENARIO = 2025
 case = 'BM'
-version = 'test'
+version = '52_v1'
 YEAR_START = 2020
 YEAR_END = 2020
-SQL_FILE = f"powergama_{case}_{version}.sqlite"
+
 # SQL_FILE = "powergama_2025_30y_v1.sqlite"
 # DATE_START = f"{YEAR_START}-01-01"
 DATE_START = pd.Timestamp(f'{YEAR_START}-01-01 00:00:00', tz='UTC')
-# DATE_END = f"{YEAR_END}-12-31"
-DATE_END = pd.Timestamp(f'{YEAR_END}-12-31 23:00:00', tz='UTC')
+
+# DATE_END = f"{YEAR_END}-01-02"
+DATE_END = pd.Timestamp(f'{YEAR_END}-02-15 23:00:00', tz='UTC')
+
+
 loss_method = 0
 new_scenario = False
 save_scenario = False
@@ -30,6 +33,10 @@ except NameError:
     BASE_DIR = pathlib.Path().cwd()
     BASE_DIR = BASE_DIR / f'case_{case}'
 
+
+SQL_FILE = BASE_DIR / f"powergama_{case}_{version}.sqlite"
+
+
 # File paths
 DATA_PATH = BASE_DIR / 'data'
 OUTPUT_PATH = BASE_DIR / 'results'
@@ -38,7 +45,7 @@ OUTPUT_PATH_PLOTS = BASE_DIR / 'results' / 'plots'
 
 # %%
 # Configure grid and run simulation
-
+create_case_doc('BM') # Create case documentation
 data, time_max_min = setup_grid(YEAR_SCENARIO, version, DATE_START, DATE_END, DATA_PATH, new_scenario, save_scenario)
 res = solve_lp(data, SQL_FILE, loss_method, replace=True)
 
@@ -53,7 +60,7 @@ grid_data_path = DATA_PATH / 'system'
 # %%
 
 output_path = OUTPUT_PATH / f'prices_and_branch_utilization_map_{version}.html'
-create_price_and_utilization_map(data, res, time_max_min=time_max_min, output_path=output_path, eur_to_nok=11.7, version=version)
+create_price_and_utilization_map(data, res, time_max_min=time_max_min, output_path=output_path)
 
 
 # %% Plot import/ export load flow with respect to time for all cross-border interconnections
@@ -62,7 +69,7 @@ create_price_and_utilization_map(data, res, time_max_min=time_max_min, output_pa
 by_year = False
 duration_curve = True
 duration_relative = True   # Hours(False) or Percentage(True)
-save_fig_flow = True
+save_fig_flow = False
 interval_flow = 12           # Velger antall måneder mellom hver x-akse tick
 plot_imp_exp_cross_border_Flow_NEW(db=database,
                                    DATE_START=DATE_START,
@@ -82,10 +89,10 @@ plot_imp_exp_cross_border_Flow_NEW(db=database,
 storfilling = pd.DataFrame()
 areas = ["NO"]          # When plotting multiple years in one year, recommend to only use one area
 relative=True           # Relative storage filling, True gives percentage
-interval=12              # Month interval for x-axis if plot_by_year is False
+interval=1              # Month interval for x-axis if plot_by_year is False
 plot_by_year = True    # True: Split plot by year, or False: Plot all years in one plot
 duration_curve = False  # True: Plot duration curve, or False: Plot storage filling over time
-save_plot_SF = True    # True: Save plot as pdf
+save_plot_SF = False    # True: Save plot as pdf
 
 for area in areas:
     storfilling[area] = res.getStorageFillingInAreas(areas=[area], generator_type="hydro", relative_storage=relative)

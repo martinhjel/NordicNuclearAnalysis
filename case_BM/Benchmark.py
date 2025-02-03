@@ -7,13 +7,13 @@ from functions.global_functions import *
 YEAR_SCENARIO = 2025
 case = 'BM'
 version = '52_v1'
-YEAR_START = 2020
+YEAR_START = 2019
 YEAR_END = 2020
 
 # SQL_FILE = "powergama_2025_30y_v1.sqlite"
 # DATE_START = f"{YEAR_START}-01-01"
 DATE_START = pd.Timestamp(f'{YEAR_START}-01-01 00:00:00', tz='UTC')
-# DATE_END = f"{YEAR_END}-01-02"
+# DATE_END = f"{YEAR_END}-12-31"
 DATE_END = pd.Timestamp(f'{YEAR_END}-02-15 23:00:00', tz='UTC')
 
 loss_method = 0
@@ -110,7 +110,7 @@ plot_storage_filling_area(storfilling=storfilling,
                           tex_font=False)
 
 tex_font = False
-save_plot = True
+save_plot = False
 
 fig, ax = plt.subplots(figsize=(10, 6))
 # Plot logic
@@ -199,7 +199,7 @@ zone = 'NO1'
 
 plot_all_nodes = False                   # Plot nodal prices for all nodes in the zone(True) or average(False)
 interval = 12                           # Month interval for x-axis if plot_by_year_nodal is False
-save_plot_nodal = True                 # Save plot as pdf
+save_plot_nodal = False                 # Save plot as pdf
 plot_by_year_nodal = False              # Plot all years in one plot(False) or split plot by year(True)
 duration_curve_nodal = False            # Plot duration curve(False) or nodal prices over year(True)
 
@@ -232,7 +232,7 @@ plot_nodal_prices(res=res,
 # %% Hydro production, reservoir filling, inflow
 area_OP = 'NO'
 genType = 'hydro'
-save_plot_HRI = True
+save_plot_HRI = False
 interval = 12
 box_in_frame = True
 plot_full_timeline = True       # Plot full timeline or by year
@@ -296,7 +296,7 @@ figsize = (10, 6)
 df_gen_resampled, df_prices_resampled, total_production = get_production_by_type(res, area_OP, time_max_min, DATE_START)
 plot_full_timeline = True
 plot_duration_curve = False
-save_plot_LG = True
+save_plot_LG = False
 box_in_frame_LG = False
 plot_production(df_gen_resampled=df_gen_resampled,
                 df_prices_resampled=df_prices_resampled,

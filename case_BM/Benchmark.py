@@ -2,6 +2,7 @@
 
 from powergama.database import Database  # Import Database-Class specifically
 from functions.global_functions import *
+from scripts.case_doc import *
 
 
 # Define global variables
@@ -15,7 +16,7 @@ SQL_FILE = f"powergama_{case}_{version}.sqlite"
 # DATE_START = f"{YEAR_START}-01-01"
 DATE_START = pd.Timestamp(f'{YEAR_START}-01-01 00:00:00', tz='UTC')
 # DATE_END = f"{YEAR_END}-02-01"
-DATE_END = pd.Timestamp(f'{YEAR_END}-12-31 23:00:00', tz='UTC')
+DATE_END = pd.Timestamp(f'{YEAR_END}-01-02 23:00:00', tz='UTC')
 loss_method = 0
 new_scenario = False
 save_scenario = False
@@ -38,7 +39,7 @@ OUTPUT_PATH_PLOTS = BASE_DIR / 'results' / 'plots'
 
 # %%
 # Configure grid and run simulation
-
+create_case_doc('BM')
 data, time_max_min = setup_grid(YEAR_SCENARIO, version, DATE_START, DATE_END, DATA_PATH, new_scenario, save_scenario)
 res = solve_lp(data, SQL_FILE, loss_method, replace=True)
 

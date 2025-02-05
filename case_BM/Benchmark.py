@@ -16,7 +16,7 @@ YEAR_END = 2020
 DATE_START = pd.Timestamp(f'{YEAR_START}-01-01 00:00:00', tz='UTC')
 
 # DATE_END = f"{YEAR_END}-01-02"
-DATE_END = pd.Timestamp(f'{YEAR_END}-02-15 23:00:00', tz='UTC')
+DATE_END = pd.Timestamp(f'{YEAR_END}-12-31 23:00:00', tz='UTC')
 
 
 loss_method = 0
@@ -47,7 +47,7 @@ OUTPUT_PATH_PLOTS = BASE_DIR / 'results' / 'plots'
 # Configure grid and run simulation
 create_case_doc('BM') # Create case documentation
 data, time_max_min = setup_grid(YEAR_SCENARIO, version, DATE_START, DATE_END, DATA_PATH, new_scenario, save_scenario)
-res = solve_lp(data, SQL_FILE, loss_method, replace=True)
+res = solve_lp(data, SQL_FILE, loss_method, replace=True, nuclear_availability=0.7)
 
 # %% Print results
 print(f"System cost {sum(res.getSystemCost().values()):.2f} EUR, or {sum(res.getSystemCost().values())/1e9:.2f} Billion EUR")

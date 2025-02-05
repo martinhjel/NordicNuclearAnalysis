@@ -1,0 +1,159 @@
+
+# Steg 1
+res = solve_lp(data, SQL_FILE, loss_method, replace=True, nuclear_availability=0.7)
+
+# Steg 2 bytt ut denne i solve_lp i global_functions.py
+lp.solve(res, solver="glpk", nuclear_availability=nuclear_availability)
+
+# Steg 3 - bytt ut def solve med denne i LpProblemPyomo.py
+def solve(
+        self,
+        results,
+        solver="cbc",
+        solver_path=None,
+        warmstart=False,
+        savefiles=False,
+        aclossmultiplier=1,
+        dclossmultiplier=1,
+        solve_args=None,
+        nuclear_availability=None,
+    ):
+
+
+
+# Steg 4 - legg inn nuclear_availability i _updatedLpProblem i LpProblemPyomo.py
+# linje 863
+self._updateLpProblem(timestep, nuclear_availability)
+
+
+# Steg 5 Bytt ut hele _updateLpProblem i LpProblemPyomo.py
+
+def _updateLpProblem(self, timestep, nuclear_availability: float = None):
+    """
+    Function that updates LP problem for a given timestep, due to changed
+    power demand, power inflow and marginal generator costs
+    """
+    # Keep track of day, week, month, year
+    self.day = (timestep // 24) + 1  # Calculate the cumulative day count (starting at 1)
+    self.year = ((self.day - 1) // 365) + 1  # Determine the year (assuming 365 days per year)
+    day_of_year = ((self.day - 1) % 365) + 1  # Determine the day of the current year (1 through 365)
+    self.week = ((day_of_year - 1) // 7) + 1  # Calculate the week of the current year
+    if self.week > 52:  # Map self.week to a storage profile week between 1 and 52
+        profile_week = ((self.week - 1) % 52) + 1
+    else:
+        profile_week = self.week
+    # Determine the month (approximate based on day_of_year)
+    month = (day_of_year // 30) + 1  # Approximate month (not perfect, but sufficient for this purpose)
+
+    # 1. Generator output limits:
+    #    -> power output constraints
+    P_storage = self._storage / self.timeDelta
+    P_max = self._grid.generator["pmax"]
+    P_min = self._grid.generator["pmin"]
+    for i in self.s_gen:
+        inflow_factor = self._grid.generator.loc[i, "inflow_fac"]
+        capacity = self._grid.generator.loc[i, "pmax"]
+        inflow_profile = self._grid.generator.loc[i, "inflow_ref"]
+        P_inflow = capacity * inflow_factor * self._grid.profiles.loc[timestep, inflow_profile]
+
+        # Apply availability reduction for nuclear power plants in July
+        if nuclear_availability is not None:
+            if self._grid.generator.loc[i, 'type'] == 'nuclear' and month == 7:
+                P_inflow *= nuclear_availability  # Scale inflow based on availability
+
+        if i not in self._idx_generatorsWithStorage:
+            """
+            Don't let P_max limit the output (e.g. solar PV)
+            This won't affect fuel based generators with zero storage,
+            since these should have inflow=p_max in any case
+            """
+            if P_min[i] > 0:
+                self.p_gen_pmin[i] = min(P_inflow, P_min[i])
+            self.p_gen_pmax[i] = P_inflow
+        else:
+            # generator has storage
+            if P_min[i] > 0:
+                self.p_gen_pmin[i] = min(max(0, P_inflow + P_storage[i]), P_min[i])
+            self.p_gen_pmax[i] = min(max(0, P_inflow + P_storage[i]), P_max[i])
+
+
+
+    # 2. Update demand
+    #    -> power balance constraint
+    for i in self.s_load:
+        average = self._grid.consumer.loc[i, "demand_avg"] * (1 - self._grid.consumer.loc[i, "flex_fraction"])
+        profile_ref = self._grid.consumer.loc[i, "demand_ref"]
+        demand_now = self._grid.profiles.loc[timestep, profile_ref] * average
+        self.p_demand[i] = demand_now
+
+    # 3. Cost parameters
+    #    -> update objective function
+
+    # 3a. generators with storage (storage value)
+    for i in self._idx_generatorsWithStorage:
+        this_type_filling = self._grid.generator.loc[i, "storval_filling_ref"]
+        this_type_time = self._grid.generator.loc[i, "storval_time_ref"]
+        storagecapacity = self._grid.generator.loc[i, "storage_cap"]
+        fillinglevel = self._storage[i] / storagecapacity
+        filling_col = int(round(fillinglevel * 100))
+        if this_type_filling == 'hydro':
+            week = f"week {profile_week}"
+            storagevalue = (
+                    self._grid.generator.loc[i, "storage_price"]
+                    * self._grid.storagevalue_filling.loc[filling_col, week]
+                    * self._grid.storagevalue_time.loc[timestep, this_type_time]
+            )
+        else:
+            storagevalue = (
+                    self._grid.generator.loc[i, "storage_price"]
+                    * self._grid.storagevalue_filling.loc[filling_col, this_type_filling]
+                    * self._grid.storagevalue_time.loc[timestep, this_type_time]
+            )
+
+        self.p_gen_cost[i] = storagevalue
+        if i in self._idx_generatorsWithPumping:
+            deadband = self._grid.generator.pump_deadband[i]
+            self.p_genpump_cost[i] = storagevalue - deadband
+
+    # # 3a. generators with storage (storage value)
+    # for i in self._idx_generatorsWithStorage:
+    #     this_type_filling = self._grid.generator.loc[i, "storval_filling_ref"]
+    #     this_type_time = self._grid.generator.loc[i, "storval_time_ref"]
+    #     storagecapacity = self._grid.generator.loc[i, "storage_cap"]
+    #     fillinglevel = self._storage[i] / storagecapacity
+    #     filling_col = int(round(fillinglevel * 100))
+    #     storagevalue = (
+    #         self._grid.generator.loc[i, "storage_price"]
+    #         * self._grid.storagevalue_filling.loc[filling_col, this_type_filling]
+    #         * self._grid.storagevalue_time.loc[timestep, this_type_time]
+    #     )
+    #     self.p_gen_cost[i] = storagevalue
+    #     if i in self._idx_generatorsWithPumping:
+    #         deadband = self._grid.generator.pump_deadband[i]
+    #         self.p_genpump_cost[i] = storagevalue - deadband
+
+    # 3b. flexible load (storage value)
+    for i in self._idx_consumersWithFlexLoad:
+        this_type_filling = self._grid.consumer.loc[i, "flex_storval_filling"]
+        this_type_time = self._grid.consumer.loc[i, "flex_storval_time"]
+        # Compute storage capacity in Mwh (from value in hours)
+        storagecapacity_flexload = (
+                self._grid.consumer.loc[i, "flex_storage"]  # h
+                * self._grid.consumer.loc[i, "flex_fraction"]
+                * self._grid.consumer.loc[i, "demand_avg"]
+        )  # MW
+        fillinglevel = self._storage_flexload[i] / storagecapacity_flexload
+        filling_col = int(round(fillinglevel * 100))
+        if fillinglevel > 1:
+            storagevalue_flex = -const.flexload_outside_cost
+        elif fillinglevel < 0:
+            storagevalue_flex = const.flexload_outside_cost
+        else:
+            storagevalue_flex = (
+                    self._grid.consumer.flex_basevalue[i]
+                    * self._grid.storagevalue_filling.loc[filling_col, this_type_filling]
+                    * self._grid.storagevalue_time.loc[timestep, this_type_time]
+            )
+        self.p_loadflex_cost[i] = storagevalue_flex
+
+    return

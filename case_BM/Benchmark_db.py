@@ -3,10 +3,10 @@ from functions.database_functions import  * # Functions like 'getSystemCostFromD
 
 
 YEAR_SCENARIO = 2025
-YEAR_START = 1991
+YEAR_START = 2020
 YEAR_END = 2020
 case = 'BM'
-version = 'v3'
+version = '52_v1'
 
 # DATE_START = f"{YEAR_START}-01-01"
 DATE_START = pd.Timestamp(f'{YEAR_START}-01-01 00:00:00', tz='UTC')
@@ -38,13 +38,14 @@ OUTPUT_PATH_PLOTS = BASE_DIR / 'results' / 'plots'
 data, time_max_min = setup_grid(YEAR_SCENARIO, version, DATE_START, DATE_END, DATA_PATH, new_scenario, save_scenario)
 database = Database(SQL_FILE)
 
-x = 1
+
 
 # Example usage:
 timeMaxMin_YEAR = get_time_steps_for_period(2000, 2000)
 print(f"Time steps for 2000: {timeMaxMin_YEAR}")
 list_of_years = get_time_steps_for_years(selected_years=[1993, 2001, 2009, 2018])
 print(f"Time steps for years: {list_of_years}")
+
 
 # %%
 
@@ -73,7 +74,7 @@ plot_by_year = True    # True: Split plot by year, or False: Plot all years in o
 duration_curve = False  # True: Plot duration curve, or False: Plot storage filling over time
 save_plot_SF = False    # True: Save plot as pdf
 
-time_SF = get_time_steps_for_period(2000, 2001) # eller time_max_min
+time_SF = time_max_min# get_time_steps_for_period(2000, 2001) # eller time_max_min
 
 for area in areas:
     storfilling[area] = getStorageFillingInAreasFromDB(data=data,
@@ -111,15 +112,15 @@ plot_storage_filling_area(storfilling=storfilling,
 
 
 # %% Plot nodal prices Norway
-zone = 'NO1'
+zone = 'NO2'
 
 plot_all_nodes = False                   # Plot nodal prices for all nodes in the zone(True) or average(False)
-interval = 12                           # Month interval for x-axis if plot_by_year_nodal is False
+interval = 1                           # Month interval for x-axis if plot_by_year_nodal is False
 save_plot_nodal = True                 # Save plot as pdf
 plot_by_year_nodal = False              # Plot all years in one plot(False) or split plot by year(True)
 duration_curve_nodal = False            # Plot duration curve(False) or nodal prices over year(True)
 
-time_NP = get_time_steps_for_period(2000, 2001)
+time_NP = time_max_min# get_time_steps_for_period(2000, 2001)
 
 nodes_in_zone = data.node[data.node['zone'] == zone].index.tolist() # Get all nodes in the zone
 # Get nodal prices for all nodes in the zone in one step node_prices
@@ -150,12 +151,12 @@ plot_nodal_prices_FromDB(data=data,
 area_OP = 'NO'
 genType = 'hydro'
 save_plot_HRI = False
-interval = 12
+interval = 1
 box_in_frame = True
 plot_full_timeline = True       # Plot full timeline or by year
 relative_storage = True         # Relative storage filling, True gives percentage
 
-time_HRI = get_time_steps_for_period(2000, 2001)
+time_HRI = time_max_min# get_time_steps_for_period(2000, 2001)
 
 correct_date_start_HRI = DATE_START + pd.Timedelta(hours=time_HRI[0])
 correct_date_end_HRI = DATE_START + pd.Timedelta(hours=time_HRI[-1])
@@ -195,7 +196,7 @@ interval = 1
 box_in_frame = True
 resample = True
 
-time_PLP = get_time_steps_for_period(2000, 2001)
+time_PLP = time_max_min# get_time_steps_for_period(2000, 2001)
 correct_date_start_PLP = DATE_START + pd.Timedelta(hours=time_PLP[0])
 correct_date_end_PLP = DATE_START + pd.Timedelta(hours=time_PLP[-1])
 
@@ -218,12 +219,12 @@ plot_hydro_prod_demand_price(df_plp=df_plp,
 
 
 # %% Load, generation by type in AREA
-area_OP = 'NO'
+area_OP = 'FI'
 title_gen = f'Production, Consumption and Price in {area_OP}'
-interval = 12
+interval = 1
 figsize = (10, 6)
 
-time_LGT = get_time_steps_for_period(2000, 2003)
+time_LGT = time_max_min# get_time_steps_for_period(2000, 2003)
 correct_date_start_LGT = DATE_START + pd.Timedelta(hours=time_LGT[0])
 correct_date_end_LGT = DATE_START + pd.Timedelta(hours=time_LGT[-1])
 
@@ -252,3 +253,94 @@ plot_production(df_gen_resampled=df_gen_resampled,
                 tex_font=False)
 
 
+# %%
+
+# prodution per node or area
+
+
+
+def get_production_by_type_FromDB_v2(data: GridData, db: Database, area_OP, time_max_min, DATE_START):
+    time_period = time_max_min[-1] - time_max_min[0]
+    # Get Generation by type
+    # List of generation types to extract
+    generation_types = ['hydro', 'ror', 'nuclear', 'wind_on', 'wind_off', 'solar', 'fossil_gas', 'fossil_other', 'biomass']
+
+    # Dictionary to store production data
+    generation_data = {}
+
+    # Iterate through generation types and fetch data
+    for gen_type in generation_types:
+        try:
+            gen_idx = data.getGeneratorsPerAreaAndType()[area_OP].get(gen_type, None)
+            if gen_idx:
+                production = pd.DataFrame(db.getResultGeneratorPower(gen_idx, time_max_min)).sum(axis=1)
+                if production.sum() > 0:  # Ensure we only include nonzero production
+                    generation_data[f"{gen_type.capitalize()}"] = production
+        except Exception as e:
+            print(f"Warning: Could not fetch data for {gen_type} in {area_OP}. Error: {e}")
+
+    # Get Load Demand
+    load_demand = getDemandPerAreaFromDB(data, db, area=area_OP, timeMaxMin=time_max_min)
+
+    # Get Avg Price for Area
+    nodes_in_area = data.node[data.node['area'] == area_OP].index.tolist()
+    node_prices_3 = pd.DataFrame({
+        node: getNodalPricesFromDB(db, node=node, timeMaxMin=time_max_min) for node in nodes_in_area
+    })
+    node_prices_3.index = pd.date_range(DATE_START, periods=time_period, freq='h')
+    avg_area_prices = node_prices_3.sum(axis=1) / len(nodes_in_area)
+
+    # Create DataFrame with dynamically collected generation data
+    df_gen = pd.DataFrame(generation_data)
+    df_gen['Load'] = load_demand['sum']
+    df_gen.index = pd.date_range(DATE_START, periods=time_period, freq='h')
+
+    # Define resampling rules dynamically
+    resampling_rules = {col: 'sum' for col in df_gen.columns}
+
+    # Resample the data based on the defined rules
+    df_gen_resampled = df_gen.resample('7D').agg(resampling_rules)
+
+    # Create price DataFrame
+    df_prices = pd.DataFrame({'Price': avg_area_prices})
+    df_prices.index = pd.date_range(DATE_START, periods=time_period, freq='h')
+    df_prices_resampled = df_prices.resample('1D').agg({'Price': 'mean'})
+
+    total_production = df_gen.sum().sum()
+
+    return df_gen_resampled, df_prices_resampled, total_production
+
+
+df_gen_resampled_new, df_prices_resampled_new, total_production_new = get_production_by_type_FromDB_v2(data,
+                                                                                        database,
+                                                                                        area_OP='DE',
+                                                                                        time_max_min=time_max_min,
+                                                                                        DATE_START=correct_date_start_LGT)
+
+
+
+# %%
+df_gen_resampled_new['Total Generation'] = df_gen_resampled_new.drop(columns=['Load']).sum(axis=1)
+
+df_gen_resampled_new[['Total Generation', 'Load']].plot(figsize=(12, 6), linewidth=2)
+plt.title("Total Generation vs. Load Over Time")
+plt.ylabel("Energy (MWh)")
+plt.xlabel("Date")
+plt.legend(loc='upper left', bbox_to_anchor=(1,1))
+plt.grid(True)
+plt.show()
+
+
+# %%
+
+
+df_gen_resampled_new.drop(columns=['Load', 'Total Generation'], errors='ignore').sum().plot(kind='bar',
+                                                                                            figsize=(10, 6),
+                                                                                            color='skyblue',
+                                                                                            edgecolor='black')
+plt.title("Total Energy Generation by Type")
+plt.ylabel("Total Energy (MWh)")
+plt.xlabel("Energy Source")
+plt.xticks(rotation=45)
+plt.grid(axis='y')
+plt.show()

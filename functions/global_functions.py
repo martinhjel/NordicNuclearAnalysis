@@ -20,7 +20,12 @@ from powergama.GridData import GridData  # Import GridData-Class specifically
 from functions.database_functions import *
 
 
-def read_grid_data(year, version, date_start, date_end, data_path):
+def read_grid_data(year,
+                   version,
+                   date_start,
+                   date_end,
+                   data_path,
+                   ):
     """
     Reads and processes grid data for a specified year and date range.
 
@@ -37,7 +42,7 @@ def read_grid_data(year, version, date_start, date_end, data_path):
     # Calculate and print the number of simulation hours and years
     datapath_GridData = data_path / "system"
     file_storval_filling = data_path / f"storage/profiles_storval_filling_{version}.csv"
-    file_30y_profiles = pathlib.Path(data_path / "timeseries_profiles.csv")
+    file_30y_profiles = data_path / "timeseries_profiles.csv"
 
     # Initialize GridData object
     data = powergama.GridData()
@@ -78,7 +83,14 @@ def read_grid_data(year, version, date_start, date_end, data_path):
 
 
 # Read and configure grid
-def setup_grid(year, version, date_start, date_end, data_path, new_scenario, save_scenario):
+def setup_grid(year,
+               version,
+               date_start,
+               date_end,
+               data_path,
+               new_scenario,
+               save_scenario,
+               ):
     """
     Set up grid data and initialize a simulation scenario.
 
@@ -110,7 +122,11 @@ def setup_grid(year, version, date_start, date_end, data_path, new_scenario, sav
 
 
 
-def solve_lp(data, sql_file, loss_method, replace):
+def solve_lp(data,
+             sql_file,
+             loss_method,
+             replace,
+             nuclear_availability=None):
     """
     Solves a linear programming problem using the given grid data and stores the results in a SQL file.
 
@@ -127,7 +143,7 @@ def solve_lp(data, sql_file, loss_method, replace):
     res = powergama.Results(data, sql_file, replace=replace)
     if replace:
         start_time = time.time()
-        lp.solve(res, solver="glpk")
+        lp.solve(res, solver="glpk", nuclear_availability=nuclear_availability)
         end_time = time.time()
         print("\nSimulation time = {:.2f} seconds".format(end_time - start_time))
         print("\nSimulation time = {:.2f} minutes".format((end_time - start_time)/60))
@@ -965,8 +981,9 @@ def get_production_by_type(res, area_OP, time_max_min, DATE_START):
     genGasIdx = res.grid.getGeneratorsPerAreaAndType()[area_OP][genGas]
     all_gas_production = pd.DataFrame(res.db.getResultGeneratorPower(genGasIdx, time_max_min)).sum(axis=1)
 
+
     # Get Load Demand
-    load_demand = res.getDemandPerArea(area='NO')
+    load_demand = res.getDemandPerArea(area=area_OP)
 
     # Get Avg Price for Area
     nodes_in_area = res.grid.node[res.grid.node['area'] == area_OP].index.tolist()
@@ -984,14 +1001,30 @@ def get_production_by_type(res, area_OP, time_max_min, DATE_START):
     })
     df_gen.index = pd.date_range(DATE_START, periods=time_max_min[-1], freq='h')
 
-    # Resample the data
-    df_gen_resampled = df_gen.resample('7D').agg({
+    # Conditionally add Nuclear Production
+    nuclear_areas = ['SE', 'FI', 'NL', 'GB']
+    if area_OP in nuclear_areas:
+        genNuclear = 'nuclear'
+        genNuclearIdx = res.grid.getGeneratorsPerAreaAndType()[area_OP][genNuclear]
+        all_nuclear_production = pd.DataFrame(res.db.getResultGeneratorPower(genNuclearIdx, time_max_min)).sum(axis=1)
+        if all_nuclear_production.sum() > 0:
+            df_gen['Nuclear Production'] = all_nuclear_production
+
+    # Define resampling rules
+    resampling_rules = {
         'Hydro Production': 'sum',
         'Wind Production': 'sum',
         'Solar Production': 'sum',
         'Gas Production': 'sum',
         'Load': 'sum'
-    })
+    }
+
+    # Conditionally include Nuclear Production in resampling
+    if 'Nuclear Production' in df_gen.columns:
+        resampling_rules['Nuclear Production'] = 'sum'
+
+    # Resample the data based on the defined rules
+    df_gen_resampled = df_gen.resample('7D').agg(resampling_rules)
 
     df_prices = pd.DataFrame({
         'Price': avg_area_prices
@@ -1002,6 +1035,8 @@ def get_production_by_type(res, area_OP, time_max_min, DATE_START):
     })
 
     total_production = sum(all_hydro_production) + sum(all_wind_production) + sum(all_solar_production) + sum(all_gas_production)
+    if 'Nuclear Production' in df_gen_resampled.columns:
+        total_production += sum(all_nuclear_production)
 
     return df_gen_resampled, df_prices_resampled, total_production
 
@@ -1043,14 +1078,30 @@ def get_production_by_type_FromDB(data: GridData, db: Database, area_OP, time_ma
     })
     df_gen.index = pd.date_range(DATE_START, periods=time_period, freq='h')
 
-    # Resample the data
-    df_gen_resampled = df_gen.resample('7D').agg({
+    # Conditionally add Nuclear Production
+    nuclear_areas = ['SE', 'FI', 'NL', 'GB']
+    if area_OP in nuclear_areas:
+        genNuclear = 'nuclear'
+        genNuclearIdx = data.getGeneratorsPerAreaAndType()[area_OP][genNuclear]
+        all_nuclear_production = pd.DataFrame(db.getResultGeneratorPower(genNuclearIdx, time_max_min)).sum(axis=1)
+        if all_nuclear_production.sum() > 0:
+            df_gen['Nuclear Production'] = all_nuclear_production
+
+    # Define resampling rules
+    resampling_rules = {
         'Hydro Production': 'sum',
         'Wind Production': 'sum',
         'Solar Production': 'sum',
         'Gas Production': 'sum',
         'Load': 'sum'
-    })
+    }
+
+    # Conditionally include Nuclear Production in resampling
+    if 'Nuclear Production' in df_gen.columns:
+        resampling_rules['Nuclear Production'] = 'sum'
+
+    # Resample the data based on the defined rules
+    df_gen_resampled = df_gen.resample('7D').agg(resampling_rules)
 
     df_prices = pd.DataFrame({
         'Price': avg_area_prices
@@ -1061,6 +1112,9 @@ def get_production_by_type_FromDB(data: GridData, db: Database, area_OP, time_ma
     })
 
     total_production = sum(all_hydro_production) + sum(all_wind_production) + sum(all_solar_production) + sum(all_gas_production)
+
+    if 'Nuclear Production' in df_gen_resampled.columns:
+        total_production += sum(all_nuclear_production)
 
     return df_gen_resampled, df_prices_resampled, total_production
 

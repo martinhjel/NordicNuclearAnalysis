@@ -135,7 +135,7 @@ def grid_plot(scenario_data):
     return map
 
 def main():
-    case = 'xx'
+    case = 'x'
     # year = 2025
     scenario_data = read_data(case)
     grid_map = grid_plot(scenario_data)

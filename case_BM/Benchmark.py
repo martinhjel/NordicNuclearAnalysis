@@ -7,8 +7,8 @@ from scripts.case_doc import *
 # Define global variables
 YEAR_SCENARIO = 2025
 case = 'BM'
-version = '52_v1'
-YEAR_START = 2020
+version = '52_v6'
+YEAR_START = 1991
 YEAR_END = 2020
 
 # SQL_FILE = "powergama_2025_30y_v1.sqlite"
@@ -89,13 +89,18 @@ plot_imp_exp_cross_border_Flow_NEW(db=database,
 storfilling = pd.DataFrame()
 areas = ["NO"]          # When plotting multiple years in one year, recommend to only use one area
 relative=True           # Relative storage filling, True gives percentage
-interval=1              # Month interval for x-axis if plot_by_year is False
+interval=12              # Month interval for x-axis if plot_by_year is False
 plot_by_year = True    # True: Split plot by year, or False: Plot all years in one plot
 duration_curve = False  # True: Plot duration curve, or False: Plot storage filling over time
 save_plot_SF = False    # True: Save plot as pdf
 
 for area in areas:
-    storfilling[area] = res.getStorageFillingInAreas(areas=[area], generator_type="hydro", relative_storage=relative)
+    storfilling[area] = res.getStorageFillingInAreas(areas=[area],
+                                                     generator_type="hydro",
+                                                     relative_storage=relative)
+    if relative:
+        storfilling[area] = storfilling[area] * 100
+
 storfilling.index = pd.date_range(DATE_START, periods=time_max_min[-1], freq='h')
 storfilling['year'] = storfilling.index.year    # Add year column to DataFrame
 title_storage_filling = f'Reservoir Filling in {areas} for period {DATE_START.year}-{DATE_END.year}'

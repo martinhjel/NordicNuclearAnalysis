@@ -223,6 +223,87 @@ def getDemandPerAreaFromDB(data: GridData, db: Database, area, timeMaxMin):
     demand_per_area = {"fixed": dem, "flex": flex_demand, "sum": sum_demand}
     return demand_per_area
 
+def getDemandPerZoneFromDB(data: GridData, db: Database, area, zone, timeMaxMin):
+    """
+    Returns demand timeseries for given zone, as dictionary fields "fixed", "flex", and "sum"
+
+    Parameters
+    ----------
+    area : str
+        The area.
+    timeMaxMin : list (default = None)
+        [min, max] - lower and upper time interval
+
+    Returns
+    -------
+    demand_per_area : dict
+        The demand per zone.
+    """
+    timerange = range(timeMaxMin[0], timeMaxMin[-1])
+
+    consumer = data.consumer
+
+    dem = [0] * len(timerange)
+    flex_demand = [0] * len(timerange)
+    consumers = data.getConsumersPerArea()[area]
+    for i in consumers:
+        if zone in data.consumer.node[i]:
+            ref_profile = consumer.demand_ref[i]
+            # accumulate demand for all consumers in this area:
+            dem = [
+                dem[t - timerange[0]]
+                + consumer.demand_avg[i]
+                * (1 - consumer.flex_fraction[i])
+                * data.profiles[ref_profile][t - timerange[0]]
+                for t in timerange
+            ]
+            flex_demand_i = db.getResultFlexloadPower(i, timeMaxMin)
+            if len(flex_demand_i) > 0:
+                flex_demand = [sum(x) for x in zip(flex_demand, flex_demand_i)]
+    sum_demand = [sum(x) for x in zip(dem, flex_demand)]
+    demand_per_zone = {"fixed": dem, "flex": flex_demand, "sum": sum_demand}
+    return demand_per_zone
+
+def getDemandPerNodeFromDB(data: GridData, db: Database, area, node, timeMaxMin):
+    """
+    Returns demand timeseries for given zone, as dictionary fields "fixed", "flex", and "sum"
+
+    Parameters
+    ----------
+    area : str
+        The area.
+    timeMaxMin : list (default = None)
+        [min, max] - lower and upper time interval
+
+    Returns
+    -------
+    demand_per_area : dict
+        The demand per zone.
+    """
+    timerange = range(timeMaxMin[0], timeMaxMin[-1])
+
+    consumer = data.consumer
+
+    dem = [0] * len(timerange)
+    flex_demand = [0] * len(timerange)
+    consumers = data.getConsumersPerArea()[area]
+    for i in consumers:
+        if node == data.consumer.node[i]:
+            ref_profile = consumer.demand_ref[i]
+            # accumulate demand for all consumers in this area:
+            dem = [
+                dem[t - timerange[0]]
+                + consumer.demand_avg[i]
+                * (1 - consumer.flex_fraction[i])
+                * data.profiles[ref_profile][t - timerange[0]]
+                for t in timerange
+            ]
+            flex_demand_i = db.getResultFlexloadPower(i, timeMaxMin)
+            if len(flex_demand_i) > 0:
+                flex_demand = [sum(x) for x in zip(flex_demand, flex_demand_i)]
+    sum_demand = [sum(x) for x in zip(dem, flex_demand)]
+    demand_per_node = {"fixed": dem, "flex": flex_demand, "sum": sum_demand}
+    return demand_per_node
 
 
 
@@ -541,7 +622,62 @@ def getAllGeneratorProductionOBSOLETEFromDB(data: GridData, db:Database, timeMax
 
 
 
+def getEnergyBalanceInAreaFromDB(data: GridData, db:Database, area, spillageGen, resolution="h", fileName=None, timeMaxMin=None, start_date=None):
+    """
+    Print time series of energy balance in an area, including
+    production, spillage, load shedding, storage, pump consumption
+    and imports
 
+    Parameters
+    ----------
+    area : string
+        area code
+    spillageGen : list
+        generator types for which to show spillage (renewables)
+    resolution : string
+        resolution of output, see pandas:resample
+    fileName : string (default=None)
+        name of file to export results
+    timeMaxMin : list
+        time range to consider
+    start_date : date string
+        date when time series start
+
+    """
+    if timeMaxMin is None:
+        timeMaxMin = [db.getTimerange()[0], db.getTimerange()[-1]]
+
+    # data resolution in whole seconds (usually, timeDelta=1.0)
+    resolutionS = int(data.timeDelta * 3600)
+
+    prod = pd.DataFrame()
+    genTypes = data.getAllGeneratorTypes()
+    generators = data.getGeneratorsPerAreaAndType()[area]
+    pumpIdx = data.getGeneratorsWithPumpByArea()
+    if len(pumpIdx) > 0:
+        pumpIdx = pumpIdx[area]
+    storageGen = data.getIdxGeneratorsWithStorage()
+    areaGen = [item for sublist in list(generators.values()) for item in sublist]
+    matches = [x for x in areaGen if x in storageGen]
+    for gt in genTypes:
+        if gt in generators:
+            prod[gt] = db.getResultGeneratorPower(generators[gt], timeMaxMin)
+            if gt in spillageGen:
+                prod[gt + " spilled"] = db.getResultGeneratorSpilled(generators[gt], timeMaxMin)
+    prod["load shedding"] = getLoadheddingInAreaFromDB(db, area, timeMaxMin)
+    storage = db.getResultStorageFillingMultiple(matches, timeMaxMin, capacity=False)
+    if storage:
+        prod["storage"] = storage
+    if len(pumpIdx) > 0:
+        prod["pumped"] = db.getResultPumpPowerMultiple(pumpIdx, timeMaxMin, negative=True)
+    prod["net import"] = getNetImportFromDB(data, db, area, timeMaxMin)
+    prod.index = pd.date_range(start_date, periods=timeMaxMin[-1] - timeMaxMin[0], freq="{}s".format(resolutionS))
+    if resolution != "h":
+        prod = prod.resample(resolution, how="sum")
+    if fileName:
+        prod.to_csv(fileName)
+    else:
+        return prod
 
 
 

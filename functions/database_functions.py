@@ -307,8 +307,93 @@ def getDemandPerNodeFromDB(data: GridData, db: Database, area, node, timeMaxMin)
 
 
 
+# def get_production_by_typeFromDB(data: GridData, db: Database, area_OP, time_max_min, DATE_START):
+#     """
+#     Get production by type from the database.
+#
+#     Parameters
+#     ----------
+#     data : dict
+#         The data dictionary.
+#     db : Database
+#         The database object.
+#     area_OP : str
+#         The area.
+#     time_max_min : list
+#         The time interval.
+#     DATE_START : str
+#         The start date.
+#
+#     Returns
+#     -------
+#     df_gen_resampled : pd.DataFrame
+#         The resampled generation DataFrame.
+#     df_prices_resampled : pd.DataFrame
+#         The resampled price DataFrame.
+#     total_production : float
+#         The total production.
+#     """
+#
+#     # Get Generation by type
+#     genHydro = 'hydro'
+#     genHydroIdx = data.getGeneratorsPerAreaAndType()[area_OP][genHydro]
+#     all_hydro_production = pd.DataFrame(db.getResultGeneratorPower(genHydroIdx, time_max_min)).sum(axis=1)
+#
+#     genWind = 'wind_on'
+#     genWindIdx = data.getGeneratorsPerAreaAndType()[area_OP][genWind]
+#     all_wind_production = pd.DataFrame(db.getResultGeneratorPower(genWindIdx, time_max_min)).sum(axis=1)
+#
+#     genSolar = 'solar'
+#     genSolarIdx = data.getGeneratorsPerAreaAndType()[area_OP][genSolar]
+#     all_solar_production = pd.DataFrame(db.getResultGeneratorPower(genSolarIdx, time_max_min)).sum(axis=1)
+#
+#     genGas = 'fossil_gas'
+#     genGasIdx = data.getGeneratorsPerAreaAndType()[area_OP][genGas]
+#     all_gas_production = pd.DataFrame(db.getResultGeneratorPower(genGasIdx, time_max_min)).sum(axis=1)
+#
+#     # Get Load Demand
+#     load_demand = getDemandPerAreaFromDB(data, db, area='NO', timeMaxMin=time_max_min)
+#
+#     # Get Avg Price for Area
+#     nodes_in_area = data.node[data.node['area'] == area_OP].index.tolist()
+#     node_prices = pd.DataFrame({node: getNodalPricesFromDB(db, node=node, timeMaxMin=time_max_min) for node in nodes_in_area})
+#     node_prices.index = pd.date_range(DATE_START, periods=time_max_min[-1], freq='h')
+#     avg_area_prices = node_prices.sum(axis=1) / len(nodes_in_area)
+#
+#     # Create DataFrame
+#     df_gen = pd.DataFrame({
+#         'Hydro Production': all_hydro_production,
+#         'Wind Production': all_wind_production,
+#         'Solar Production': all_solar_production,
+#         'Gas Production': all_gas_production,
+#         'Load': load_demand['sum']
+#     })
+#     df_gen.index = pd.date_range(DATE_START, periods=time_max_min[-1], freq='h')
+#
+#     # Resample the data
+#     df_gen_resampled = df_gen.resample('7D').agg({
+#         'Hydro Production': 'sum',
+#         'Wind Production': 'sum',
+#         'Solar Production': 'sum',
+#         'Gas Production': 'sum',
+#         'Load': 'sum'
+#     })
+#
+#     df_prices = pd.DataFrame({
+#         'Price': avg_area_prices
+#     })
+#     df_prices.index = pd.date_range(DATE_START, periods=time_max_min[-1], freq='h')
+#     df_prices_resampled = df_prices.resample('1D').agg({
+#         'Price': 'mean'
+#     })
+#
+#     total_production = sum(all_hydro_production) + sum(all_wind_production) + sum(all_solar_production) + sum(all_gas_production)
+#
+#     return df_gen_resampled, df_prices_resampled, total_production
 
-def get_production_by_typeFromDB(data: GridData, db: Database, area_OP, time_max_min, DATE_START):
+
+
+def get_production_by_type_FromDB(data: GridData, db: Database, area_OP, time_max_min, DATE_START):
     """
     Get production by type from the database.
 
@@ -334,63 +419,205 @@ def get_production_by_typeFromDB(data: GridData, db: Database, area_OP, time_max
     total_production : float
         The total production.
     """
-
+    time_period = time_max_min[-1] - time_max_min[0]
     # Get Generation by type
-    genHydro = 'hydro'
-    genHydroIdx = data.getGeneratorsPerAreaAndType()[area_OP][genHydro]
-    all_hydro_production = pd.DataFrame(db.getResultGeneratorPower(genHydroIdx, time_max_min)).sum(axis=1)
+    # List of generation types to extract
+    generation_types = ['hydro', 'ror', 'nuclear', 'wind_on', 'wind_off', 'solar', 'fossil_gas', 'fossil_other', 'biomass']
 
-    genWind = 'wind_on'
-    genWindIdx = data.getGeneratorsPerAreaAndType()[area_OP][genWind]
-    all_wind_production = pd.DataFrame(db.getResultGeneratorPower(genWindIdx, time_max_min)).sum(axis=1)
+    # Dictionary to store production data
+    generation_data = {}
 
-    genSolar = 'solar'
-    genSolarIdx = data.getGeneratorsPerAreaAndType()[area_OP][genSolar]
-    all_solar_production = pd.DataFrame(db.getResultGeneratorPower(genSolarIdx, time_max_min)).sum(axis=1)
-
-    genGas = 'fossil_gas'
-    genGasIdx = data.getGeneratorsPerAreaAndType()[area_OP][genGas]
-    all_gas_production = pd.DataFrame(db.getResultGeneratorPower(genGasIdx, time_max_min)).sum(axis=1)
+    # Iterate through generation types and fetch data
+    for gen_type in generation_types:
+        try:
+            gen_idx = data.getGeneratorsPerAreaAndType()[area_OP].get(gen_type, None)
+            if gen_idx:
+                production = pd.DataFrame(db.getResultGeneratorPower(gen_idx, time_max_min)).sum(axis=1)
+                if production.sum() > 0:  # Ensure we only include nonzero production
+                    generation_data[f"{gen_type.capitalize()}"] = production
+        except Exception as e:
+            print(f"Warning: Could not fetch data for {gen_type} in {area_OP}. Error: {e}")
 
     # Get Load Demand
-    load_demand = getDemandPerAreaFromDB(data, db, area='NO', timeMaxMin=time_max_min)
+    load_demand = getDemandPerAreaFromDB(data, db, area=area_OP, timeMaxMin=time_max_min)
 
     # Get Avg Price for Area
     nodes_in_area = data.node[data.node['area'] == area_OP].index.tolist()
-    node_prices = pd.DataFrame({node: getNodalPricesFromDB(db, node=node, timeMaxMin=time_max_min) for node in nodes_in_area})
-    node_prices.index = pd.date_range(DATE_START, periods=time_max_min[-1], freq='h')
-    avg_area_prices = node_prices.sum(axis=1) / len(nodes_in_area)
-
-    # Create DataFrame
-    df_gen = pd.DataFrame({
-        'Hydro Production': all_hydro_production,
-        'Wind Production': all_wind_production,
-        'Solar Production': all_solar_production,
-        'Gas Production': all_gas_production,
-        'Load': load_demand['sum']
+    node_prices_3 = pd.DataFrame({
+        node: getNodalPricesFromDB(db, node=node, timeMaxMin=time_max_min) for node in nodes_in_area
     })
-    df_gen.index = pd.date_range(DATE_START, periods=time_max_min[-1], freq='h')
+    node_prices_3.index = pd.date_range(DATE_START, periods=time_period, freq='h')
+    avg_area_prices = node_prices_3.sum(axis=1) / len(nodes_in_area)
 
-    # Resample the data
-    df_gen_resampled = df_gen.resample('7D').agg({
-        'Hydro Production': 'sum',
-        'Wind Production': 'sum',
-        'Solar Production': 'sum',
-        'Gas Production': 'sum',
-        'Load': 'sum'
-    })
+    # Create DataFrame with dynamically collected generation data
+    df_gen = pd.DataFrame(generation_data)
+    df_gen['Load'] = load_demand['sum']
+    df_gen.index = pd.date_range(DATE_START, periods=time_period, freq='h')
 
-    df_prices = pd.DataFrame({
-        'Price': avg_area_prices
-    })
-    df_prices.index = pd.date_range(DATE_START, periods=time_max_min[-1], freq='h')
-    df_prices_resampled = df_prices.resample('1D').agg({
-        'Price': 'mean'
-    })
+    # Define resampling rules dynamically
+    resampling_rules = {col: 'sum' for col in df_gen.columns}
 
-    total_production = sum(all_hydro_production) + sum(all_wind_production) + sum(all_solar_production) + sum(all_gas_production)
+    # Resample the data based on the defined rules
+    df_gen_resampled = df_gen.resample('7D').agg(resampling_rules)
+
+    # Create price DataFrame
+    df_prices = pd.DataFrame({'Price': avg_area_prices})
+    df_prices.index = pd.date_range(DATE_START, periods=time_period, freq='h')
+    df_prices_resampled = df_prices.resample('1D').agg({'Price': 'mean'})
+
+    total_production = df_gen.sum().sum()
 
     return df_gen_resampled, df_prices_resampled, total_production
+
+
+
+def get_production_by_type_FromDB_ZoneLevel(data: GridData, db: Database, area, time_max_min, DATE_START):
+    time_period = time_max_min[-1] - time_max_min[0]
+    print("Analyzing production by type in", area)
+
+    # Step 1: Create zone-to-node mapping
+    node_zone_map = {z: set(n for n, zone in zip(data.node.id, data.node.zone) if zone == z)
+                     for z in set(data.node.zone) if area in z}
+
+    # Step 2: Get generator indices per area and type
+    generators_per_type = data.getGeneratorsPerAreaAndType().get(area, {})
+
+    # Step 3: Extract generator information (only needed columns)
+    generator_data = data.generator[['node', 'type']]
+
+    # Step 4: Group generator indices by zone and type in a dictionary
+    zone_gen_map = {
+        zone: {
+            gt: generator_data.loc[(generator_data['node'].isin(nodes)) & (generator_data['type'] == gt)].index.tolist()
+            for gt in generators_per_type.keys()}
+        for zone, nodes in node_zone_map.items()
+    }
+
+    # Step 5: Fetch production data in a single query per (zone, type)
+    zone_production = {zone: {gt: [] for gt in generators_per_type.keys()} for zone in node_zone_map.keys()}
+
+    # Iterate over zones and fetch production data
+    for zone, gen_types in zone_gen_map.items():
+        for gt, gen_idx in gen_types.items():
+            if gen_idx:
+                try:
+                    # Fetch the accumulated production for the entire zone's generators of this type
+                    print(f"Fetching data for {gt} in {zone}")
+                    zone_production[zone][gt] = db.getResultGeneratorPower(gen_idx, time_max_min)
+
+                except Exception as e:
+                    print(f"Warning: Could not fetch data for {gt} in {area}. Error: {e}")
+
+        # Get Load Demand (ensure this data is fetched for each zone)
+        try:
+            load_demand = getDemandPerZoneFromDB(data, db, area=area, zone=zone, timeMaxMin=time_max_min)
+            zone_production[zone]['Load'] = load_demand['sum']  # Store the summed load demand in 'Load'
+            print(f"Fetched Load demand for {zone}")
+        except Exception as e:
+            print(f"Warning: Could not fetch Load demand for {zone}. Error: {e}")
+            zone_production[zone]['Load'] = []  # Default empty list if fetching fails
+
+    # Flatten dictionary into a DataFrame
+    df_gen = pd.DataFrame([
+        {'Zone': zone, 'GenerationType': gen_type, 'Timestamp': t, 'Production': value}
+        for zone, gen_dict in zone_production.items()
+        for gen_type, values in gen_dict.items()
+        for t, value in enumerate(values)  # Ensure full time series
+    ])
+
+    df_gen['Timestamp'] = pd.date_range(DATE_START, periods=time_period, freq='h')[df_gen['Timestamp']]
+    df_gen.set_index('Timestamp', inplace=True)
+
+    # Pivot table to create a time-series format with GenerationType as columns
+    df_gen_pivot = df_gen.pivot_table(index='Timestamp', columns=['Zone', 'GenerationType'], values='Production', aggfunc='sum')
+
+    # Define resampling rules (sum over 7-day periods)
+    resampling_rules = {col: 'sum' for col in df_gen_pivot.columns}
+
+    # Resample data to 7-day intervals
+    df_gen_resampled = df_gen_pivot.resample('7D').agg(resampling_rules)
+
+
+    # total_production = df_gen_resampled.sum().sum()
+
+    return df_gen_resampled# , total_production
+
+
+
+
+def get_production_by_type_FromDB_NodesInZone(data: GridData, db: Database, zone, time_max_min, DATE_START):
+    time_period = time_max_min[-1] - time_max_min[0]
+    print("Analyzing production by type for nodes in", zone)
+    area = zone[0:2] # Two first letters
+
+    # Step 1: Create zone-to-node mapping
+    node_zone_map = {z: set(n for n, zone in zip(data.node.id, data.node.zone) if zone == z)
+                     for z in set(data.node.zone) if area in z}
+
+    node_zone_map = node_zone_map[zone]
+    # Step 2: Get generator indices per area and type
+    generators_per_type = data.getGeneratorsPerAreaAndType().get(area, {})
+
+    # Step 3: Extract generator information (only needed columns)
+    generator_data = data.generator[['node', 'type']]
+
+
+    # Step 4: Group generator indices by zone and type in a dictionary
+    node_gen_map = {
+        node: {
+            gt: generator_data.loc[(generator_data['node']==node) & (generator_data['type'] == gt)].index.tolist()
+            for gt in generators_per_type.keys()}
+        for node in node_zone_map
+    }
+
+    # Step 5: Fetch production data in a single query per (zone, type)
+    node_production = {node: {gt: [] for gt in generators_per_type.keys()} for node in node_zone_map}
+
+    # Iterate over zones and fetch production data
+    for node, gen_types in node_gen_map.items():
+        for gt, gen_idx in gen_types.items():
+            if gen_idx:
+                try:
+                    # Fetch the accumulated production for the entire zone's generators of this type
+                    print(f"Fetching data for {gt} in {node}")
+                    node_production[node][gt] = db.getResultGeneratorPower(gen_idx, time_max_min)
+
+                except Exception as e:
+                    print(f"Warning: Could not fetch data for {gt} in {node}. Error: {e}")
+
+        # Get Load Demand (ensure this data is fetched for each zone)
+        try:
+            load_demand = getDemandPerNodeFromDB(data, db, area=area, node=node, timeMaxMin=time_max_min)
+            node_production[node]['Load'] = load_demand['sum']  # Store the summed load demand in 'Load'
+            print(f"Fetched Load demand for {node}")
+        except Exception as e:
+            print(f"Warning: Could not fetch Load demand for {node}. Error: {e}")
+            node_production[node]['Load'] = []  # Default empty list if fetching fails
+
+    # Flatten dictionary into a DataFrame
+    df_gen = pd.DataFrame([
+        {'Node': node, 'GenerationType': gen_type, 'Timestamp': t, 'Production': value}
+        for node, gen_dict in node_production.items()
+        for gen_type, values in gen_dict.items()
+        for t, value in enumerate(values)  # Ensure full time series
+    ])
+
+    df_gen['Timestamp'] = pd.date_range(DATE_START, periods=time_period, freq='h')[df_gen['Timestamp']]
+    df_gen.set_index('Timestamp', inplace=True)
+
+    # Pivot table to create a time-series format with GenerationType as columns
+    df_gen_pivot = df_gen.pivot_table(index='Timestamp', columns=['Node', 'GenerationType'], values='Production', aggfunc='sum')
+
+    # Define resampling rules (sum over 7-day periods)
+    resampling_rules = {col: 'sum' for col in df_gen_pivot.columns}
+
+    # Resample data to 7-day intervals
+    df_gen_resampled = df_gen_pivot.resample('7D').agg(resampling_rules)
+
+
+    return df_gen_resampled
+
+
 
 
 def getLoadheddingInAreaFromDB(db: Database, area, timeMaxMin=None):

@@ -1012,58 +1012,6 @@ def get_production_by_type(res, area_OP, time_max_min, DATE_START):
 
     return df_gen_resampled, df_prices_resampled, total_production
 
-def get_production_by_type_FromDB(data: GridData, db: Database, area_OP, time_max_min, DATE_START):
-    time_period = time_max_min[-1] - time_max_min[0]
-    # Get Generation by type
-    # List of generation types to extract
-    generation_types = ['hydro', 'ror', 'nuclear', 'wind_on', 'wind_off', 'solar', 'fossil_gas', 'fossil_other', 'biomass']
-
-    # Dictionary to store production data
-    generation_data = {}
-
-    # Iterate through generation types and fetch data
-    for gen_type in generation_types:
-        try:
-            gen_idx = data.getGeneratorsPerAreaAndType()[area_OP].get(gen_type, None)
-            if gen_idx:
-                production = pd.DataFrame(db.getResultGeneratorPower(gen_idx, time_max_min)).sum(axis=1)
-                if production.sum() > 0:  # Ensure we only include nonzero production
-                    generation_data[f"{gen_type.capitalize()}"] = production
-        except Exception as e:
-            print(f"Warning: Could not fetch data for {gen_type} in {area_OP}. Error: {e}")
-
-    # Get Load Demand
-    load_demand = getDemandPerAreaFromDB(data, db, area=area_OP, timeMaxMin=time_max_min)
-
-    # Get Avg Price for Area
-    nodes_in_area = data.node[data.node['area'] == area_OP].index.tolist()
-    node_prices_3 = pd.DataFrame({
-        node: getNodalPricesFromDB(db, node=node, timeMaxMin=time_max_min) for node in nodes_in_area
-    })
-    node_prices_3.index = pd.date_range(DATE_START, periods=time_period, freq='h')
-    avg_area_prices = node_prices_3.sum(axis=1) / len(nodes_in_area)
-
-    # Create DataFrame with dynamically collected generation data
-    df_gen = pd.DataFrame(generation_data)
-    df_gen['Load'] = load_demand['sum']
-    df_gen.index = pd.date_range(DATE_START, periods=time_period, freq='h')
-
-    # Define resampling rules dynamically
-    resampling_rules = {col: 'sum' for col in df_gen.columns}
-
-    # Resample the data based on the defined rules
-    df_gen_resampled = df_gen.resample('7D').agg(resampling_rules)
-
-    # Create price DataFrame
-    df_prices = pd.DataFrame({'Price': avg_area_prices})
-    df_prices.index = pd.date_range(DATE_START, periods=time_period, freq='h')
-    df_prices_resampled = df_prices.resample('1D').agg({'Price': 'mean'})
-
-    total_production = df_gen.sum().sum()
-
-    return df_gen_resampled, df_prices_resampled, total_production
-
-
 
 
 def plot_production(df_gen_resampled, df_prices_resampled, DATE_START, DATE_END, interval, fig_size, TITLE,

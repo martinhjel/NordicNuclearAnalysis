@@ -301,185 +301,19 @@ def calcPlot_LG_FromDB(data: GridData, database: Database, time_max_min, OUTPUT_
 
 # %%
 
-def get_production_by_type_FromDB_ZoneLevel(data: GridData, db: Database, area, time_max_min, DATE_START):
-    time_period = time_max_min[-1] - time_max_min[0]
-    print("Analyzing production by type in", area)
 
-    # Step 1: Create zone-to-node mapping
-    node_zone_map = {z: set(n for n, zone in zip(data.node.id, data.node.zone) if zone == z)
-                     for z in set(data.node.zone) if area in z}
+def getProductionNodeAndZones(data: GridData, db: Database, area, zone, time_max_min, DATE_START):
 
-    # Step 2: Get generator indices per area and type
-    generators_per_type = data.getGeneratorsPerAreaAndType().get(area, {})
+    zones_in_area_prod = get_production_by_type_FromDB_ZoneLevel(data, db, area=area, time_max_min=time_max_min, DATE_START=DATE_START)
+    zones_in_area_prod.to_csv(f'production_zone_level_{area}_{DATE_START}.csv')
 
-    # Step 3: Extract generator information (only needed columns)
-    generator_data = data.generator[['node', 'type']]
+    nodes_in_zone_prod = get_production_by_type_FromDB_NodesInZone(data, db, zone=zone, time_max_min=time_max_min, DATE_START=DATE_START)
+    nodes_in_zone_prod.to_csv(f'production_nodes_in_zone_{zone}_{DATE_START}.csv')
 
-    # Reverse map: node → zone
-    # node_to_zone = {node: zone for zone, nodes in node_zone_map.items() for node in nodes}
-
-    # Group generator indices by zone and type
-    # zone_gen_map = {zone: {gt: [] for gt in generators_per_type.keys()} for zone in node_zone_map.keys()}
-    #
-    # for idx, row in generator_data.iterrows():
-    #     node, gen_type = row['node'], row['type']
-    #     if node in node_to_zone and gen_type in generators_per_type.keys():
-    #         zone_gen_map[node_to_zone[node]][gen_type].append(idx)
-
-    # Step 5: Group generator indices by zone and type in a dictionary
-    zone_gen_map = {
-        zone: {
-            gt: generator_data.loc[(generator_data['node'].isin(nodes)) & (generator_data['type'] == gt)].index.tolist()
-            for gt in generators_per_type.keys()}
-        for zone, nodes in node_zone_map.items()
-    }
-
-    # Step 6: Fetch production data in a single query per (zone, type)
-    zone_production = {zone: {gt: [] for gt in generators_per_type.keys()} for zone in node_zone_map.keys()}
-
-    # Iterate over zones and fetch production data
-    for zone, gen_types in zone_gen_map.items():
-        for gt, gen_idx in gen_types.items():
-            if gen_idx:
-                try:
-                    # Fetch the accumulated production for the entire zone's generators of this type
-                    print(f"Fetching data for {gt} in {zone}")
-                    zone_production[zone][gt] = db.getResultGeneratorPower(gen_idx, time_max_min)
-
-                except Exception as e:
-                    print(f"Warning: Could not fetch data for {gt} in {area}. Error: {e}")
-
-        # Get Load Demand (ensure this data is fetched for each zone)
-        try:
-            load_demand = getDemandPerZoneFromDB(data, db, area=area, zone=zone, timeMaxMin=time_max_min)
-            zone_production[zone]['Load'] = load_demand['sum']  # Store the summed load demand in 'Load'
-            print(f"Fetched Load demand for {zone}")
-        except Exception as e:
-            print(f"Warning: Could not fetch Load demand for {zone}. Error: {e}")
-            zone_production[zone]['Load'] = []  # Default empty list if fetching fails
-
-    # Flatten dictionary into a DataFrame
-    df_gen = pd.DataFrame([
-        {'Zone': zone, 'GenerationType': gen_type, 'Timestamp': t, 'Production': value}
-        for zone, gen_dict in zone_production.items()
-        for gen_type, values in gen_dict.items()
-        for t, value in enumerate(values)  # Ensure full time series
-    ])
+    return zones_in_area_prod, nodes_in_zone_prod
 
 
-
-    # df_gen['Load'] = load_demand['sum']
-    df_gen['Timestamp'] = pd.date_range(DATE_START, periods=time_period, freq='h')[df_gen['Timestamp']]
-    df_gen.set_index('Timestamp', inplace=True)
-
-    # Pivot table to create a time-series format with GenerationType as columns
-    df_gen_pivot = df_gen.pivot_table(index='Timestamp', columns=['Zone', 'GenerationType'], values='Production', aggfunc='sum')
-
-    # Define resampling rules (sum over 7-day periods)
-    resampling_rules = {col: 'sum' for col in df_gen_pivot.columns}
-
-    # Resample data to 7-day intervals
-    df_gen_resampled = df_gen_pivot.resample('7D').agg(resampling_rules)
-
-
-    # total_production = df_gen_resampled.sum().sum()
-
-    return df_gen_resampled# , total_production
-
-
-# area_prod = 'SE'
-# df_prod_zone_level = get_production_by_type_FromDB_ZoneLevel(data, database, area=area_prod, time_max_min=time_max_min, DATE_START=DATE_START)
-#
-# df_prod_zone_level.to_csv(f'production_zone_level_{area_prod}.csv')
-
-
-
-# %% Node level production
-
-def get_production_by_type_FromDB_NodesInZone(data: GridData, db: Database, zone, time_max_min, DATE_START):
-    time_period = time_max_min[-1] - time_max_min[0]
-    print("Analyzing production by type for nodes in", zone)
-    area = zone[0:2] # Two first letters
-
-    # Step 1: Create zone-to-node mapping
-    node_zone_map = {z: set(n for n, zone in zip(data.node.id, data.node.zone) if zone == z)
-                     for z in set(data.node.zone) if area in z}
-
-    node_zone_map = node_zone_map[zone]
-    # Step 2: Get generator indices per area and type
-    generators_per_type = data.getGeneratorsPerAreaAndType().get(area, {})
-
-    # Step 3: Extract generator information (only needed columns)
-    generator_data = data.generator[['node', 'type']]
-
-
-    # Step 5: Group generator indices by zone and type in a dictionary
-    node_gen_map = {
-        node: {
-            gt: generator_data.loc[(generator_data['node']==node) & (generator_data['type'] == gt)].index.tolist()
-            for gt in generators_per_type.keys()}
-        for node in node_zone_map
-    }
-
-    # Step 6: Fetch production data in a single query per (zone, type)
-    node_production = {node: {gt: [] for gt in generators_per_type.keys()} for node in node_zone_map}
-
-    # Iterate over zones and fetch production data
-    for node, gen_types in node_gen_map.items():
-        for gt, gen_idx in gen_types.items():
-            if gen_idx:
-                try:
-                    # Fetch the accumulated production for the entire zone's generators of this type
-                    print(f"Fetching data for {gt} in {node}")
-                    node_production[node][gt] = db.getResultGeneratorPower(gen_idx, time_max_min)
-
-                except Exception as e:
-                    print(f"Warning: Could not fetch data for {gt} in {node}. Error: {e}")
-
-        # Get Load Demand (ensure this data is fetched for each zone)
-        try:
-            load_demand = getDemandPerNodeFromDB(data, db, area=area, node=node, timeMaxMin=time_max_min)
-            node_production[node]['Load'] = load_demand['sum']  # Store the summed load demand in 'Load'
-            print(f"Fetched Load demand for {node}")
-        except Exception as e:
-            print(f"Warning: Could not fetch Load demand for {node}. Error: {e}")
-            node_production[node]['Load'] = []  # Default empty list if fetching fails
-
-    # Flatten dictionary into a DataFrame
-    df_gen = pd.DataFrame([
-        {'Node': node, 'GenerationType': gen_type, 'Timestamp': t, 'Production': value}
-        for node, gen_dict in node_production.items()
-        for gen_type, values in gen_dict.items()
-        for t, value in enumerate(values)  # Ensure full time series
-    ])
-
-
-
-    # df_gen['Load'] = load_demand['sum']
-    df_gen['Timestamp'] = pd.date_range(DATE_START, periods=time_period, freq='h')[df_gen['Timestamp']]
-    df_gen.set_index('Timestamp', inplace=True)
-
-    # Pivot table to create a time-series format with GenerationType as columns
-    df_gen_pivot = df_gen.pivot_table(index='Timestamp', columns=['Node', 'GenerationType'], values='Production', aggfunc='sum')
-
-    # Define resampling rules (sum over 7-day periods)
-    resampling_rules = {col: 'sum' for col in df_gen_pivot.columns}
-
-    # Resample data to 7-day intervals
-    df_gen_resampled = df_gen_pivot.resample('7D').agg(resampling_rules)
-
-
-    return df_gen_resampled
-
-
-zone_prod = 'NO1'
-df_prod_nodes_in_zone = get_production_by_type_FromDB_NodesInZone(data, database, zone=zone_prod, time_max_min=time_max_min, DATE_START=DATE_START)
-
-# df_prod_zone_level.to_csv(f'production_zone_level_{area_prod}.csv')
-
-
-
-
+zones_in_area_prod, nodes_in_zone_prod = getProductionNodeAndZones(data, database, area='NO', zone='NO2', time_max_min=time_max_min, DATE_START=DATE_START)
 
 
 # %% Total production and load

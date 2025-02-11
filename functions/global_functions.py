@@ -126,7 +126,8 @@ def solve_lp(data,
              sql_file,
              loss_method,
              replace,
-             nuclear_availability=None):
+             nuclear_availability=None,
+             week_MSO=None):
     """
     Solves a linear programming problem using the given grid data and stores the results in a SQL file.
 
@@ -143,7 +144,7 @@ def solve_lp(data,
     res = powergama.Results(data, sql_file, replace=replace)
     if replace:
         start_time = time.time()
-        lp.solve(res, solver="glpk", nuclear_availability=nuclear_availability)
+        lp.solve(res, solver="glpk", nuclear_availability=nuclear_availability, week_MSO=week_MSO)
         end_time = time.time()
         print("\nSimulation time = {:.2f} seconds".format(end_time - start_time))
         print("\nSimulation time = {:.2f} minutes".format((end_time - start_time)/60))

@@ -1,7 +1,7 @@
 # Imports
 from powergama.database import Database  # Import Database-Class specifically
 from functions.global_functions import *
-from scripts.case_doc import *
+# from scripts.case_doc import *
 
 
 # Define global variables
@@ -16,7 +16,7 @@ YEAR_END = 2020
 DATE_START = pd.Timestamp(f'{YEAR_START}-01-01 00:00:00', tz='UTC')
 
 # DATE_END = f"{YEAR_END}-01-02"
-DATE_END = pd.Timestamp(f'{YEAR_END}-01-15 23:00:00', tz='UTC')
+DATE_END = pd.Timestamp(f'{YEAR_END}-04-30 23:00:00', tz='UTC')
 
 
 loss_method = 0
@@ -43,11 +43,25 @@ OUTPUT_PATH = BASE_DIR / 'results'
 OUTPUT_PATH_PLOTS = BASE_DIR / 'results' / 'plots'
 
 
+# week_start = np.random.permutation([16, 20, 24, 28, 32, 36])  # Middle of Apr, May, Jun, Jul, Aug, Sep
+# Randomised week sequence, allocated to NNP in indexed order,
+# meaning first index in week_start is allocated to first indexed NNP.
+# This means finland gets first go.
+# week_start = [16, 36, 20, 24, 32, 28]
+# week Maintenance Start Order
+week_MSO = {'FI_10':16,
+            'FI_12':36,
+            'SE3_3':20,
+            'SE3_6':24,
+            'GB':32,
+            'NL':28
+            }
+
 # %%
 # Configure grid and run simulation
 # create_case_doc('BM') # Create case documentation
 data, time_max_min = setup_grid(YEAR_SCENARIO, version, DATE_START, DATE_END, DATA_PATH, new_scenario, save_scenario)
-res = solve_lp(data, SQL_FILE, loss_method, replace=True, nuclear_availability=0.7)
+res = solve_lp(data, SQL_FILE, loss_method, replace=True, nuclear_availability=0.7, week_MSO=week_MSO)
 
 res.getEnergyBalanceInArea(area='NO', spillageGen='wind_on')
 

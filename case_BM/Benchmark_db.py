@@ -47,6 +47,10 @@ list_of_years = get_time_steps_for_years(selected_years=[1993, 2001, 2009, 2018]
 print(f"Time steps for years: {list_of_years}")
 
 
+
+
+
+
 # %%
 # time_max_min #
 def calcSystemCostAndMeanPriceFromDB(data: GridData, database: Database, time_max_min):

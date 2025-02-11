@@ -169,3 +169,10 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+
+# Database files
+*.sqlite
+
+# Timeseries profile
+timeseries_profiles.csv

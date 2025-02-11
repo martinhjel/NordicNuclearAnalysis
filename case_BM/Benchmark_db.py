@@ -312,7 +312,7 @@ def getProductionNodeAndZones(data: GridData, db: Database, area, zone, time_max
 
     return zones_in_area_prod, nodes_in_zone_prod
 
-
+# Juster area for å se på sonene, og zone for å se på nodene i sonen
 zones_in_area_prod, nodes_in_zone_prod = getProductionNodeAndZones(data, database, area='NO', zone='NO2', time_max_min=time_max_min, DATE_START=DATE_START)
 
 

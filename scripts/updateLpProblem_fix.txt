@@ -1,4 +1,5 @@
 
+
 # Steg 1
 res = solve_lp(data, SQL_FILE, loss_method, replace=True, nuclear_availability=0.7)
 

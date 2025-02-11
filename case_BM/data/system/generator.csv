@@ -1,385 +1,385 @@
 node,desc,type,pmax,pmin,fuelcost,inflow_fac,inflow_ref,storage_cap,storage_price,storval_filling_ref,storval_time_ref,storage_ini,pump_cap,pump_efficiency,pump_deadband,gen_lat,gen_lon,year,status
-DK1_1,DK1_1 wind_off,wind_off,606.5572806,0,13.8,0.8,windoff_DK_Horns Rev,0,1,const,const,0.6,0,0,0,55.7,7.688889,,updated
-DK1_1,DK1_1 fossil_gas,fossil_gas,241.1920717,0,120,1,const,0,1,const,const,0.6,0,0,0,,,,updated
-DK1_1,DK1_1 fossil_other,fossil_other,535.2547049,0,142.6,1,const,0,1,const,const,0.6,0,0,0,,,,updated
-DK1_1,DK1_1 solar,solar,494.9354513,0,9.2,0.75,solar_DK,0,1,const,const,0.6,0,0,0,,,,updated
-DK1_1,DK1_1 wind_on,wind_on,2353.440504,0,13.8,0.8,windon_DK,0,1,const,const,0.6,0,0,0,,,,updated
-DK1_2,DK1_2 wind_off,wind_off,439.496589,0,13.8,0.8,windoff_DK_Horns Rev,0,1,const,const,0.6,0,0,0,55.529722,7.906111,,updated
-DK1_2,DK1_2 wind_on,wind_on,617.8800607,0,13.8,0.8,windon_DK,0,1,const,const,0.6,0,0,0,,,,updated
-DK1_2,DK1_2 solar,solar,333.2148519,0,9.2,0.75,solar_DK,0,1,const,const,0.6,0,0,0,,,,updated
-DK1_2,DK1_2 biomass,biomass,432.628866,0,70,1,const,0,1,const,const,0.6,0,0,0,,,,updated
-DK1_2,DK1_2 fossil_gas,fossil_gas,165.8683341,0,120,1,const,0,1,const,const,0.6,0,0,0,,,,updated
-DK1_2,DK1_2 fossil_other,fossil_other,1570.355507,0,142.6,1,const,0,1,const,const,0.6,0,0,0,,,,updated
-DK1_3,DK1_3 biomass,biomass,1100.113402,0,70,1,const,0,1,const,const,0.6,0,0,0,,,,updated
-DK1_3,DK1_3 wind_off,wind_off,222.0477535,0,13.8,0.8,windoff_DK_Horns Rev,0,1,const,const,0.6,0,0,0,,,,updated
-DK1_3,DK1_3 solar,solar,385.2351411,0,9.2,0.75,solar_DK,0,1,const,const,0.6,0,0,0,,,,updated
-DK1_3,DK1_3 wind_on,wind_on,877.4652925,0,13.8,0.8,windon_DK,0,1,const,const,0.6,0,0,0,,,,updated
-DK1_3,DK1_3 fossil_gas,fossil_gas,406.8652666,0,120,1,const,0,1,const,const,0.6,0,0,0,,,,updated
-DK1_3,DK1_3 fossil_other,fossil_other,530.0454134,0,142.6,1,const,0,1,const,const,0.6,0,0,0,,,,updated
-DK2_1,DK2_1 fossil_other,fossil_other,1111.711708,0,142.6,1,const,0,1,const,const,0.6,0,0,0,,,,updated
-DK2_1,DK2_1 solar,solar,164.8975663,0,9.2,0.75,solar_DK,0,1,const,const,0.6,0,0,0,,,,updated
-DK2_1,DK2_1 wind_on,wind_on,538.4163422,0,13.8,0.8,windon_DK,0,1,const,const,0.6,0,0,0,,,,updated
-DK2_2,DK2_2 biomass,biomass,865.257732,0,70,1,const,0,1,const,const,0.6,0,0,0,,,,updated
-DK2_2,DK2_2 fossil_gas,fossil_gas,840.0743275,0,120,1,const,0,1,const,const,0.6,0,0,0,,,,updated
-DK2_2,DK2_2 fossil_other,fossil_other,676.6326662,0,142.6,1,const,0,1,const,const,0.6,0,0,0,,,,updated
-DK2_2,DK2_2 solar,solar,245.7169894,0,9.2,0.75,solar_DK,0,1,const,const,0.6,0,0,0,,,,updated
-DK2_2,DK2_2 wind_on,wind_on,170.7978009,0,13.8,0.8,windon_DK,0,1,const,const,0.6,0,0,0,,,,updated
-DK2_2,DK2_2 wind_off,wind_off,431.8983769,0,13.8,0.8,windoff_DE_Baltic2,0,1,const,const,0.6,0,0,0,54.56,11.55,,updated
-FI_1,FI_1 hydro,hydro,124.5,0,0,0.46,inflow_NO1,2001409.884,15,hydro,const,0.6,0,0,0,,,,created
-FI_1,FI_1 ror,ror,175.8949798,0,9.2,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
-FI_1,FI_1 solar,solar,2.899706787,0,9.2,0.75,solar_FI,0,1,const,const,0.6,0,0,0,,,,created
-FI_1,FI_1 wind_on,wind_on,507.3869918,0,13.8,0.8,windon_FI,0,1,const,const,0.6,0,0,0,,,,updated
-FI_1,FI_1 biomass,biomass,171.6996593,0,70,1,const,0,1,const,const,0.6,0,0,0,,,,created
-FI_1,FI_1 fossil_other,fossil_other,198.7841546,0,142.6,1,const,0,1,const,const,0.6,0,0,0,,,,created
-FI_1,FI_1 fossil_gas,fossil_gas,107.4742388,0,120,1,const,0,1,const,const,0.6,0,0,0,,,,created
-FI_10,FI_10 fossil_other,fossil_other,746.0032803,0,142.6,1,const,0,1,const,const,0.6,0,0,0,,,,updated
-FI_10,FI_10 nuclear,nuclear,3170.968424,0,32.2,1,const,0,1,const,const,0.6,0,0,0,,,,updated
-FI_10,FI_10 solar,solar,10.88210868,0,9.2,0.75,solar_FI,0,1,const,const,0.6,0,0,0,,,,updated
-FI_10,FI_10 wind_on,wind_on,1904.137485,0,13.8,0.8,windon_FI,0,1,const,const,0.6,0,0,0,,,,updated
-FI_10,FI_10 biomass,biomass,644.3597545,0,70,1,const,0,1,const,const,0.6,0,0,0,,,,updated
-FI_10,FI_10 ror,ror,660.104082,0,9.2,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
-FI_10,FI_10 hydro,hydro,16.8,0,0,0.46,inflow_NO1,270069.7674,15,hydro,const,0.6,0,0,0,,,,created
-FI_10,FI_10 fossil_gas,fossil_gas,403.3326239,0,120,1,const,0,1,const,const,0.6,0,0,0,,,,created
-FI_10,FI_10 wind_off,wind_off,44,0,13.8,0.8,windoff_DE_Baltic2,0,1,const,const,0.6,0,0,0,61.629,21.354,,updated
-FI_11,FI_11 ror,ror,183.9580198,0,9.2,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
-FI_11,FI_11 wind_on,wind_on,530.6456523,0,13.8,0.8,windon_FI,0,1,const,const,0.6,0,0,0,,,,updated
-FI_11,FI_11 solar,solar,3.032629579,0,9.2,0.75,solar_FI,0,1,const,const,0.6,0,0,0,,,,updated
-FI_11,FI_11 fossil_other,fossil_other,207.8964363,0,142.6,1,const,0,1,const,const,0.6,0,0,0,,,,updated
-FI_11,FI_11 fossil_gas,fossil_gas,112.4008665,0,120,1,const,0,1,const,const,0.6,0,0,0,,,,updated
-FI_11,FI_11 biomass,biomass,179.5703855,0,70,1,const,0,1,const,const,0.6,0,0,0,,,,updated
-FI_12,FI_12 biomass,biomass,242.4311539,0,70,1,const,0,1,const,const,0.6,0,0,0,,,,updated
-FI_12,FI_12 fossil_gas,fossil_gas,151.7481387,0,120,1,const,0,1,const,const,0.6,0,0,0,,,,updated
-FI_12,FI_12 fossil_other,fossil_other,280.6730786,0,142.6,1,const,0,1,const,const,0.6,0,0,0,,,,updated
-FI_12,FI_12 nuclear,nuclear,1193.031576,0,32.2,1,const,0,1,const,const,0.6,0,0,0,,,,updated
-FI_12,FI_12 solar,solar,4.094237956,0,9.2,0.75,solar_FI,0,1,const,const,0.6,0,0,0,,,,updated
-FI_12,FI_12 wind_on,wind_on,716.4045308,0,13.8,0.8,windon_FI,0,1,const,const,0.6,0,0,0,,,,updated
-FI_12,FI_12 ror,ror,248.3547322,0,9.2,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
-FI_13,FI_13 biomass,biomass,308.0384063,0,70,1,const,0,1,const,const,0.6,0,0,0,,,,updated
-FI_13,FI_13 fossil_gas,fossil_gas,192.814554,0,120,1,const,0,1,const,const,0.6,0,0,0,,,,updated
-FI_13,FI_13 fossil_other,fossil_other,356.6294449,0,142.6,1,const,0,1,const,const,0.6,0,0,0,,,,updated
-FI_13,FI_13 solar,solar,5.202229643,0,9.2,0.75,solar_FI,0,1,const,const,0.6,0,0,0,,,,updated
-FI_13,FI_13 wind_on,wind_on,910.2795018,0,13.8,0.8,windon_FI,0,1,const,const,0.6,0,0,0,,,,updated
-FI_13,FI_13 ror,ror,315.5650364,0,9.2,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
-FI_14,FI_14 wind_on,wind_on,350.7515625,0,13.8,0.8,windon_FI,0,1,const,const,0.6,0,0,0,,,,updated
-FI_14,FI_14 ror,ror,121.5944437,0,9.2,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
-FI_14,FI_14 hydro,hydro,3.3,0,0,0.46,inflow_NO1,53049.4186,15,hydro,const,0.6,0,0,0,,,,created
-FI_14,FI_14 fossil_other,fossil_other,137.4175018,0,142.6,1,const,0,1,const,const,0.6,0,0,0,,,,updated
-FI_14,FI_14 fossil_gas,fossil_gas,74.29586843,0,120,1,const,0,1,const,const,0.6,0,0,0,,,,updated
-FI_14,FI_14 biomass,biomass,118.6942605,0,70,1,const,0,1,const,const,0.6,0,0,0,,,,updated
-FI_14,FI_14 solar,solar,2.004538356,0,9.2,0.75,solar_FI,0,1,const,const,0.6,0,0,0,,,,updated
-FI_2,FI_2 ror,ror,77.88888524,0,9.2,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
-FI_2,FI_2 wind_on,wind_on,224.6784259,0,13.8,0.8,windon_FI,0,1,const,const,0.6,0,0,0,,,,updated
-FI_2,FI_2 hydro,hydro,25.8,0,0,0.46,inflow_NO1,414750,15,hydro,const,0.6,0,0,5,,,,updated
-FI_2,FI_2 solar,solar,1.284032833,0,9.2,0.75,solar_FI,0,1,const,const,0.6,0,0,0,,,,created
-FI_2,FI_2 biomass,biomass,76.03113561,0,70,1,const,0,1,const,const,0.6,0,0,0,,,,created
-FI_2,FI_2 fossil_gas,fossil_gas,47.59117436,0,120,1,const,0,1,const,const,0.6,0,0,0,,,,created
-FI_2,FI_2 fossil_other,fossil_other,88.02454867,0,142.6,1,const,0,1,const,const,0.6,0,0,0,,,,created
-FI_3,FI_3 ror,ror,232.6516202,0,9.2,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
-FI_3,FI_3 solar,solar,3.835365188,0,9.2,0.75,solar_FI,0,1,const,const,0.6,0,0,0,,,,created
-FI_3,FI_3 fossil_gas,fossil_gas,142.1533225,0,120,1,const,0,1,const,const,0.6,0,0,0,,,,created
-FI_3,FI_3 wind_on,wind_on,671.1073044,0,13.8,0.8,windon_FI,0,1,const,const,0.6,0,0,0,,,,updated
-FI_3,FI_3 fossil_other,fossil_other,262.9265242,0,142.6,1,const,0,1,const,const,0.6,0,0,0,,,,updated
-FI_3,FI_3 biomass,biomass,227.1025812,0,70,1,const,0,1,const,const,0.6,0,0,0,,,,updated
-FI_4,FI_4 biomass,biomass,253.5524027,0,70,1,const,0,1,const,const,0.6,0,0,0,,,,updated
-FI_4,FI_4 fossil_gas,fossil_gas,158.7094091,0,120,1,const,0,1,const,const,0.6,0,0,0,,,,updated
-FI_4,FI_4 wind_on,wind_on,749.2687604,0,13.8,0.8,windon_FI,0,1,const,const,0.6,0,0,0,,,,updated
-FI_4,FI_4 fossil_other,fossil_other,293.5486316,0,142.6,1,const,0,1,const,const,0.6,0,0,0,,,,created
-FI_4,FI_4 solar,solar,4.282056388,0,9.2,0.75,solar_FI,0,1,const,const,0.6,0,0,0,,,,created
-FI_4,FI_4 hydro,hydro,50.4,0,0,0.46,inflow_NO1,810209.3023,15,hydro,const,0.6,0,0,0,,,,created
-FI_4,FI_4 ror,ror,259.7477184,0,9.2,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
-FI_5,FI_5 hydro,hydro,6.3,0,0,0.46,inflow_NO1,101276.1628,15,hydro,const,0.6,0,0,0,,,,created
-FI_5,FI_5 ror,ror,62.144505,0,9.2,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
-FI_5,FI_5 wind_on,wind_on,179.2621568,0,13.8,0.8,windon_FI,0,1,const,const,0.6,0,0,0,,,,updated
-FI_5,FI_5 solar,solar,1.024479739,0,9.2,0.75,solar_FI,0,1,const,const,0.6,0,0,0,,,,updated
-FI_5,FI_5 biomass,biomass,60.662279,0,70,1,const,0,1,const,const,0.6,0,0,0,,,,created
-FI_5,FI_5 fossil_other,fossil_other,70.23135571,0,142.6,1,const,0,1,const,const,0.6,0,0,0,,,,updated
-FI_5,FI_5 fossil_gas,fossil_gas,37.97114266,0,120,1,const,0,1,const,const,0.6,0,0,0,,,,created
-FI_6,FI_6 solar,solar,3.324316015,0,9.2,0.75,solar_FI,0,1,const,const,0.6,0,0,0,,,,updated
-FI_6,FI_6 fossil_gas,fossil_gas,123.211883,0,120,1,const,0,1,const,const,0.6,0,0,0,,,,created
-FI_6,FI_6 hydro,hydro,28.5,0,0,0.46,inflow_NO1,458154.0698,15,hydro,const,0.6,0,0,0,,,,created
-FI_6,FI_6 wind_on,wind_on,581.6845726,0,13.8,0.8,windon_FI,0,1,const,const,0.6,0,0,0,,,,updated
-FI_6,FI_6 fossil_other,fossil_other,227.8924724,0,142.6,1,const,0,1,const,const,0.6,0,0,0,,,,updated
-FI_6,FI_6 biomass,biomass,196.8419462,0,70,1,const,0,1,const,const,0.6,0,0,0,,,,updated
-FI_6,FI_6 ror,ror,201.6515949,0,9.2,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
-FI_7,FI_7 fossil_gas,fossil_gas,78.84830815,0,120,1,const,0,1,const,const,0.6,0,0,0,,,,created
-FI_7,FI_7 hydro,hydro,85,0,0,0.46,inflow_NO1,1366424.419,15,hydro,const,0.6,0,0,0,,,,created
-FI_7,FI_7 ror,ror,129.0450784,0,9.2,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
-FI_7,FI_7 biomass,biomass,125.9671881,0,70,1,const,0,1,const,const,0.6,0,0,0,,,,updated
-FI_7,FI_7 fossil_other,fossil_other,145.8376859,0,142.6,1,const,0,1,const,const,0.6,0,0,0,,,,updated
-FI_7,FI_7 solar,solar,2.127365375,0,9.2,0.75,solar_FI,0,1,const,const,0.6,0,0,0,,,,updated
-FI_7,FI_7 wind_on,wind_on,372.2436775,0,13.8,0.8,windon_FI,0,1,const,const,0.6,0,0,0,,,,updated
-FI_8,FI_8 biomass,biomass,71.7028617,0,70,1,const,0,1,const,const,0.6,0,0,0,,,,updated
-FI_8,FI_8 fossil_other,fossil_other,83.01351793,0,142.6,1,const,0,1,const,const,0.6,0,0,0,,,,updated
-FI_8,FI_8 wind_on,wind_on,211.888011,0,13.8,0.8,windon_FI,0,1,const,const,0.6,0,0,0,,,,updated
-FI_8,FI_8 ror,ror,73.45485401,0,9.2,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
-FI_8,FI_8 hydro,hydro,3.4,0,0,0.46,inflow_NO1,54656.97674,15,hydro,const,0.6,0,0,0,,,,created
-FI_8,FI_8 solar,solar,1.210935861,0,9.2,0.75,solar_FI,0,1,const,const,0.6,0,0,0,,,,updated
-FI_8,FI_8 fossil_gas,fossil_gas,44.88192062,0,120,1,const,0,1,const,const,0.6,0,0,0,,,,created
-FI_9,FI_9 ror,ror,108.94445,0,9.2,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
-FI_9,FI_9 biomass,biomass,106.3459854,0,70,1,const,0,1,const,const,0.6,0,0,0,,,,updated
-FI_9,FI_9 fossil_other,fossil_other,123.1213673,0,142.6,1,const,0,1,const,const,0.6,0,0,0,,,,updated
-FI_9,FI_9 solar,solar,1.795997598,0,9.2,0.75,solar_FI,0,1,const,const,0.6,0,0,0,,,,updated
-FI_9,FI_9 wind_on,wind_on,314.261367,0,13.8,0.8,windon_FI,0,1,const,const,0.6,0,0,0,,,,updated
-FI_9,FI_9 fossil_gas,fossil_gas,66.56654928,0,120,1,const,0,1,const,const,0.6,0,0,0,,,,updated
-NO1_1,NO1_1 wind_on,wind_on,71.70004265,0,13.8,0.8,windon_NO1,0,1,const,const,0.6,0,0,0,,,,updated
-NO1_1,NO1_1 biomass,biomass,6.004437069,0,70,1,const,0,1,const,const,0.6,0,0,0,,,,created
-NO1_1,NO1_1 fossil_gas,fossil_gas,1.236207632,0,120,1,const,0,1,const,const,0.6,0,0,0,,,,created
-NO1_1,NO1_1 solar,solar,3.002218535,0,9.2,0.75,solar_NO1,0,1,const,const,0.6,0,0,0,,,,created
-NO1_1,NO1_1 ror,ror,458.9862336,0,9.2,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
-NO1_1,NO1_1 hydro,hydro,247.5947286,0,0,0.46,inflow_NO1,1046361.46,15,hydro,const,0.6,0,0,5,,,,updated
-NO1_2,NO1_2 biomass,biomass,3.373183272,0,70,1,const,0,1,const,const,0.6,0,0,0,,,,created
-NO1_2,NO1_2 hydro,hydro,139.0942043,0,0,0.46,inflow_NO1,587826.7908,15,hydro,const,0.6,0,0,5,,,,updated
-NO1_2,NO1_2 wind_on,wind_on,40.27977672,0,13.8,0.8,windon_NO1,0,1,const,const,0.6,0,0,0,,,,updated
-NO1_2,NO1_2 fossil_gas,fossil_gas,0.694478909,0,120,1,const,0,1,const,const,0.6,0,0,0,,,,created
-NO1_2,NO1_2 solar,solar,1.686591636,0,9.2,0.75,solar_NO1,0,1,const,const,0.6,0,0,0,,,,created
-NO1_2,NO1_2 ror,ror,257.8500978,0,9.2,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
-NO1_3,NO1_3 fossil_gas,fossil_gas,3.982969984,0,120,1,const,0,1,const,const,0.6,0,0,0,,,,created
-NO1_3,NO1_3 biomass,biomass,19.34585421,0,70,1,const,0,1,const,const,0.6,0,0,0,,,,created
-NO1_3,NO1_3 wind_on,wind_on,231.012259,0,13.8,0.8,windon_NO1,0,1,const,const,0.6,0,0,0,,,,updated
-NO1_3,NO1_3 hydro,hydro,797.7319881,0,0,0.46,inflow_NO1,3371299.593,15,hydro,const,0.6,0,0,5,,,,updated
-NO1_3,NO1_3 solar,solar,9.672927103,0,9.2,0.75,solar_NO1,0,1,const,const,0.6,0,0,0,,,,updated
-NO1_3,NO1_3 ror,ror,1478.819855,0,9.2,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
-NO1_4,NO1_4 solar,solar,0.9191224,0,9.2,0.75,solar_NO1,0,1,const,const,0.6,0,0,0,,,,created
-NO1_4,NO1_4 ror,ror,140.5175952,0,9.2,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
-NO1_4,NO1_4 fossil_gas,fossil_gas,0.378462165,0,120,1,const,0,1,const,const,0.6,0,0,0,,,,created
-NO1_4,NO1_4 biomass,biomass,1.8382448,0,70,1,const,0,1,const,const,0.6,0,0,0,,,,created
-NO1_4,NO1_4 wind_on,wind_on,21.95080555,0,13.8,0.8,windon_NO1,0,1,const,const,0.6,0,0,0,,,,updated
-NO1_4,NO1_4 hydro,hydro,75.80056499,0,0,0.46,inflow_NO1,320341.1894,15,hydro,const,0.6,0,0,5,,,,updated
-NO1_5,NO1_5 biomass,biomass,3.438280653,0,70,1,const,0,1,const,const,0.6,0,0,0,,,,created
-NO1_5,NO1_5 wind_on,wind_on,41.05711603,0,13.8,0.8,windon_NO1,0,1,const,const,0.6,0,0,0,,,,updated
-NO1_5,NO1_5 ror,ror,262.8262181,0,9.2,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
-NO1_5,NO1_5 hydro,hydro,141.778514,0,0,0.46,inflow_NO1,599170.9667,15,hydro,const,0.6,0,0,0,,,,created
-NO1_5,NO1_5 fossil_gas,fossil_gas,0.707881311,0,120,1,const,0,1,const,const,0.6,0,0,0,,,,created
-NO1_5,NO1_5 solar,solar,1.719140326,0,9.2,0.75,solar_NO1,0,1,const,const,0.6,0,0,0,,,,created
-NO2_1,NO2_1 ror,ror,872.8815617,0,9.2,0.46,inflow_NO2,0,1,const,const,0.6,0,0,0,,,,created
-NO2_1,NO2_1 wind_off,wind_off,3.454676366,0,13.8,0.8,windoff_Nordavind A,0,1,const,const,0.6,0,0,0,,,,created
-NO2_1,NO2_1 fossil_gas,fossil_gas,13.24292607,0,120,1,const,0,1,const,const,0.6,0,0,0,,,,created
-NO2_1,NO2_1 biomass,biomass,12.66714667,0,70,1,const,0,1,const,const,0.6,0,0,0,,,,created
-NO2_1,NO2_1 hydro,hydro,5984.075245,0,0,0.46,inflow_NO2,19479192.69,15,hydro,const,0.6,0,0,5,,,,updated
-NO2_1,NO2_1 solar,solar,10.67560609,0,9.2,0.75,solar_NO2,0,1,const,const,0.6,0,0,0,,,,updated
-NO2_1,NO2_1 wind_on,wind_on,833.1527835,0,13.8,0.8,windon_NO2,0,1,const,const,0.6,0,0,0,,,,updated
-NO2_2,NO2_2 hydro,hydro,393.6362979,0,0,0.46,inflow_NO2,1281353.757,15,hydro,const,0.6,0,0,5,,,,updated
-NO2_2,NO2_2 biomass,biomass,0.833253012,0,70,1,const,0,1,const,const,0.6,0,0,0,,,,created
-NO2_2,NO2_2 fossil_gas,fossil_gas,0.871128149,0,120,1,const,0,1,const,const,0.6,0,0,0,,,,created
-NO2_2,NO2_2 wind_on,wind_on,54.80532311,0,13.8,0.8,windon_NO2,0,1,const,const,0.6,0,0,0,,,,updated
-NO2_2,NO2_2 ror,ror,57.41870756,0,9.2,0.46,inflow_NO2,0,1,const,const,0.6,0,0,0,,,,created
-NO2_2,NO2_2 wind_off,wind_off,0.227250821,0,13.8,0.8,windoff_Nordavind A,0,1,const,const,0.6,0,0,0,,,,created
-NO2_3,NO2_3 biomass,biomass,1.926978928,0,70,1,const,0,1,const,const,0.6,0,0,0,,,,created
-NO2_3,NO2_3 fossil_gas,fossil_gas,2.01456888,0,120,1,const,0,1,const,const,0.6,0,0,0,,,,created
-NO2_3,NO2_3 wind_off,wind_off,0.525539708,0,13.8,0.8,windoff_Nordavind A,0,1,const,const,0.6,0,0,0,,,,created
-NO2_3,NO2_3 ror,ror,132.7863662,0,9.2,0.46,inflow_NO2,0,1,const,const,0.6,0,0,0,,,,created
-NO2_3,NO2_3 wind_on,wind_on,126.7426595,0,13.8,0.8,windon_NO2,0,1,const,const,0.6,0,0,0,,,,updated
-NO2_3,NO2_3 hydro,hydro,910.3223638,0,0,0.46,inflow_NO2,2963255.642,15,hydro,const,0.6,0,0,5,,,,updated
-NO2_4,NO2_4 biomass,biomass,4.296969472,0,70,1,const,0,1,const,const,0.6,0,0,0,,,,created
-NO2_4,NO2_4 fossil_gas,fossil_gas,4.492286267,0,120,1,const,0,1,const,const,0.6,0,0,0,,,,created
-NO2_4,NO2_4 wind_off,wind_off,1.171900765,0,13.8,0.8,windoff_Nordavind A,0,1,const,const,0.6,0,0,0,,,,created
-NO2_4,NO2_4 ror,ror,296.10026,0,9.2,0.46,inflow_NO2,0,1,const,const,0.6,0,0,0,,,,created
-NO2_4,NO2_4 wind_on,wind_on,282.6234012,0,13.8,0.8,windon_NO2,0,1,const,const,0.6,0,0,0,,,,updated
-NO2_4,NO2_4 hydro,hydro,2029.927442,0,0,0.46,inflow_NO2,6607762.465,15,hydro,const,0.6,0,0,5,,,,updated
-NO2_5,NO2_5 wind_on,wind_on,149.6758326,0,13.8,0.8,windon_NO2,0,1,const,const,0.6,0,0,0,,,,updated
-NO2_5,NO2_5 biomass,biomass,2.275651913,0,70,1,const,0,1,const,const,0.6,0,0,0,,,,created
-NO2_5,NO2_5 wind_off,wind_off,0.62063234,0,13.8,0.8,windoff_Nordavind A,0,1,const,const,0.6,0,0,0,,,,created
-NO2_5,NO2_5 fossil_gas,fossil_gas,2.379090636,0,120,1,const,0,1,const,const,0.6,0,0,0,,,,created
-NO2_5,NO2_5 hydro,hydro,1075.038651,0,0,0.46,inflow_NO2,3499435.448,15,hydro,const,0.6,0,0,5,,,,updated
-NO2_5,NO2_5 ror,ror,156.8131045,0,9.2,0.46,inflow_NO2,0,1,const,const,0.6,0,0,0,,,,created
-NO3_1,NO3_1 wind_on,wind_on,491.75681,0,13.8,0.8,windon_NO3,0,1,const,const,0.6,0,0,0,,,,updated
-NO3_1,NO3_1 biomass,biomass,16.93313544,0,70,1,const,0,1,const,const,0.6,0,0,0,,,,created
-NO3_1,NO3_1 hydro,hydro,807.6873644,0,0,0.46,inflow_NO3,2107595.46,15,hydro,const,0.6,0,0,5,,,,updated
-NO3_1,NO3_1 ror,ror,347.9411392,0,9.2,0.46,inflow_NO3,0,1,const,const,0.6,0,0,0,,,,created
-NO3_1,NO3_1 solar,solar,14.30486743,0,9.2,0.75,solar_NO3,0,1,const,const,0.6,0,0,0,,,,updated
-NO3_2,NO3_2 biomass,biomass,12.7552679,0,70,1,const,0,1,const,const,0.6,0,0,0,,,,created
-NO3_2,NO3_2 wind_on,wind_on,370.4269583,0,13.8,0.8,windon_NO3,0,1,const,const,0.6,0,0,0,,,,updated
-NO3_2,NO3_2 ror,ror,262.094546,0,9.2,0.46,inflow_NO3,0,1,const,const,0.6,0,0,0,,,,created
-NO3_2,NO3_2 hydro,hydro,608.408806,0,0,0.46,inflow_NO3,1587594.03,15,hydro,const,0.6,0,0,5,,,,updated
-NO3_3,NO3_3 hydro,hydro,910.7849372,0,0,0.46,inflow_NO3,2376620.316,15,hydro,const,0.6,0,0,5,,,,updated
-NO3_3,NO3_3 solar,solar,11.50988071,0,9.2,0.75,solar_NO3,0,1,const,const,0.6,0,0,0,,,,updated
-NO3_3,NO3_3 ror,ror,392.3542234,0,9.2,0.46,inflow_NO3,0,1,const,const,0.6,0,0,0,,,,created
-NO3_3,NO3_3 biomass,biomass,19.0945722,0,70,1,const,0,1,const,const,0.6,0,0,0,,,,created
-NO3_3,NO3_3 wind_on,wind_on,554.5273024,0,13.8,0.8,windon_NO3,0,1,const,const,0.6,0,0,0,,,,updated
-NO3_4,NO3_4 biomass,biomass,17.40413445,0,70,1,const,0,1,const,const,0.6,0,0,0,,,,created
-NO3_4,NO3_4 ror,ror,357.619201,0,9.2,0.46,inflow_NO3,0,1,const,const,0.6,0,0,0,,,,created
-NO3_4,NO3_4 hydro,hydro,830.1533719,0,0,0.46,inflow_NO3,2166218.707,15,hydro,const,0.6,0,0,5,,,,updated
-NO3_4,NO3_4 solar,solar,10.75766302,0,9.2,0.75,solar_NO3,0,1,const,const,0.6,0,0,0,,,,updated
-NO3_4,NO3_4 wind_on,wind_on,505.4351374,0,13.8,0.8,windon_NO3,0,1,const,const,0.6,0,0,0,,,,updated
-NO3_5,NO3_5 biomass,biomass,6.812890004,0,70,1,const,0,1,const,const,0.6,0,0,0,,,,created
-NO3_5,NO3_5 ror,ror,139.9908905,0,9.2,0.46,inflow_NO3,0,1,const,const,0.6,0,0,0,,,,created
-NO3_5,NO3_5 hydro,hydro,324.9655205,0,0,0.46,inflow_NO3,847971.4874,15,hydro,const,0.6,0,0,5,,,,updated
-NO3_5,NO3_5 solar,solar,15.94034362,0,9.2,0.75,solar_NO3,0,1,const,const,0.6,0,0,0,,,,updated
-NO3_5,NO3_5 wind_on,wind_on,197.8537919,0,13.8,0.8,windon_NO3,0,1,const,const,0.6,0,0,0,,,,updated
-NO4_1,NO4_1 fossil_gas,fossil_gas,92.97081594,0,120,1,const,0,1,const,const,0.6,0,0,0,,,,updated
-NO4_1,NO4_1 biomass,biomass,27.96387823,0,70,1,const,0,1,const,const,0.6,0,0,0,,,,created
-NO4_1,NO4_1 wind_on,wind_on,421.2740097,0,13.8,0.8,windon_NO4,0,1,const,const,0.6,0,0,0,,,,updated
-NO4_1,NO4_1 ror,ror,262.2067543,0,9.2,0.46,inflow_NO4,0,1,const,const,0.6,0,0,0,,,,created
-NO4_1,NO4_1 hydro,hydro,1784.603865,0,0,0.46,inflow_NO4,7562594.809,15,hydro,const,0.6,0,0,5,,,,updated
-NO4_2,NO4_2 hydro,hydro,808.7374773,0,0,0.46,inflow_NO4,3427177.295,15,hydro,const,0.6,0,0,5,,,,updated
-NO4_2,NO4_2 wind_on,wind_on,190.9107598,0,13.8,0.8,windon_NO4,0,1,const,const,0.6,0,0,0,,,,updated
-NO4_2,NO4_2 ror,ror,118.8254901,0,9.2,0.46,inflow_NO4,0,1,const,const,0.6,0,0,0,,,,created
-NO4_2,NO4_2 biomass,biomass,12.67252457,0,70,1,const,0,1,const,const,0.6,0,0,0,,,,created
-NO4_2,NO4_2 fossil_gas,fossil_gas,42.13202975,0,120,1,const,0,1,const,const,0.6,0,0,0,,,,created
-NO4_3,NO4_3 hydro,hydro,2320.658657,0,0,0.46,inflow_NO4,9834227.896,15,hydro,const,0.6,0,0,5,,,,updated
-NO4_3,NO4_3 wind_on,wind_on,547.8152305,0,13.8,0.8,windon_NO4,0,1,const,const,0.6,0,0,0,,,,updated
-NO4_3,NO4_3 fossil_gas,fossil_gas,120.8971543,0,120,1,const,0,1,const,const,0.6,0,0,0,,,,created
-NO4_3,NO4_3 biomass,biomass,36.3635972,0,70,1,const,0,1,const,const,0.6,0,0,0,,,,created
-NO4_3,NO4_3 ror,ror,340.9677555,0,9.2,0.46,inflow_NO4,0,1,const,const,0.6,0,0,0,,,,created
-NO5_1,NO5_1 ror,ror,533.9819013,0,9.2,0.46,inflow_NO5,0,1,const,const,0.6,0,0,0,,,,created
-NO5_1,NO5_1 fossil_gas,fossil_gas,114.9378084,0,120,1,const,0,1,const,const,0.6,0,0,0,,,,created
-NO5_1,NO5_1 hydro,hydro,4541.839333,0,0,0.46,inflow_NO5,10329436.89,15,hydro,const,0.6,0,0,5,,,,updated
-NO5_1,NO5_1 solar,solar,12.22776481,0,9.2,0.75,solar_NO5,0,1,const,const,0.6,0,0,0,,,,updated
-NO5_1,NO5_1 wind_on,wind_on,42.16624013,0,13.8,0.8,windon_NO5,0,1,const,const,0.6,0,0,0,,,,updated
-NO5_1,NO5_1 biomass,biomass,19.15630139,0,70,1,const,0,1,const,const,0.6,0,0,0,,,,created
-NO5_2,NO5_2 ror,ror,358.0180987,0,9.2,0.46,inflow_NO5,0,1,const,const,0.6,0,0,0,,,,created
-NO5_2,NO5_2 biomass,biomass,12.84369861,0,70,1,const,0,1,const,const,0.6,0,0,0,,,,created
-NO5_2,NO5_2 wind_on,wind_on,98.6603901,0,13.8,0.8,windon_NO5,0,1,const,const,0.6,0,0,0,,,,updated
-NO5_2,NO5_2 solar,solar,10.75460769,0,9.2,0.75,solar_NO5,0,1,const,const,0.6,0,0,0,,,,updated
-NO5_2,NO5_2 hydro,hydro,3045.160667,0,0,0.46,inflow_NO5,6925563.108,15,hydro,const,0.6,0,0,5,,,,updated
-NO5_2,NO5_2 fossil_gas,fossil_gas,77.06219164,0,120,1,const,0,1,const,const,0.6,0,0,0,,,,updated
-SE1_1,SE1_1 fossil_other,fossil_other,101.022412,0,142.6,1,const,0,1,const,const,0.6,0,0,0,,,,created
-SE1_1,SE1_1 solar,solar,11.88498965,0,9.2,0.75,solar_SE1,0,1,const,const,0.6,0,0,0,,,,created
-SE1_1,SE1_1 ror,ror,1234.670913,0,9.2,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
-SE1_1,SE1_1 wind_on,wind_on,1273.391748,0,13.8,0.8,windon_SE1,0,1,const,const,0.6,0,0,0,,,,updated
-SE1_1,SE1_1 hydro,hydro,1193.621757,0,0,0.46,inflow_NO1,6286310.597,15,hydro,const,0.6,0,0,5,,,,updated
-SE1_3,SE1_3 solar,solar,16.11501035,0,9.2,0.75,solar_SE1,0,1,const,const,0.6,0,0,0,,,,updated
-SE1_3,SE1_3 fossil_other,fossil_other,136.977588,0,142.6,1,const,0,1,const,const,0.6,0,0,0,,,,created
-SE1_3,SE1_3 wind_on,wind_on,1726.608252,0,13.8,0.8,windon_SE1,0,1,const,const,0.6,0,0,0,,,,updated
-SE1_3,SE1_3 hydro,hydro,1618.447095,0,0,0.46,inflow_NO1,8523689.403,15,hydro,const,0.6,0,0,0,,,,created
-SE1_3,SE1_3 ror,ror,1674.106173,0,9.2,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
-SE2_2,SE2_2 wind_on,wind_on,1868.726803,0,13.8,0.8,windon_SE2,0,1,const,const,0.6,0,0,0,,,,updated
-SE2_2,SE2_2 solar,solar,45.73902624,0,9.2,0.75,solar_SE2,0,1,const,const,0.6,0,0,0,,,,updated
-SE2_2,SE2_2 ror,ror,2225.819765,0,9.2,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
-SE2_2,SE2_2 hydro,hydro,247.024096,0,0,0.46,inflow_NO1,4308232.831,15,hydro,const,0.6,0,0,0,,,,created
-SE2_2,SE2_2 fossil_other,fossil_other,218.2874486,0,142.6,1,const,0,1,const,const,0.6,0,0,0,,,,created
-SE2_3,SE2_3 fossil_other,fossil_other,227.8829869,0,142.6,1,const,0,1,const,const,0.6,0,0,0,,,,created
-SE2_3,SE2_3 ror,ror,2323.662948,0,9.2,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
-SE2_3,SE2_3 wind_on,wind_on,1950.872797,0,13.8,0.8,windon_SE2,0,1,const,const,0.6,0,0,0,,,,updated
-SE2_3,SE2_3 solar,solar,47.74963464,0,9.2,0.75,solar_SE2,0,1,const,const,0.6,0,0,0,,,,updated
-SE2_3,SE2_3 hydro,hydro,257.8828476,0,0,0.46,inflow_NO1,4497615.286,15,hydro,const,0.6,0,0,0,,,,created
-SE2_4,SE2_4 hydro,hydro,52.8865299,0,0,0.46,inflow_NO1,922369.4696,15,hydro,const,0.6,0,0,0,,,,created
-SE2_4,SE2_4 ror,ror,476.5360361,0,9.2,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
-SE2_4,SE2_4 solar,solar,9.792479429,0,9.2,0.75,solar_SE2,0,1,const,const,0.6,0,0,0,,,,updated
-SE2_4,SE2_4 wind_on,wind_on,400.0843542,0,13.8,0.8,windon_SE2,0,1,const,const,0.6,0,0,0,,,,updated
-SE2_4,SE2_4 fossil_other,fossil_other,46.73416829,0,142.6,1,const,0,1,const,const,0.6,0,0,0,,,,created
-SE2_5,SE2_5 hydro,hydro,114.1952819,0,0,0.46,inflow_NO1,1991627.013,15,hydro,const,0.6,0,0,5,,,,updated
-SE2_5,SE2_5 wind_on,wind_on,863.882461,0,13.8,0.8,windon_SE2,0,1,const,const,0.6,0,0,0,,,,updated
-SE2_5,SE2_5 fossil_other,fossil_other,100.9107902,0,142.6,1,const,0,1,const,const,0.6,0,0,0,,,,created
-SE2_5,SE2_5 ror,ror,1028.960816,0,9.2,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
-SE2_5,SE2_5 solar,solar,21.14441902,0,9.2,0.75,solar_SE2,0,1,const,const,0.6,0,0,0,,,,updated
-SE2_6,SE2_6 ror,ror,1314.015997,0,9.2,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
-SE2_6,SE2_6 solar,solar,27.00210193,0,9.2,0.75,solar_SE2,0,1,const,const,0.6,0,0,0,,,,created
-SE2_6,SE2_6 hydro,hydro,145.8310412,0,0,0.46,inflow_NO1,2543371.637,15,hydro,const,0.6,0,0,0,,,,created
-SE2_6,SE2_6 wind_on,wind_on,1103.205638,0,13.8,0.8,windon_SE2,0,1,const,const,0.6,0,0,0,,,,updated
-SE2_6,SE2_6 fossil_other,fossil_other,128.8663188,0,142.6,1,const,0,1,const,const,0.6,0,0,0,,,,created
-SE2_7,SE2_7 wind_on,wind_on,636.2279473,0,13.8,0.8,windon_SE2,0,1,const,const,0.6,0,0,0,,,,updated
-SE2_7,SE2_7 hydro,hydro,84.10198501,0,0,0.46,inflow_NO1,1466783.762,15,hydro,const,0.6,0,0,0,,,,created
-SE2_7,SE2_7 ror,ror,757.8040503,0,9.2,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
-SE2_7,SE2_7 solar,solar,15.57233874,0,9.2,0.75,solar_SE2,0,1,const,const,0.6,0,0,0,,,,updated
-SE2_7,SE2_7 fossil_other,fossil_other,74.31828726,0,142.6,1,const,0,1,const,const,0.6,0,0,0,,,,created
-SE3_1,SE3_1 wind_on,wind_on,338.6495493,0,13.8,0.8,windon_SE3,0,1,const,const,0.6,0,0,0,,,,updated
-SE3_1,SE3_1 solar,solar,222.1827731,0,9.2,0.75,solar_SE3,0,1,const,const,0.6,0,0,0,,,,updated
-SE3_1,SE3_1 hydro,hydro,80.79287476,0,0,0.46,inflow_NO1,248377.1323,15,hydro,const,0.6,0,0,5,,,,updated
-SE3_1,SE3_1 fossil_other,fossil_other,393.7686243,0,142.6,1,const,0,1,const,const,0.6,0,0,0,,,,created
-SE3_1,SE3_1 ror,ror,51.79735159,0,9.2,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
-SE3_10,SE3_10 solar,solar,43.85637345,0,9.2,0.75,solar_SE3,0,1,const,const,0.6,0,0,0,,,,updated
-SE3_10,SE3_10 wind_off,wind_off,48,0,13.8,0.8,windoff_DE_Baltic2,0,1,const,const,0.6,0,0,0,56.98,17.02,,updated
-SE3_10,SE3_10 fossil_other,fossil_other,77.7254852,0,142.6,1,const,0,1,const,const,0.6,0,0,0,,,,created
-SE3_10,SE3_10 hydro,hydro,15.94760223,0,0,0.46,inflow_NO1,49026.84451,15,hydro,const,0.6,0,0,0,,,,created
-SE3_10,SE3_10 ror,ror,10.22421299,0,9.2,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
-SE3_10,SE3_10 wind_on,wind_on,66.84560146,0,13.8,0.8,windon_SE3,0,1,const,const,0.6,0,0,0,,,,updated
-SE3_2,SE3_2 ror,ror,19.60221782,0,9.2,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
-SE3_2,SE3_2 hydro,hydro,30.57529932,0,0,0.46,inflow_NO1,93995.97659,15,hydro,const,0.6,0,0,5,,,,updated
-SE3_2,SE3_2 solar,solar,84.0829691,0,9.2,0.75,solar_SE3,0,1,const,const,0.6,0,0,0,,,,updated
-SE3_2,SE3_2 wind_on,wind_on,128.158719,0,13.8,0.8,windon_SE3,0,1,const,const,0.6,0,0,0,,,,updated
-SE3_2,SE3_2 fossil_other,fossil_other,149.0180117,0,142.6,1,const,0,1,const,const,0.6,0,0,0,,,,created
-SE3_3,SE3_3 nuclear,nuclear,5441.063506,0,32.2,1,const,0,1,const,const,0.6,0,0,0,,,,updated
-SE3_3,SE3_3 solar,solar,1062.12666,0,9.2,0.75,solar_SE3,0,1,const,const,0.6,0,0,0,,,,updated
-SE3_3,SE3_3 wind_on,wind_on,1618.886602,0,13.8,0.8,windon_SE3,0,1,const,const,0.6,0,0,0,,,,updated
-SE3_3,SE3_3 fossil_other,fossil_other,1882.378854,0,142.6,1,const,0,1,const,const,0.6,0,0,0,,,,created
-SE3_3,SE3_3 hydro,hydro,386.2237608,0,0,0.46,inflow_NO1,1187346.662,15,hydro,const,0.6,0,0,0,,,,created
-SE3_3,SE3_3 ror,ror,247.6130227,0,9.2,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
-SE3_4,SE3_4 ror,ror,11.15849518,0,9.2,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
-SE3_4,SE3_4 wind_on,wind_on,72.95391073,0,13.8,0.8,windon_SE3,0,1,const,const,0.6,0,0,0,,,,created
-SE3_4,SE3_4 solar,solar,47.86394143,0,9.2,0.75,solar_SE3,0,1,const,const,0.6,0,0,0,,,,updated
-SE3_4,SE3_4 hydro,hydro,17.40488415,0,0,0.46,inflow_NO1,53506.88691,15,hydro,const,0.6,0,0,5,,,,updated
-SE3_4,SE3_4 fossil_other,fossil_other,84.82799144,0,142.6,1,const,0,1,const,const,0.6,0,0,0,,,,created
-SE3_5,SE3_5 ror,ror,20.07362633,0,9.2,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
-SE3_5,SE3_5 fossil_other,fossil_other,152.6017061,0,142.6,1,const,0,1,const,const,0.6,0,0,0,,,,created
-SE3_5,SE3_5 solar,solar,86.105058,0,9.2,0.75,solar_SE3,0,1,const,const,0.6,0,0,0,,,,updated
-SE3_5,SE3_5 hydro,hydro,31.31059655,0,0,0.46,inflow_NO1,96256.46077,15,hydro,const,0.6,0,0,5,,,,updated
-SE3_5,SE3_5 wind_on,wind_on,131.2407739,0,13.8,0.8,windon_SE3,0,1,const,const,0.6,0,0,0,,,,updated
-SE3_6,SE3_6 solar,solar,649.4153531,0,9.2,0.75,solar_SE3,0,1,const,const,0.6,0,0,0,,,,updated
-SE3_6,SE3_6 nuclear,nuclear,2335.936494,0,32.2,1,const,0,1,const,const,0.6,0,0,0,,,,updated
-SE3_6,SE3_6 fossil_other,fossil_other,1150.941572,0,142.6,1,const,0,1,const,const,0.6,0,0,0,,,,created
-SE3_6,SE3_6 hydro,hydro,236.1485211,0,0,0.46,inflow_NO1,725978.5303,15,hydro,const,0.6,0,0,0,,,,created
-SE3_6,SE3_6 ror,ror,151.3978555,0,9.2,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
-SE3_6,SE3_6 wind_on,wind_on,989.8346914,0,13.8,0.8,windon_SE3,0,1,const,const,0.6,0,0,0,,,,updated
-SE3_7,SE3_7 fossil_other,fossil_other,397.8573084,0,142.6,1,const,0,1,const,const,0.6,0,0,0,,,,created
-SE3_7,SE3_7 hydro,hydro,81.63178502,0,0,0.46,inflow_NO1,250956.1484,15,hydro,const,0.6,0,0,0,,,,created
-SE3_7,SE3_7 ror,ror,52.33518775,0,9.2,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
-SE3_7,SE3_7 solar,solar,224.4898009,0,9.2,0.75,solar_SE3,0,1,const,const,0.6,0,0,0,,,,updated
-SE3_7,SE3_7 wind_on,wind_on,342.1659062,0,13.8,0.8,windon_SE3,0,1,const,const,0.6,0,0,0,,,,updated
-SE3_8,SE3_8 wind_on,wind_on,154.1898615,0,13.8,0.8,windon_SE3,0,1,const,const,0.6,0,0,0,,,,updated
-SE3_8,SE3_8 solar,solar,101.1616023,0,9.2,0.75,solar_SE3,0,1,const,const,0.6,0,0,0,,,,updated
-SE3_8,SE3_8 ror,ror,23.58375047,0,9.2,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
-SE3_8,SE3_8 hydro,hydro,36.7856452,0,0,0.46,inflow_NO1,113088.1045,15,hydro,const,0.6,0,0,0,,,,created
-SE3_8,SE3_8 fossil_other,fossil_other,179.2860194,0,142.6,1,const,0,1,const,const,0.6,0,0,0,,,,created
-SE3_9,SE3_9 ror,ror,19.28341323,0,9.2,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
-SE3_9,SE3_9 wind_on,wind_on,126.0743841,0,13.8,0.8,windon_SE3,0,1,const,const,0.6,0,0,0,,,,updated
-SE3_9,SE3_9 solar,solar,82.71546891,0,9.2,0.75,solar_SE3,0,1,const,const,0.6,0,0,0,,,,updated
-SE3_9,SE3_9 hydro,hydro,30.07803183,0,0,0.46,inflow_NO1,92467.25423,15,hydro,const,0.6,0,0,5,,,,updated
-SE3_9,SE3_9 fossil_other,fossil_other,146.5944274,0,142.6,1,const,0,1,const,const,0.6,0,0,0,,,,created
-SE4_1,SE4_1 hydro,hydro,48.17765065,0,0,0.46,inflow_NO1,105322.2356,15,hydro,const,0.6,0,0,5,,,,updated
-SE4_1,SE4_1 solar,solar,552.0013598,0,9.2,0.75,solar_SE4,0,1,const,const,0.6,0,0,0,,,,updated
-SE4_1,SE4_1 wind_on,wind_on,1143.028369,0,13.8,0.8,windon_SE4,0,1,const,const,0.6,0,0,0,,,,updated
-SE4_1,SE4_1 fossil_other,fossil_other,977.9921877,0,142.6,1,const,0,1,const,const,0.6,0,0,0,,,,created
-SE4_2,SE4_2 hydro,hydro,54.28688292,0,0,0.46,inflow_NO1,118677.7644,15,hydro,const,0.6,0,0,5,,,,updated
-SE4_2,SE4_2 wind_on,wind_on,1287.971631,0,13.8,0.8,windon_SE4,0,1,const,const,0.6,0,0,0,,,,updated
-SE4_2,SE4_2 wind_off,wind_off,110,0,13.8,0.8,windoff_DE_Baltic2,0,1,const,const,0.6,0,0,0,55.516667,12.783333,,updated
-SE4_2,SE4_2 solar,solar,621.9986402,0,9.2,0.75,solar_SE4,0,1,const,const,0.6,0,0,0,,,,updated
-SE4_2,SE4_2 fossil_other,fossil_other,1102.007812,0,142.6,1,const,0,1,const,const,0.6,0,0,0,,,,created
-GB,,wind_on,6434,0,13.8,0.75,windon_UK,0,1,const,const,0.6,0,0,0,,,,
-GB,,wind_off,10446,0,13.8,0.5,windoff_GB_Doggerbank,0,1,const,const,0.6,0,0,0,,,,
-GB,,solar,13470,0,9.2,0.75,solar_UK,0,1,const,const,0.6,0,0,0,,,,
-GB,,hydro,10876,0,1,0.3,inflow_NO1,0,15,hydro,const,0.6,,,,,,,
-GB,,biomass,4503,0,70,1,const,0,,,,,,,,,,,
-GB,,nuclear,12638,0,32.2,1,const,0,,,,,,,,,,,
-GB,,fossil_gas,36587,0,120,1,const,0,,,,,,,,,,,
-GB,,fossil_other,20110,0,142.6,1,const,0,,,,,,,,,,,
-DE,,wind_on,60048,0,13.8,0.75,windon_DE,0,1,const,const,0.6,0,0,0,,,,
-DE,,wind_off,1832,0,13.8,0.5,windoff_DE_Baltic2,0,1,const,const,0.6,0,0,0,,,,
-DE,,solar,77016,0,9.2,0.75,solar_DE,0,1,const,const,0.6,0,0,0,,,,
-DE,,hydro,14594,0,1,0.2,inflow_NO1,0,15,hydro,const,0.6,,,,,,,
-DE,,biomass,8660,0,70,1,const,0,,,,,,,,,,,
-DE,,nuclear,0,0,32.2,1,const,0,,,,,,,,,,,
-DE,,fossil_gas,36327,0,120,1,const,0,,,,,,,,,,,
-DE,,fossil_other,36704,0,142.6,1,const,0,,,,,,,,,,,
-NL,,wind_on,1238.7,0,13.8,0.75,windon_NL,0,1,const,const,0.6,0,0,0,,,,
-NL,,wind_off,4764.5,0,13.8,0.5,windoff_GB_Doggerbank,0,1,const,const,0.6,0,0,0,,,,
-NL,,solar,11108,0,9.2,0.75,solar_NL,0,1,const,const,0.6,0,0,0,,,,
-NL,,hydro,1,0,1,1,inflow_NO1,0,15,hydro,const,0.6,,,,,,,
-NL,,biomass,1340,0,70,1,const,0,,,,,,,,,,,
-NL,,nuclear,485,0,32.2,1,const,0,,,,,,,,,,,
-NL,,fossil_gas,12970,0,120,1,const,0,,,,,,,,,,,
-NL,,fossil_other,4452,0,142.6,1,const,0,,,,,,,,,,,
-EE,,wind_on,0,0,13.8,0.75,windon_FI,0,1,const,const,0.6,0,0,0,,,,
-EE,,wind_off,0,0,13.8,0.5,windoff_DE_Baltic2,0,1,const,const,0.6,0,0,0,,,,
-EE,,solar,0,0,9.2,0.75,solar_SE3,0,1,const,const,0.6,0,0,0,,,,
-EE,,hydro,0,0,1,1,inflow_NO1,0,15,hydro,const,0.6,,,,,,,
-EE,,biomass,0,0,70,1,const,0,,,,,,,,,,,
-EE,,nuclear,0,0,32.2,1,const,0,,,,,,,,,,,
-EE,,fossil_gas,423,0,120,1,const,0,,,,,,,,,,,
-EE,,fossil_other,2111,0,142.6,1,const,0,,,,,,,,,,,
-LT,,wind_on,1308,0,13.8,0.75,windon_FI,0,1,const,const,0.6,0,0,0,,,,
-LT,,wind_off,0,0,13.8,0.5,windoff_DE_Baltic2,0,1,const,const,0.6,0,0,0,,,,
-LT,,solar,0,0,9.2,0.75,solar_SE4,0,1,const,const,0.6,0,0,0,,,,
-LT,,hydro,1001,0,1,1,inflow_NO1,0,15,hydro,const,0.6,,,,,,,
-LT,,biomass,0,0,70,1,const,0,,,,,,,,,,,
-LT,,nuclear,0,0,32.2,1,const,0,,,,,,,,,,,
-LT,,fossil_gas,1315,0,120,1,const,0,,,,,,,,,,,
-LT,,fossil_other,0,0,142.6,1,const,0,,,,,,,,,,,
-PL,,wind_on,9628,0,13.8,0.75,windon_DE,0,1,const,const,0.6,0,0,0,,,,
-PL,,wind_off,0,0,13.8,0.5,windoff_DE_Baltic2,0,1,const,const,0.6,0,0,0,,,,
-PL,,solar,14282,0,9.2,0.75,solar_DE,0,1,const,const,0.6,0,0,0,,,,
-PL,,hydro,2381,0,1,1,inflow_NO1,0,15,hydro,const,0.6,,,,,,,
-PL,,biomass,678,0,70,1,const,0,,,,,,,,,,,
-PL,,nuclear,0,0,32.2,1,const,0,,,,,,,,,,,
-PL,,fossil_gas,5424,0,120,1,const,0,,,,,,,,,,,
-PL,,fossil_other,26658,0,142.6,1,const,0,,,,,,,,,,,
+DK1_1,DK1_1 wind_off,wind_off,606.5572806,0,0.015,0.95,windoff_DK_Horns Rev,0,1,const,const,0.6,0,0,0,55.7,7.688889,,updated
+DK1_1,DK1_1 fossil_gas,fossil_gas,241.1920717,0,45,1,const,0,1,const,const,0.6,0,0,0,,,,updated
+DK1_1,DK1_1 fossil_other,fossil_other,535.2547049,0,85,1,const,0,1,const,const,0.6,0,0,0,,,,updated
+DK1_1,DK1_1 solar,solar,494.9354513,0,0.01,0.75,solar_DK,0,1,const,const,0.6,0,0,0,,,,updated
+DK1_1,DK1_1 wind_on,wind_on,2353.440504,0,0.015,0.95,windon_DK,0,1,const,const,0.6,0,0,0,,,,updated
+DK1_2,DK1_2 wind_off,wind_off,439.496589,0,0.015,0.95,windoff_DK_Horns Rev,0,1,const,const,0.6,0,0,0,55.529722,7.906111,,updated
+DK1_2,DK1_2 wind_on,wind_on,617.8800607,0,0.015,0.95,windon_DK,0,1,const,const,0.6,0,0,0,,,,updated
+DK1_2,DK1_2 solar,solar,333.2148519,0,0.01,0.75,solar_DK,0,1,const,const,0.6,0,0,0,,,,updated
+DK1_2,DK1_2 biomass,biomass,432.628866,0,15,1,const,0,1,const,const,0.6,0,0,0,,,,updated
+DK1_2,DK1_2 fossil_gas,fossil_gas,165.8683341,0,45,1,const,0,1,const,const,0.6,0,0,0,,,,updated
+DK1_2,DK1_2 fossil_other,fossil_other,1570.355507,0,85,1,const,0,1,const,const,0.6,0,0,0,,,,updated
+DK1_3,DK1_3 biomass,biomass,1100.113402,0,15,1,const,0,1,const,const,0.6,0,0,0,,,,updated
+DK1_3,DK1_3 wind_off,wind_off,222.0477535,0,0.015,0.95,windoff_DK_Horns Rev,0,1,const,const,0.6,0,0,0,,,,updated
+DK1_3,DK1_3 solar,solar,385.2351411,0,0.01,0.75,solar_DK,0,1,const,const,0.6,0,0,0,,,,updated
+DK1_3,DK1_3 wind_on,wind_on,877.4652925,0,0.015,0.95,windon_DK,0,1,const,const,0.6,0,0,0,,,,updated
+DK1_3,DK1_3 fossil_gas,fossil_gas,406.8652666,0,45,1,const,0,1,const,const,0.6,0,0,0,,,,updated
+DK1_3,DK1_3 fossil_other,fossil_other,530.0454134,0,85,1,const,0,1,const,const,0.6,0,0,0,,,,updated
+DK2_1,DK2_1 fossil_other,fossil_other,1111.711708,0,85,1,const,0,1,const,const,0.6,0,0,0,,,,updated
+DK2_1,DK2_1 solar,solar,164.8975663,0,0.01,0.75,solar_DK,0,1,const,const,0.6,0,0,0,,,,updated
+DK2_1,DK2_1 wind_on,wind_on,538.4163422,0,0.015,0.95,windon_DK,0,1,const,const,0.6,0,0,0,,,,updated
+DK2_2,DK2_2 biomass,biomass,865.257732,0,15,1,const,0,1,const,const,0.6,0,0,0,,,,updated
+DK2_2,DK2_2 fossil_gas,fossil_gas,840.0743275,0,45,1,const,0,1,const,const,0.6,0,0,0,,,,updated
+DK2_2,DK2_2 fossil_other,fossil_other,676.6326662,0,85,1,const,0,1,const,const,0.6,0,0,0,,,,updated
+DK2_2,DK2_2 solar,solar,245.7169894,0,0.01,0.75,solar_DK,0,1,const,const,0.6,0,0,0,,,,updated
+DK2_2,DK2_2 wind_on,wind_on,170.7978009,0,0.015,0.95,windon_DK,0,1,const,const,0.6,0,0,0,,,,updated
+DK2_2,DK2_2 wind_off,wind_off,431.8983769,0,0.015,0.95,windoff_DE_Baltic2,0,1,const,const,0.6,0,0,0,54.56,11.55,,updated
+FI_1,FI_1 hydro,hydro,124.5,0,0,0.46,inflow_NO1,2001409.884,10,hydro,const,0.6,0,0,0,,,,created
+FI_1,FI_1 ror,ror,175.8949798,0,0,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
+FI_1,FI_1 solar,solar,2.899706787,0,0.01,0.75,solar_FI,0,1,const,const,0.6,0,0,0,,,,created
+FI_1,FI_1 wind_on,wind_on,507.3869918,0,0.015,0.95,windon_FI,0,1,const,const,0.6,0,0,0,,,,updated
+FI_1,FI_1 biomass,biomass,171.6996593,0,15,1,const,0,1,const,const,0.6,0,0,0,,,,created
+FI_1,FI_1 fossil_other,fossil_other,198.7841546,0,85,1,const,0,1,const,const,0.6,0,0,0,,,,created
+FI_1,FI_1 fossil_gas,fossil_gas,107.4742388,0,45,1,const,0,1,const,const,0.6,0,0,0,,,,created
+FI_10,FI_10 fossil_other,fossil_other,746.0032803,0,85,1,const,0,1,const,const,0.6,0,0,0,,,,updated
+FI_10,FI_10 nuclear,nuclear,3170.968424,0,9.37,1,const,0,1,const,const,0.6,0,0,0,,,,updated
+FI_10,FI_10 solar,solar,10.88210868,0,0.01,0.75,solar_FI,0,1,const,const,0.6,0,0,0,,,,updated
+FI_10,FI_10 wind_on,wind_on,1904.137485,0,0.015,0.95,windon_FI,0,1,const,const,0.6,0,0,0,,,,updated
+FI_10,FI_10 biomass,biomass,644.3597545,0,15,1,const,0,1,const,const,0.6,0,0,0,,,,updated
+FI_10,FI_10 ror,ror,660.104082,0,0,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
+FI_10,FI_10 hydro,hydro,16.8,0,0,0.46,inflow_NO1,270069.7674,10,hydro,const,0.6,0,0,0,,,,created
+FI_10,FI_10 fossil_gas,fossil_gas,403.3326239,0,45,1,const,0,1,const,const,0.6,0,0,0,,,,created
+FI_10,FI_10 wind_off,wind_off,44,0,0.015,0.95,windoff_DE_Baltic2,0,1,const,const,0.6,0,0,0,61.629,21.354,,updated
+FI_11,FI_11 ror,ror,183.9580198,0,0,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
+FI_11,FI_11 wind_on,wind_on,530.6456523,0,0.015,0.95,windon_FI,0,1,const,const,0.6,0,0,0,,,,updated
+FI_11,FI_11 solar,solar,3.032629579,0,0.01,0.75,solar_FI,0,1,const,const,0.6,0,0,0,,,,updated
+FI_11,FI_11 fossil_other,fossil_other,207.8964363,0,85,1,const,0,1,const,const,0.6,0,0,0,,,,updated
+FI_11,FI_11 fossil_gas,fossil_gas,112.4008665,0,45,1,const,0,1,const,const,0.6,0,0,0,,,,updated
+FI_11,FI_11 biomass,biomass,179.5703855,0,15,1,const,0,1,const,const,0.6,0,0,0,,,,updated
+FI_12,FI_12 biomass,biomass,242.4311539,0,15,1,const,0,1,const,const,0.6,0,0,0,,,,updated
+FI_12,FI_12 fossil_gas,fossil_gas,151.7481387,0,45,1,const,0,1,const,const,0.6,0,0,0,,,,updated
+FI_12,FI_12 fossil_other,fossil_other,280.6730786,0,85,1,const,0,1,const,const,0.6,0,0,0,,,,updated
+FI_12,FI_12 nuclear,nuclear,1193.031576,0,9.37,1,const,0,1,const,const,0.6,0,0,0,,,,updated
+FI_12,FI_12 solar,solar,4.094237956,0,0.01,0.75,solar_FI,0,1,const,const,0.6,0,0,0,,,,updated
+FI_12,FI_12 wind_on,wind_on,716.4045308,0,0.015,0.95,windon_FI,0,1,const,const,0.6,0,0,0,,,,updated
+FI_12,FI_12 ror,ror,248.3547322,0,0,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
+FI_13,FI_13 biomass,biomass,308.0384063,0,15,1,const,0,1,const,const,0.6,0,0,0,,,,updated
+FI_13,FI_13 fossil_gas,fossil_gas,192.814554,0,45,1,const,0,1,const,const,0.6,0,0,0,,,,updated
+FI_13,FI_13 fossil_other,fossil_other,356.6294449,0,85,1,const,0,1,const,const,0.6,0,0,0,,,,updated
+FI_13,FI_13 solar,solar,5.202229643,0,0.01,0.75,solar_FI,0,1,const,const,0.6,0,0,0,,,,updated
+FI_13,FI_13 wind_on,wind_on,910.2795018,0,0.015,0.95,windon_FI,0,1,const,const,0.6,0,0,0,,,,updated
+FI_13,FI_13 ror,ror,315.5650364,0,0,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
+FI_14,FI_14 wind_on,wind_on,350.7515625,0,0.015,0.95,windon_FI,0,1,const,const,0.6,0,0,0,,,,updated
+FI_14,FI_14 ror,ror,121.5944437,0,0,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
+FI_14,FI_14 hydro,hydro,3.3,0,0,0.46,inflow_NO1,53049.4186,10,hydro,const,0.6,0,0,0,,,,created
+FI_14,FI_14 fossil_other,fossil_other,137.4175018,0,85,1,const,0,1,const,const,0.6,0,0,0,,,,updated
+FI_14,FI_14 fossil_gas,fossil_gas,74.29586843,0,45,1,const,0,1,const,const,0.6,0,0,0,,,,updated
+FI_14,FI_14 biomass,biomass,118.6942605,0,15,1,const,0,1,const,const,0.6,0,0,0,,,,updated
+FI_14,FI_14 solar,solar,2.004538356,0,0.01,0.75,solar_FI,0,1,const,const,0.6,0,0,0,,,,updated
+FI_2,FI_2 ror,ror,77.88888524,0,0,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
+FI_2,FI_2 wind_on,wind_on,224.6784259,0,0.015,0.95,windon_FI,0,1,const,const,0.6,0,0,0,,,,updated
+FI_2,FI_2 hydro,hydro,25.8,0,0,0.46,inflow_NO1,414750,10,hydro,const,0.6,0,0,5,,,,updated
+FI_2,FI_2 solar,solar,1.284032833,0,0.01,0.75,solar_FI,0,1,const,const,0.6,0,0,0,,,,created
+FI_2,FI_2 biomass,biomass,76.03113561,0,15,1,const,0,1,const,const,0.6,0,0,0,,,,created
+FI_2,FI_2 fossil_gas,fossil_gas,47.59117436,0,45,1,const,0,1,const,const,0.6,0,0,0,,,,created
+FI_2,FI_2 fossil_other,fossil_other,88.02454867,0,85,1,const,0,1,const,const,0.6,0,0,0,,,,created
+FI_3,FI_3 ror,ror,232.6516202,0,0,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
+FI_3,FI_3 solar,solar,3.835365188,0,0.01,0.75,solar_FI,0,1,const,const,0.6,0,0,0,,,,created
+FI_3,FI_3 fossil_gas,fossil_gas,142.1533225,0,45,1,const,0,1,const,const,0.6,0,0,0,,,,created
+FI_3,FI_3 wind_on,wind_on,671.1073044,0,0.015,0.95,windon_FI,0,1,const,const,0.6,0,0,0,,,,updated
+FI_3,FI_3 fossil_other,fossil_other,262.9265242,0,85,1,const,0,1,const,const,0.6,0,0,0,,,,updated
+FI_3,FI_3 biomass,biomass,227.1025812,0,15,1,const,0,1,const,const,0.6,0,0,0,,,,updated
+FI_4,FI_4 biomass,biomass,253.5524027,0,15,1,const,0,1,const,const,0.6,0,0,0,,,,updated
+FI_4,FI_4 fossil_gas,fossil_gas,158.7094091,0,45,1,const,0,1,const,const,0.6,0,0,0,,,,updated
+FI_4,FI_4 wind_on,wind_on,749.2687604,0,0.015,0.95,windon_FI,0,1,const,const,0.6,0,0,0,,,,updated
+FI_4,FI_4 fossil_other,fossil_other,293.5486316,0,85,1,const,0,1,const,const,0.6,0,0,0,,,,created
+FI_4,FI_4 solar,solar,4.282056388,0,0.01,0.75,solar_FI,0,1,const,const,0.6,0,0,0,,,,created
+FI_4,FI_4 hydro,hydro,50.4,0,0,0.46,inflow_NO1,810209.3023,10,hydro,const,0.6,0,0,0,,,,created
+FI_4,FI_4 ror,ror,259.7477184,0,0,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
+FI_5,FI_5 hydro,hydro,6.3,0,0,0.46,inflow_NO1,101276.1628,10,hydro,const,0.6,0,0,0,,,,created
+FI_5,FI_5 ror,ror,62.144505,0,0,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
+FI_5,FI_5 wind_on,wind_on,179.2621568,0,0.015,0.95,windon_FI,0,1,const,const,0.6,0,0,0,,,,updated
+FI_5,FI_5 solar,solar,1.024479739,0,0.01,0.75,solar_FI,0,1,const,const,0.6,0,0,0,,,,updated
+FI_5,FI_5 biomass,biomass,60.662279,0,15,1,const,0,1,const,const,0.6,0,0,0,,,,created
+FI_5,FI_5 fossil_other,fossil_other,70.23135571,0,85,1,const,0,1,const,const,0.6,0,0,0,,,,updated
+FI_5,FI_5 fossil_gas,fossil_gas,37.97114266,0,45,1,const,0,1,const,const,0.6,0,0,0,,,,created
+FI_6,FI_6 solar,solar,3.324316015,0,0.01,0.75,solar_FI,0,1,const,const,0.6,0,0,0,,,,updated
+FI_6,FI_6 fossil_gas,fossil_gas,123.211883,0,45,1,const,0,1,const,const,0.6,0,0,0,,,,created
+FI_6,FI_6 hydro,hydro,28.5,0,0,0.46,inflow_NO1,458154.0698,10,hydro,const,0.6,0,0,0,,,,created
+FI_6,FI_6 wind_on,wind_on,581.6845726,0,0.015,0.95,windon_FI,0,1,const,const,0.6,0,0,0,,,,updated
+FI_6,FI_6 fossil_other,fossil_other,227.8924724,0,85,1,const,0,1,const,const,0.6,0,0,0,,,,updated
+FI_6,FI_6 biomass,biomass,196.8419462,0,15,1,const,0,1,const,const,0.6,0,0,0,,,,updated
+FI_6,FI_6 ror,ror,201.6515949,0,0,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
+FI_7,FI_7 fossil_gas,fossil_gas,78.84830815,0,45,1,const,0,1,const,const,0.6,0,0,0,,,,created
+FI_7,FI_7 hydro,hydro,85,0,0,0.46,inflow_NO1,1366424.419,10,hydro,const,0.6,0,0,0,,,,created
+FI_7,FI_7 ror,ror,129.0450784,0,0,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
+FI_7,FI_7 biomass,biomass,125.9671881,0,15,1,const,0,1,const,const,0.6,0,0,0,,,,updated
+FI_7,FI_7 fossil_other,fossil_other,145.8376859,0,85,1,const,0,1,const,const,0.6,0,0,0,,,,updated
+FI_7,FI_7 solar,solar,2.127365375,0,0.01,0.75,solar_FI,0,1,const,const,0.6,0,0,0,,,,updated
+FI_7,FI_7 wind_on,wind_on,372.2436775,0,0.015,0.95,windon_FI,0,1,const,const,0.6,0,0,0,,,,updated
+FI_8,FI_8 biomass,biomass,71.7028617,0,15,1,const,0,1,const,const,0.6,0,0,0,,,,updated
+FI_8,FI_8 fossil_other,fossil_other,83.01351793,0,85,1,const,0,1,const,const,0.6,0,0,0,,,,updated
+FI_8,FI_8 wind_on,wind_on,211.888011,0,0.015,0.95,windon_FI,0,1,const,const,0.6,0,0,0,,,,updated
+FI_8,FI_8 ror,ror,73.45485401,0,0,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
+FI_8,FI_8 hydro,hydro,3.4,0,0,0.46,inflow_NO1,54656.97674,10,hydro,const,0.6,0,0,0,,,,created
+FI_8,FI_8 solar,solar,1.210935861,0,0.01,0.75,solar_FI,0,1,const,const,0.6,0,0,0,,,,updated
+FI_8,FI_8 fossil_gas,fossil_gas,44.88192062,0,45,1,const,0,1,const,const,0.6,0,0,0,,,,created
+FI_9,FI_9 ror,ror,108.94445,0,0,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
+FI_9,FI_9 biomass,biomass,106.3459854,0,15,1,const,0,1,const,const,0.6,0,0,0,,,,updated
+FI_9,FI_9 fossil_other,fossil_other,123.1213673,0,85,1,const,0,1,const,const,0.6,0,0,0,,,,updated
+FI_9,FI_9 solar,solar,1.795997598,0,0.01,0.75,solar_FI,0,1,const,const,0.6,0,0,0,,,,updated
+FI_9,FI_9 wind_on,wind_on,314.261367,0,0.015,0.95,windon_FI,0,1,const,const,0.6,0,0,0,,,,updated
+FI_9,FI_9 fossil_gas,fossil_gas,66.56654928,0,45,1,const,0,1,const,const,0.6,0,0,0,,,,updated
+NO1_1,NO1_1 wind_on,wind_on,71.70004265,0,0.015,0.95,windon_NO1,0,1,const,const,0.6,0,0,0,,,,updated
+NO1_1,NO1_1 biomass,biomass,6.004437069,0,15,1,const,0,1,const,const,0.6,0,0,0,,,,created
+NO1_1,NO1_1 fossil_gas,fossil_gas,1.236207632,0,45,1,const,0,1,const,const,0.6,0,0,0,,,,created
+NO1_1,NO1_1 solar,solar,3.002218535,0,0.01,0.75,solar_NO1,0,1,const,const,0.6,0,0,0,,,,created
+NO1_1,NO1_1 ror,ror,458.9862336,0,0,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
+NO1_1,NO1_1 hydro,hydro,247.5947286,0,0,0.46,inflow_NO1,1046361.46,10,hydro,const,0.6,0,0,5,,,,updated
+NO1_2,NO1_2 biomass,biomass,3.373183272,0,15,1,const,0,1,const,const,0.6,0,0,0,,,,created
+NO1_2,NO1_2 hydro,hydro,139.0942043,0,0,0.46,inflow_NO1,587826.7908,10,hydro,const,0.6,0,0,5,,,,updated
+NO1_2,NO1_2 wind_on,wind_on,40.27977672,0,0.015,0.95,windon_NO1,0,1,const,const,0.6,0,0,0,,,,updated
+NO1_2,NO1_2 fossil_gas,fossil_gas,0.694478909,0,45,1,const,0,1,const,const,0.6,0,0,0,,,,created
+NO1_2,NO1_2 solar,solar,1.686591636,0,0.01,0.75,solar_NO1,0,1,const,const,0.6,0,0,0,,,,created
+NO1_2,NO1_2 ror,ror,257.8500978,0,0,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
+NO1_3,NO1_3 fossil_gas,fossil_gas,3.982969984,0,45,1,const,0,1,const,const,0.6,0,0,0,,,,created
+NO1_3,NO1_3 biomass,biomass,19.34585421,0,15,1,const,0,1,const,const,0.6,0,0,0,,,,created
+NO1_3,NO1_3 wind_on,wind_on,231.012259,0,0.015,0.95,windon_NO1,0,1,const,const,0.6,0,0,0,,,,updated
+NO1_3,NO1_3 hydro,hydro,797.7319881,0,0,0.46,inflow_NO1,3371299.593,10,hydro,const,0.6,0,0,5,,,,updated
+NO1_3,NO1_3 solar,solar,9.672927103,0,0.01,0.75,solar_NO1,0,1,const,const,0.6,0,0,0,,,,updated
+NO1_3,NO1_3 ror,ror,1478.819855,0,0,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
+NO1_4,NO1_4 solar,solar,0.9191224,0,0.01,0.75,solar_NO1,0,1,const,const,0.6,0,0,0,,,,created
+NO1_4,NO1_4 ror,ror,140.5175952,0,0,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
+NO1_4,NO1_4 fossil_gas,fossil_gas,0.378462165,0,45,1,const,0,1,const,const,0.6,0,0,0,,,,created
+NO1_4,NO1_4 biomass,biomass,1.8382448,0,15,1,const,0,1,const,const,0.6,0,0,0,,,,created
+NO1_4,NO1_4 wind_on,wind_on,21.95080555,0,0.015,0.95,windon_NO1,0,1,const,const,0.6,0,0,0,,,,updated
+NO1_4,NO1_4 hydro,hydro,75.80056499,0,0,0.46,inflow_NO1,320341.1894,10,hydro,const,0.6,0,0,5,,,,updated
+NO1_5,NO1_5 biomass,biomass,3.438280653,0,15,1,const,0,1,const,const,0.6,0,0,0,,,,created
+NO1_5,NO1_5 wind_on,wind_on,41.05711603,0,0.015,0.95,windon_NO1,0,1,const,const,0.6,0,0,0,,,,updated
+NO1_5,NO1_5 ror,ror,262.8262181,0,0,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
+NO1_5,NO1_5 hydro,hydro,141.778514,0,0,0.46,inflow_NO1,599170.9667,10,hydro,const,0.6,0,0,0,,,,created
+NO1_5,NO1_5 fossil_gas,fossil_gas,0.707881311,0,45,1,const,0,1,const,const,0.6,0,0,0,,,,created
+NO1_5,NO1_5 solar,solar,1.719140326,0,0.01,0.75,solar_NO1,0,1,const,const,0.6,0,0,0,,,,created
+NO2_1,NO2_1 ror,ror,872.8815617,0,0,0.46,inflow_NO2,0,1,const,const,0.6,0,0,0,,,,created
+NO2_1,NO2_1 wind_off,wind_off,3.454676366,0,0.015,0.95,windoff_Nordavind A,0,1,const,const,0.6,0,0,0,,,,created
+NO2_1,NO2_1 fossil_gas,fossil_gas,13.24292607,0,45,1,const,0,1,const,const,0.6,0,0,0,,,,created
+NO2_1,NO2_1 biomass,biomass,12.66714667,0,15,1,const,0,1,const,const,0.6,0,0,0,,,,created
+NO2_1,NO2_1 hydro,hydro,5984.075245,0,0,0.46,inflow_NO2,19479192.69,10,hydro,const,0.6,0,0,5,,,,updated
+NO2_1,NO2_1 solar,solar,10.67560609,0,0.01,0.75,solar_NO2,0,1,const,const,0.6,0,0,0,,,,updated
+NO2_1,NO2_1 wind_on,wind_on,833.1527835,0,0.015,0.95,windon_NO2,0,1,const,const,0.6,0,0,0,,,,updated
+NO2_2,NO2_2 hydro,hydro,393.6362979,0,0,0.46,inflow_NO2,1281353.757,10,hydro,const,0.6,0,0,5,,,,updated
+NO2_2,NO2_2 biomass,biomass,0.833253012,0,15,1,const,0,1,const,const,0.6,0,0,0,,,,created
+NO2_2,NO2_2 fossil_gas,fossil_gas,0.871128149,0,45,1,const,0,1,const,const,0.6,0,0,0,,,,created
+NO2_2,NO2_2 wind_on,wind_on,54.80532311,0,0.015,0.95,windon_NO2,0,1,const,const,0.6,0,0,0,,,,updated
+NO2_2,NO2_2 ror,ror,57.41870756,0,0,0.46,inflow_NO2,0,1,const,const,0.6,0,0,0,,,,created
+NO2_2,NO2_2 wind_off,wind_off,0.227250821,0,0.015,0.95,windoff_Nordavind A,0,1,const,const,0.6,0,0,0,,,,created
+NO2_3,NO2_3 biomass,biomass,1.926978928,0,15,1,const,0,1,const,const,0.6,0,0,0,,,,created
+NO2_3,NO2_3 fossil_gas,fossil_gas,2.01456888,0,45,1,const,0,1,const,const,0.6,0,0,0,,,,created
+NO2_3,NO2_3 wind_off,wind_off,0.525539708,0,0.015,0.95,windoff_Nordavind A,0,1,const,const,0.6,0,0,0,,,,created
+NO2_3,NO2_3 ror,ror,132.7863662,0,0,0.46,inflow_NO2,0,1,const,const,0.6,0,0,0,,,,created
+NO2_3,NO2_3 wind_on,wind_on,126.7426595,0,0.015,0.95,windon_NO2,0,1,const,const,0.6,0,0,0,,,,updated
+NO2_3,NO2_3 hydro,hydro,910.3223638,0,0,0.46,inflow_NO2,2963255.642,10,hydro,const,0.6,0,0,5,,,,updated
+NO2_4,NO2_4 biomass,biomass,4.296969472,0,15,1,const,0,1,const,const,0.6,0,0,0,,,,created
+NO2_4,NO2_4 fossil_gas,fossil_gas,4.492286267,0,45,1,const,0,1,const,const,0.6,0,0,0,,,,created
+NO2_4,NO2_4 wind_off,wind_off,1.171900765,0,0.015,0.95,windoff_Nordavind A,0,1,const,const,0.6,0,0,0,,,,created
+NO2_4,NO2_4 ror,ror,296.10026,0,0,0.46,inflow_NO2,0,1,const,const,0.6,0,0,0,,,,created
+NO2_4,NO2_4 wind_on,wind_on,282.6234012,0,0.015,0.95,windon_NO2,0,1,const,const,0.6,0,0,0,,,,updated
+NO2_4,NO2_4 hydro,hydro,2029.927442,0,0,0.46,inflow_NO2,6607762.465,10,hydro,const,0.6,0,0,5,,,,updated
+NO2_5,NO2_5 wind_on,wind_on,149.6758326,0,0.015,0.95,windon_NO2,0,1,const,const,0.6,0,0,0,,,,updated
+NO2_5,NO2_5 biomass,biomass,2.275651913,0,15,1,const,0,1,const,const,0.6,0,0,0,,,,created
+NO2_5,NO2_5 wind_off,wind_off,0.62063234,0,0.015,0.95,windoff_Nordavind A,0,1,const,const,0.6,0,0,0,,,,created
+NO2_5,NO2_5 fossil_gas,fossil_gas,2.379090636,0,45,1,const,0,1,const,const,0.6,0,0,0,,,,created
+NO2_5,NO2_5 hydro,hydro,1075.038651,0,0,0.46,inflow_NO2,3499435.448,10,hydro,const,0.6,0,0,5,,,,updated
+NO2_5,NO2_5 ror,ror,156.8131045,0,0,0.46,inflow_NO2,0,1,const,const,0.6,0,0,0,,,,created
+NO3_1,NO3_1 wind_on,wind_on,491.75681,0,0.015,0.95,windon_NO3,0,1,const,const,0.6,0,0,0,,,,updated
+NO3_1,NO3_1 biomass,biomass,16.93313544,0,15,1,const,0,1,const,const,0.6,0,0,0,,,,created
+NO3_1,NO3_1 hydro,hydro,807.6873644,0,0,0.46,inflow_NO3,2107595.46,10,hydro,const,0.6,0,0,5,,,,updated
+NO3_1,NO3_1 ror,ror,347.9411392,0,0,0.46,inflow_NO3,0,1,const,const,0.6,0,0,0,,,,created
+NO3_1,NO3_1 solar,solar,14.30486743,0,0.01,0.75,solar_NO3,0,1,const,const,0.6,0,0,0,,,,updated
+NO3_2,NO3_2 biomass,biomass,12.7552679,0,15,1,const,0,1,const,const,0.6,0,0,0,,,,created
+NO3_2,NO3_2 wind_on,wind_on,370.4269583,0,0.015,0.95,windon_NO3,0,1,const,const,0.6,0,0,0,,,,updated
+NO3_2,NO3_2 ror,ror,262.094546,0,0,0.46,inflow_NO3,0,1,const,const,0.6,0,0,0,,,,created
+NO3_2,NO3_2 hydro,hydro,608.408806,0,0,0.46,inflow_NO3,1587594.03,10,hydro,const,0.6,0,0,5,,,,updated
+NO3_3,NO3_3 hydro,hydro,910.7849372,0,0,0.46,inflow_NO3,2376620.316,10,hydro,const,0.6,0,0,5,,,,updated
+NO3_3,NO3_3 solar,solar,11.50988071,0,0.01,0.75,solar_NO3,0,1,const,const,0.6,0,0,0,,,,updated
+NO3_3,NO3_3 ror,ror,392.3542234,0,0,0.46,inflow_NO3,0,1,const,const,0.6,0,0,0,,,,created
+NO3_3,NO3_3 biomass,biomass,19.0945722,0,15,1,const,0,1,const,const,0.6,0,0,0,,,,created
+NO3_3,NO3_3 wind_on,wind_on,554.5273024,0,0.015,0.95,windon_NO3,0,1,const,const,0.6,0,0,0,,,,updated
+NO3_4,NO3_4 biomass,biomass,17.40413445,0,15,1,const,0,1,const,const,0.6,0,0,0,,,,created
+NO3_4,NO3_4 ror,ror,357.619201,0,0,0.46,inflow_NO3,0,1,const,const,0.6,0,0,0,,,,created
+NO3_4,NO3_4 hydro,hydro,830.1533719,0,0,0.46,inflow_NO3,2166218.707,10,hydro,const,0.6,0,0,5,,,,updated
+NO3_4,NO3_4 solar,solar,10.75766302,0,0.01,0.75,solar_NO3,0,1,const,const,0.6,0,0,0,,,,updated
+NO3_4,NO3_4 wind_on,wind_on,505.4351374,0,0.015,0.95,windon_NO3,0,1,const,const,0.6,0,0,0,,,,updated
+NO3_5,NO3_5 biomass,biomass,6.812890004,0,15,1,const,0,1,const,const,0.6,0,0,0,,,,created
+NO3_5,NO3_5 ror,ror,139.9908905,0,0,0.46,inflow_NO3,0,1,const,const,0.6,0,0,0,,,,created
+NO3_5,NO3_5 hydro,hydro,324.9655205,0,0,0.46,inflow_NO3,847971.4874,10,hydro,const,0.6,0,0,5,,,,updated
+NO3_5,NO3_5 solar,solar,15.94034362,0,0.01,0.75,solar_NO3,0,1,const,const,0.6,0,0,0,,,,updated
+NO3_5,NO3_5 wind_on,wind_on,197.8537919,0,0.015,0.95,windon_NO3,0,1,const,const,0.6,0,0,0,,,,updated
+NO4_1,NO4_1 fossil_gas,fossil_gas,92.97081594,0,45,1,const,0,1,const,const,0.6,0,0,0,,,,updated
+NO4_1,NO4_1 biomass,biomass,27.96387823,0,15,1,const,0,1,const,const,0.6,0,0,0,,,,created
+NO4_1,NO4_1 wind_on,wind_on,421.2740097,0,0.015,0.95,windon_NO4,0,1,const,const,0.6,0,0,0,,,,updated
+NO4_1,NO4_1 ror,ror,262.2067543,0,0,0.46,inflow_NO4,0,1,const,const,0.6,0,0,0,,,,created
+NO4_1,NO4_1 hydro,hydro,1784.603865,0,0,0.46,inflow_NO4,7562594.809,10,hydro,const,0.6,0,0,5,,,,updated
+NO4_2,NO4_2 hydro,hydro,808.7374773,0,0,0.46,inflow_NO4,3427177.295,10,hydro,const,0.6,0,0,5,,,,updated
+NO4_2,NO4_2 wind_on,wind_on,190.9107598,0,0.015,0.95,windon_NO4,0,1,const,const,0.6,0,0,0,,,,updated
+NO4_2,NO4_2 ror,ror,118.8254901,0,0,0.46,inflow_NO4,0,1,const,const,0.6,0,0,0,,,,created
+NO4_2,NO4_2 biomass,biomass,12.67252457,0,15,1,const,0,1,const,const,0.6,0,0,0,,,,created
+NO4_2,NO4_2 fossil_gas,fossil_gas,42.13202975,0,45,1,const,0,1,const,const,0.6,0,0,0,,,,created
+NO4_3,NO4_3 hydro,hydro,2320.658657,0,0,0.46,inflow_NO4,9834227.896,10,hydro,const,0.6,0,0,5,,,,updated
+NO4_3,NO4_3 wind_on,wind_on,547.8152305,0,0.015,0.95,windon_NO4,0,1,const,const,0.6,0,0,0,,,,updated
+NO4_3,NO4_3 fossil_gas,fossil_gas,120.8971543,0,45,1,const,0,1,const,const,0.6,0,0,0,,,,created
+NO4_3,NO4_3 biomass,biomass,36.3635972,0,15,1,const,0,1,const,const,0.6,0,0,0,,,,created
+NO4_3,NO4_3 ror,ror,340.9677555,0,0,0.46,inflow_NO4,0,1,const,const,0.6,0,0,0,,,,created
+NO5_1,NO5_1 ror,ror,533.9819013,0,0,0.46,inflow_NO5,0,1,const,const,0.6,0,0,0,,,,created
+NO5_1,NO5_1 fossil_gas,fossil_gas,114.9378084,0,45,1,const,0,1,const,const,0.6,0,0,0,,,,created
+NO5_1,NO5_1 hydro,hydro,4541.839333,0,0,0.46,inflow_NO5,10329436.89,10,hydro,const,0.6,0,0,5,,,,updated
+NO5_1,NO5_1 solar,solar,12.22776481,0,0.01,0.75,solar_NO5,0,1,const,const,0.6,0,0,0,,,,updated
+NO5_1,NO5_1 wind_on,wind_on,42.16624013,0,0.015,0.95,windon_NO5,0,1,const,const,0.6,0,0,0,,,,updated
+NO5_1,NO5_1 biomass,biomass,19.15630139,0,15,1,const,0,1,const,const,0.6,0,0,0,,,,created
+NO5_2,NO5_2 ror,ror,358.0180987,0,0,0.46,inflow_NO5,0,1,const,const,0.6,0,0,0,,,,created
+NO5_2,NO5_2 biomass,biomass,12.84369861,0,15,1,const,0,1,const,const,0.6,0,0,0,,,,created
+NO5_2,NO5_2 wind_on,wind_on,98.6603901,0,0.015,0.95,windon_NO5,0,1,const,const,0.6,0,0,0,,,,updated
+NO5_2,NO5_2 solar,solar,10.75460769,0,0.01,0.75,solar_NO5,0,1,const,const,0.6,0,0,0,,,,updated
+NO5_2,NO5_2 hydro,hydro,3045.160667,0,0,0.46,inflow_NO5,6925563.108,10,hydro,const,0.6,0,0,5,,,,updated
+NO5_2,NO5_2 fossil_gas,fossil_gas,77.06219164,0,45,1,const,0,1,const,const,0.6,0,0,0,,,,updated
+SE1_1,SE1_1 fossil_other,fossil_other,101.022412,0,85,1,const,0,1,const,const,0.6,0,0,0,,,,created
+SE1_1,SE1_1 solar,solar,11.88498965,0,0.01,0.75,solar_SE1,0,1,const,const,0.6,0,0,0,,,,created
+SE1_1,SE1_1 ror,ror,1234.670913,0,0,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
+SE1_1,SE1_1 wind_on,wind_on,1273.391748,0,0.015,0.95,windon_SE1,0,1,const,const,0.6,0,0,0,,,,updated
+SE1_1,SE1_1 hydro,hydro,1193.621757,0,0,0.46,inflow_NO1,6286310.597,10,hydro,const,0.6,0,0,5,,,,updated
+SE1_3,SE1_3 solar,solar,16.11501035,0,0.01,0.75,solar_SE1,0,1,const,const,0.6,0,0,0,,,,updated
+SE1_3,SE1_3 fossil_other,fossil_other,136.977588,0,85,1,const,0,1,const,const,0.6,0,0,0,,,,created
+SE1_3,SE1_3 wind_on,wind_on,1726.608252,0,0.015,0.95,windon_SE1,0,1,const,const,0.6,0,0,0,,,,updated
+SE1_3,SE1_3 hydro,hydro,1618.447095,0,0,0.46,inflow_NO1,8523689.403,10,hydro,const,0.6,0,0,0,,,,created
+SE1_3,SE1_3 ror,ror,1674.106173,0,0,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
+SE2_2,SE2_2 wind_on,wind_on,1868.726803,0,0.015,0.95,windon_SE2,0,1,const,const,0.6,0,0,0,,,,updated
+SE2_2,SE2_2 solar,solar,45.73902624,0,0.01,0.75,solar_SE2,0,1,const,const,0.6,0,0,0,,,,updated
+SE2_2,SE2_2 ror,ror,2225.819765,0,0,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
+SE2_2,SE2_2 hydro,hydro,247.024096,0,0,0.46,inflow_NO1,4308232.831,10,hydro,const,0.6,0,0,0,,,,created
+SE2_2,SE2_2 fossil_other,fossil_other,218.2874486,0,85,1,const,0,1,const,const,0.6,0,0,0,,,,created
+SE2_3,SE2_3 fossil_other,fossil_other,227.8829869,0,85,1,const,0,1,const,const,0.6,0,0,0,,,,created
+SE2_3,SE2_3 ror,ror,2323.662948,0,0,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
+SE2_3,SE2_3 wind_on,wind_on,1950.872797,0,0.015,0.95,windon_SE2,0,1,const,const,0.6,0,0,0,,,,updated
+SE2_3,SE2_3 solar,solar,47.74963464,0,0.01,0.75,solar_SE2,0,1,const,const,0.6,0,0,0,,,,updated
+SE2_3,SE2_3 hydro,hydro,257.8828476,0,0,0.46,inflow_NO1,4497615.286,10,hydro,const,0.6,0,0,0,,,,created
+SE2_4,SE2_4 hydro,hydro,52.8865299,0,0,0.46,inflow_NO1,922369.4696,10,hydro,const,0.6,0,0,0,,,,created
+SE2_4,SE2_4 ror,ror,476.5360361,0,0,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
+SE2_4,SE2_4 solar,solar,9.792479429,0,0.01,0.75,solar_SE2,0,1,const,const,0.6,0,0,0,,,,updated
+SE2_4,SE2_4 wind_on,wind_on,400.0843542,0,0.015,0.95,windon_SE2,0,1,const,const,0.6,0,0,0,,,,updated
+SE2_4,SE2_4 fossil_other,fossil_other,46.73416829,0,85,1,const,0,1,const,const,0.6,0,0,0,,,,created
+SE2_5,SE2_5 hydro,hydro,114.1952819,0,0,0.46,inflow_NO1,1991627.013,10,hydro,const,0.6,0,0,5,,,,updated
+SE2_5,SE2_5 wind_on,wind_on,863.882461,0,0.015,0.95,windon_SE2,0,1,const,const,0.6,0,0,0,,,,updated
+SE2_5,SE2_5 fossil_other,fossil_other,100.9107902,0,85,1,const,0,1,const,const,0.6,0,0,0,,,,created
+SE2_5,SE2_5 ror,ror,1028.960816,0,0,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
+SE2_5,SE2_5 solar,solar,21.14441902,0,0.01,0.75,solar_SE2,0,1,const,const,0.6,0,0,0,,,,updated
+SE2_6,SE2_6 ror,ror,1314.015997,0,0,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
+SE2_6,SE2_6 solar,solar,27.00210193,0,0.01,0.75,solar_SE2,0,1,const,const,0.6,0,0,0,,,,created
+SE2_6,SE2_6 hydro,hydro,145.8310412,0,0,0.46,inflow_NO1,2543371.637,10,hydro,const,0.6,0,0,0,,,,created
+SE2_6,SE2_6 wind_on,wind_on,1103.205638,0,0.015,0.95,windon_SE2,0,1,const,const,0.6,0,0,0,,,,updated
+SE2_6,SE2_6 fossil_other,fossil_other,128.8663188,0,85,1,const,0,1,const,const,0.6,0,0,0,,,,created
+SE2_7,SE2_7 wind_on,wind_on,636.2279473,0,0.015,0.95,windon_SE2,0,1,const,const,0.6,0,0,0,,,,updated
+SE2_7,SE2_7 hydro,hydro,84.10198501,0,0,0.46,inflow_NO1,1466783.762,10,hydro,const,0.6,0,0,0,,,,created
+SE2_7,SE2_7 ror,ror,757.8040503,0,0,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
+SE2_7,SE2_7 solar,solar,15.57233874,0,0.01,0.75,solar_SE2,0,1,const,const,0.6,0,0,0,,,,updated
+SE2_7,SE2_7 fossil_other,fossil_other,74.31828726,0,85,1,const,0,1,const,const,0.6,0,0,0,,,,created
+SE3_1,SE3_1 wind_on,wind_on,338.6495493,0,0.015,0.95,windon_SE3,0,1,const,const,0.6,0,0,0,,,,updated
+SE3_1,SE3_1 solar,solar,222.1827731,0,0.01,0.75,solar_SE3,0,1,const,const,0.6,0,0,0,,,,updated
+SE3_1,SE3_1 hydro,hydro,80.79287476,0,0,0.46,inflow_NO1,248377.1323,10,hydro,const,0.6,0,0,5,,,,updated
+SE3_1,SE3_1 fossil_other,fossil_other,393.7686243,0,85,1,const,0,1,const,const,0.6,0,0,0,,,,created
+SE3_1,SE3_1 ror,ror,51.79735159,0,0,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
+SE3_10,SE3_10 solar,solar,43.85637345,0,0.01,0.75,solar_SE3,0,1,const,const,0.6,0,0,0,,,,updated
+SE3_10,SE3_10 wind_off,wind_off,48,0,0.015,0.95,windoff_DE_Baltic2,0,1,const,const,0.6,0,0,0,56.98,17.02,,updated
+SE3_10,SE3_10 fossil_other,fossil_other,77.7254852,0,85,1,const,0,1,const,const,0.6,0,0,0,,,,created
+SE3_10,SE3_10 hydro,hydro,15.94760223,0,0,0.46,inflow_NO1,49026.84451,10,hydro,const,0.6,0,0,0,,,,created
+SE3_10,SE3_10 ror,ror,10.22421299,0,0,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
+SE3_10,SE3_10 wind_on,wind_on,66.84560146,0,0.015,0.95,windon_SE3,0,1,const,const,0.6,0,0,0,,,,updated
+SE3_2,SE3_2 ror,ror,19.60221782,0,0,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
+SE3_2,SE3_2 hydro,hydro,30.57529932,0,0,0.46,inflow_NO1,93995.97659,10,hydro,const,0.6,0,0,5,,,,updated
+SE3_2,SE3_2 solar,solar,84.0829691,0,0.01,0.75,solar_SE3,0,1,const,const,0.6,0,0,0,,,,updated
+SE3_2,SE3_2 wind_on,wind_on,128.158719,0,0.015,0.95,windon_SE3,0,1,const,const,0.6,0,0,0,,,,updated
+SE3_2,SE3_2 fossil_other,fossil_other,149.0180117,0,85,1,const,0,1,const,const,0.6,0,0,0,,,,created
+SE3_3,SE3_3 nuclear,nuclear,5441.063506,0,9.37,1,const,0,1,const,const,0.6,0,0,0,,,,updated
+SE3_3,SE3_3 solar,solar,1062.12666,0,0.01,0.75,solar_SE3,0,1,const,const,0.6,0,0,0,,,,updated
+SE3_3,SE3_3 wind_on,wind_on,1618.886602,0,0.015,0.95,windon_SE3,0,1,const,const,0.6,0,0,0,,,,updated
+SE3_3,SE3_3 fossil_other,fossil_other,1882.378854,0,85,1,const,0,1,const,const,0.6,0,0,0,,,,created
+SE3_3,SE3_3 hydro,hydro,386.2237608,0,0,0.46,inflow_NO1,1187346.662,10,hydro,const,0.6,0,0,0,,,,created
+SE3_3,SE3_3 ror,ror,247.6130227,0,0,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
+SE3_4,SE3_4 ror,ror,11.15849518,0,0,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
+SE3_4,SE3_4 wind_on,wind_on,72.95391073,0,0.015,0.95,windon_SE3,0,1,const,const,0.6,0,0,0,,,,created
+SE3_4,SE3_4 solar,solar,47.86394143,0,0.01,0.75,solar_SE3,0,1,const,const,0.6,0,0,0,,,,updated
+SE3_4,SE3_4 hydro,hydro,17.40488415,0,0,0.46,inflow_NO1,53506.88691,10,hydro,const,0.6,0,0,5,,,,updated
+SE3_4,SE3_4 fossil_other,fossil_other,84.82799144,0,85,1,const,0,1,const,const,0.6,0,0,0,,,,created
+SE3_5,SE3_5 ror,ror,20.07362633,0,0,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
+SE3_5,SE3_5 fossil_other,fossil_other,152.6017061,0,85,1,const,0,1,const,const,0.6,0,0,0,,,,created
+SE3_5,SE3_5 solar,solar,86.105058,0,0.01,0.75,solar_SE3,0,1,const,const,0.6,0,0,0,,,,updated
+SE3_5,SE3_5 hydro,hydro,31.31059655,0,0,0.46,inflow_NO1,96256.46077,10,hydro,const,0.6,0,0,5,,,,updated
+SE3_5,SE3_5 wind_on,wind_on,131.2407739,0,0.015,0.95,windon_SE3,0,1,const,const,0.6,0,0,0,,,,updated
+SE3_6,SE3_6 solar,solar,649.4153531,0,0.01,0.75,solar_SE3,0,1,const,const,0.6,0,0,0,,,,updated
+SE3_6,SE3_6 nuclear,nuclear,2335.936494,0,9.37,1,const,0,1,const,const,0.6,0,0,0,,,,updated
+SE3_6,SE3_6 fossil_other,fossil_other,1150.941572,0,85,1,const,0,1,const,const,0.6,0,0,0,,,,created
+SE3_6,SE3_6 hydro,hydro,236.1485211,0,0,0.46,inflow_NO1,725978.5303,10,hydro,const,0.6,0,0,0,,,,created
+SE3_6,SE3_6 ror,ror,151.3978555,0,0,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
+SE3_6,SE3_6 wind_on,wind_on,989.8346914,0,0.015,0.95,windon_SE3,0,1,const,const,0.6,0,0,0,,,,updated
+SE3_7,SE3_7 fossil_other,fossil_other,397.8573084,0,85,1,const,0,1,const,const,0.6,0,0,0,,,,created
+SE3_7,SE3_7 hydro,hydro,81.63178502,0,0,0.46,inflow_NO1,250956.1484,10,hydro,const,0.6,0,0,0,,,,created
+SE3_7,SE3_7 ror,ror,52.33518775,0,0,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
+SE3_7,SE3_7 solar,solar,224.4898009,0,0.01,0.75,solar_SE3,0,1,const,const,0.6,0,0,0,,,,updated
+SE3_7,SE3_7 wind_on,wind_on,342.1659062,0,0.015,0.95,windon_SE3,0,1,const,const,0.6,0,0,0,,,,updated
+SE3_8,SE3_8 wind_on,wind_on,154.1898615,0,0.015,0.95,windon_SE3,0,1,const,const,0.6,0,0,0,,,,updated
+SE3_8,SE3_8 solar,solar,101.1616023,0,0.01,0.75,solar_SE3,0,1,const,const,0.6,0,0,0,,,,updated
+SE3_8,SE3_8 ror,ror,23.58375047,0,0,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
+SE3_8,SE3_8 hydro,hydro,36.7856452,0,0,0.46,inflow_NO1,113088.1045,10,hydro,const,0.6,0,0,0,,,,created
+SE3_8,SE3_8 fossil_other,fossil_other,179.2860194,0,85,1,const,0,1,const,const,0.6,0,0,0,,,,created
+SE3_9,SE3_9 ror,ror,19.28341323,0,0,0.46,inflow_NO1,0,1,const,const,0.6,0,0,0,,,,created
+SE3_9,SE3_9 wind_on,wind_on,126.0743841,0,0.015,0.95,windon_SE3,0,1,const,const,0.6,0,0,0,,,,updated
+SE3_9,SE3_9 solar,solar,82.71546891,0,0.01,0.75,solar_SE3,0,1,const,const,0.6,0,0,0,,,,updated
+SE3_9,SE3_9 hydro,hydro,30.07803183,0,0,0.46,inflow_NO1,92467.25423,10,hydro,const,0.6,0,0,5,,,,updated
+SE3_9,SE3_9 fossil_other,fossil_other,146.5944274,0,85,1,const,0,1,const,const,0.6,0,0,0,,,,created
+SE4_1,SE4_1 hydro,hydro,48.17765065,0,0,0.46,inflow_NO1,105322.2356,10,hydro,const,0.6,0,0,5,,,,updated
+SE4_1,SE4_1 solar,solar,552.0013598,0,0.01,0.75,solar_SE4,0,1,const,const,0.6,0,0,0,,,,updated
+SE4_1,SE4_1 wind_on,wind_on,1143.028369,0,0.015,0.95,windon_SE4,0,1,const,const,0.6,0,0,0,,,,updated
+SE4_1,SE4_1 fossil_other,fossil_other,977.9921877,0,85,1,const,0,1,const,const,0.6,0,0,0,,,,created
+SE4_2,SE4_2 hydro,hydro,54.28688292,0,0,0.46,inflow_NO1,118677.7644,10,hydro,const,0.6,0,0,5,,,,updated
+SE4_2,SE4_2 wind_on,wind_on,1287.971631,0,0.015,0.95,windon_SE4,0,1,const,const,0.6,0,0,0,,,,updated
+SE4_2,SE4_2 wind_off,wind_off,110,0,0.015,0.95,windoff_DE_Baltic2,0,1,const,const,0.6,0,0,0,55.516667,12.783333,,updated
+SE4_2,SE4_2 solar,solar,621.9986402,0,0.01,0.75,solar_SE4,0,1,const,const,0.6,0,0,0,,,,updated
+SE4_2,SE4_2 fossil_other,fossil_other,1102.007812,0,85,1,const,0,1,const,const,0.6,0,0,0,,,,created
+GB,,wind_on,6434,0,0.015,0.75,windon_UK,0,1,const,const,0.6,0,0,0,,,,
+GB,,wind_off,10446,0,0.015,0.5,windoff_GB_Doggerbank,0,1,const,const,0.6,0,0,0,,,,
+GB,,solar,13470,0,0.01,0.75,solar_UK,0,1,const,const,0.6,0,0,0,,,,
+GB,,hydro,10876,0,1,0.3,inflow_NO1,0,10,hydro,const,0.6,,,,,,,
+GB,,biomass,4503,0,15,1,const,0,,,,,,,,,,,
+GB,,nuclear,12638,0,9.37,1,const,0,,,,,,,,,,,
+GB,,fossil_gas,36587,0,45,1,const,0,,,,,,,,,,,
+GB,,fossil_other,20110,0,85,1,const,0,,,,,,,,,,,
+DE,,wind_on,60048,0,0.015,0.75,windon_DE,0,1,const,const,0.6,0,0,0,,,,
+DE,,wind_off,1832,0,0.015,0.5,windoff_DE_Baltic2,0,1,const,const,0.6,0,0,0,,,,
+DE,,solar,77016,0,0.01,0.75,solar_DE,0,1,const,const,0.6,0,0,0,,,,
+DE,,hydro,14594,0,1,0.2,inflow_NO1,0,10,hydro,const,0.6,,,,,,,
+DE,,biomass,8660,0,15,1,const,0,,,,,,,,,,,
+DE,,nuclear,0,0,9.37,1,const,0,,,,,,,,,,,
+DE,,fossil_gas,36327,0,45,1,const,0,,,,,,,,,,,
+DE,,fossil_other,36704,0,85,1,const,0,,,,,,,,,,,
+NL,,wind_on,1238.7,0,0.015,0.75,windon_NL,0,1,const,const,0.6,0,0,0,,,,
+NL,,wind_off,4764.5,0,0.015,0.5,windoff_GB_Doggerbank,0,1,const,const,0.6,0,0,0,,,,
+NL,,solar,11108,0,0.01,0.75,solar_NL,0,1,const,const,0.6,0,0,0,,,,
+NL,,hydro,1,0,1,1,inflow_NO1,0,10,hydro,const,0.6,,,,,,,
+NL,,biomass,1340,0,15,1,const,0,,,,,,,,,,,
+NL,,nuclear,485,0,9.37,1,const,0,,,,,,,,,,,
+NL,,fossil_gas,12970,0,45,1,const,0,,,,,,,,,,,
+NL,,fossil_other,4452,0,85,1,const,0,,,,,,,,,,,
+EE,,wind_on,0,0,0.015,0.75,windon_FI,0,1,const,const,0.6,0,0,0,,,,
+EE,,wind_off,0,0,0.015,0.5,windoff_DE_Baltic2,0,1,const,const,0.6,0,0,0,,,,
+EE,,solar,0,0,0.01,0.75,solar_SE3,0,1,const,const,0.6,0,0,0,,,,
+EE,,hydro,0,0,1,1,inflow_NO1,0,10,hydro,const,0.6,,,,,,,
+EE,,biomass,0,0,15,1,const,0,,,,,,,,,,,
+EE,,nuclear,0,0,9.37,1,const,0,,,,,,,,,,,
+EE,,fossil_gas,423,0,45,1,const,0,,,,,,,,,,,
+EE,,fossil_other,2111,0,85,1,const,0,,,,,,,,,,,
+LT,,wind_on,1308,0,0.015,0.75,windon_FI,0,1,const,const,0.6,0,0,0,,,,
+LT,,wind_off,0,0,0.015,0.5,windoff_DE_Baltic2,0,1,const,const,0.6,0,0,0,,,,
+LT,,solar,0,0,0.01,0.75,solar_SE4,0,1,const,const,0.6,0,0,0,,,,
+LT,,hydro,1001,0,1,1,inflow_NO1,0,10,hydro,const,0.6,,,,,,,
+LT,,biomass,0,0,15,1,const,0,,,,,,,,,,,
+LT,,nuclear,0,0,9.37,1,const,0,,,,,,,,,,,
+LT,,fossil_gas,1315,0,45,1,const,0,,,,,,,,,,,
+LT,,fossil_other,0,0,85,1,const,0,,,,,,,,,,,
+PL,,wind_on,9628,0,0.015,0.75,windon_DE,0,1,const,const,0.6,0,0,0,,,,
+PL,,wind_off,0,0,0.015,0.5,windoff_DE_Baltic2,0,1,const,const,0.6,0,0,0,,,,
+PL,,solar,14282,0,0.01,0.75,solar_DE,0,1,const,const,0.6,0,0,0,,,,
+PL,,hydro,2381,0,1,1,inflow_NO1,0,10,hydro,const,0.6,,,,,,,
+PL,,biomass,678,0,15,1,const,0,,,,,,,,,,,
+PL,,nuclear,0,0,9.37,1,const,0,,,,,,,,,,,
+PL,,fossil_gas,5424,0,45,1,const,0,,,,,,,,,,,
+PL,,fossil_other,26658,0,85,1,const,0,,,,,,,,,,,

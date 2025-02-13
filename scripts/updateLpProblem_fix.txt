@@ -1,10 +1,13 @@
 
+
 # Steg 1
-res = solve_lp(data, SQL_FILE, loss_method, replace=True, nuclear_availability=0.7)
+res = solve_lp(data, SQL_FILE, loss_method, replace=True, nuclear_availability=0.7, week_MSO)
 
+-----------------------------------------------------------------------------------------------
 # Steg 2 bytt ut denne i solve_lp i global_functions.py
-lp.solve(res, solver="glpk", nuclear_availability=nuclear_availability)
+lp.solve(res, solver="glpk", nuclear_availability=nuclear_availability, week_MSO=week_MSO)
 
+-----------------------------------------------------------------------------------------------
 # Steg 3 - bytt ut def solve med denne i LpProblemPyomo.py
 def solve(
         self,
@@ -17,18 +20,19 @@ def solve(
         dclossmultiplier=1,
         solve_args=None,
         nuclear_availability=None,
+        week_MSO=None,
     ):
 
 
-
+-----------------------------------------------------------------------------------------------
 # Steg 4 - legg inn nuclear_availability i _updatedLpProblem i LpProblemPyomo.py
 # linje 863
-self._updateLpProblem(timestep, nuclear_availability)
+self._updateLpProblem(timestep, nuclear_availability, week_MSO)
 
-
+-----------------------------------------------------------------------------------------------
 # Steg 5 Bytt ut hele _updateLpProblem i LpProblemPyomo.py
 
-def _updateLpProblem(self, timestep, nuclear_availability: float = None):
+def _updateLpProblem(self, timestep, nuclear_availability: float = None, week_MSO=None):
     """
     Function that updates LP problem for a given timestep, due to changed
     power demand, power inflow and marginal generator costs
@@ -45,6 +49,12 @@ def _updateLpProblem(self, timestep, nuclear_availability: float = None):
     # Determine the month (approximate based on day_of_year)
     month = (day_of_year // 30) + 1  # Approximate month (not perfect, but sufficient for this purpose)
 
+    self.nuclear_availability = {}
+
+
+
+
+
     # 1. Generator output limits:
     #    -> power output constraints
     P_storage = self._storage / self.timeDelta
@@ -58,8 +68,16 @@ def _updateLpProblem(self, timestep, nuclear_availability: float = None):
 
         # Apply availability reduction for nuclear power plants in July
         if nuclear_availability is not None:
-            if self._grid.generator.loc[i, 'type'] == 'nuclear' and month == 7:
+            start_week = week_MSO.get(self._grid.generator.loc[i, 'node'])
+
+            if (self._grid.generator.loc[i, 'type'] == 'nuclear' and
+                start_week is not None and
+                start_week <= profile_week < start_week + 3):
+
                 P_inflow *= nuclear_availability  # Scale inflow based on availability
+
+
+
 
         if i not in self._idx_generatorsWithStorage:
             """
@@ -77,7 +95,6 @@ def _updateLpProblem(self, timestep, nuclear_availability: float = None):
             self.p_gen_pmax[i] = min(max(0, P_inflow + P_storage[i]), P_max[i])
 
 
-
     # 2. Update demand
     #    -> power balance constraint
     for i in self.s_load:
@@ -88,6 +105,7 @@ def _updateLpProblem(self, timestep, nuclear_availability: float = None):
 
     # 3. Cost parameters
     #    -> update objective function
+
 
     # 3a. generators with storage (storage value)
     for i in self._idx_generatorsWithStorage:
@@ -138,9 +156,9 @@ def _updateLpProblem(self, timestep, nuclear_availability: float = None):
         this_type_time = self._grid.consumer.loc[i, "flex_storval_time"]
         # Compute storage capacity in Mwh (from value in hours)
         storagecapacity_flexload = (
-                self._grid.consumer.loc[i, "flex_storage"]  # h
-                * self._grid.consumer.loc[i, "flex_fraction"]
-                * self._grid.consumer.loc[i, "demand_avg"]
+            self._grid.consumer.loc[i, "flex_storage"]  # h
+            * self._grid.consumer.loc[i, "flex_fraction"]
+            * self._grid.consumer.loc[i, "demand_avg"]
         )  # MW
         fillinglevel = self._storage_flexload[i] / storagecapacity_flexload
         filling_col = int(round(fillinglevel * 100))
@@ -150,9 +168,9 @@ def _updateLpProblem(self, timestep, nuclear_availability: float = None):
             storagevalue_flex = const.flexload_outside_cost
         else:
             storagevalue_flex = (
-                    self._grid.consumer.flex_basevalue[i]
-                    * self._grid.storagevalue_filling.loc[filling_col, this_type_filling]
-                    * self._grid.storagevalue_time.loc[timestep, this_type_time]
+                self._grid.consumer.flex_basevalue[i]
+                * self._grid.storagevalue_filling.loc[filling_col, this_type_filling]
+                * self._grid.storagevalue_time.loc[timestep, this_type_time]
             )
         self.p_loadflex_cost[i] = storagevalue_flex
 

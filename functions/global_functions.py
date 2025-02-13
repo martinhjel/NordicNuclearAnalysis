@@ -41,7 +41,7 @@ def read_grid_data(year,
     """
     # Calculate and print the number of simulation hours and years
     datapath_GridData = data_path / "system"
-    file_storval_filling = data_path / f"storage/profiles_storval_filling_{version}.csv"
+    file_storval_filling = data_path / f"storage/profiles_storval_filling_52_v1.csv"
     file_30y_profiles = data_path / "timeseries_profiles.csv"
 
     # Initialize GridData object
@@ -126,7 +126,8 @@ def solve_lp(data,
              sql_file,
              loss_method,
              replace,
-             nuclear_availability=None):
+             nuclear_availability=None,
+             week_MSO=None):
     """
     Solves a linear programming problem using the given grid data and stores the results in a SQL file.
 
@@ -143,7 +144,7 @@ def solve_lp(data,
     res = powergama.Results(data, sql_file, replace=replace)
     if replace:
         start_time = time.time()
-        lp.solve(res, solver="glpk", nuclear_availability=nuclear_availability)
+        lp.solve(res, solver="glpk", nuclear_availability=nuclear_availability, week_MSO=week_MSO)
         end_time = time.time()
         print("\nSimulation time = {:.2f} seconds".format(end_time - start_time))
         print("\nSimulation time = {:.2f} minutes".format((end_time - start_time)/60))
@@ -964,161 +965,53 @@ def check_load_shedding(load_shedding, tex_font):
 
 def get_production_by_type(res, area_OP, time_max_min, DATE_START):
 
-    # Get Generation by type
-    genHydro = 'hydro'
-    genHydroIdx = res.grid.getGeneratorsPerAreaAndType()[area_OP][genHydro]
-    all_hydro_production = pd.DataFrame(res.db.getResultGeneratorPower(genHydroIdx, time_max_min)).sum(axis=1)
+    generation_types = ['hydro', 'ror', 'nuclear', 'wind_on', 'wind_off', 'solar', 'fossil_gas', 'fossil_other',
+                        'biomass']
 
-    genWind = 'wind_on'
-    genWindIdx = res.grid.getGeneratorsPerAreaAndType()[area_OP][genWind]
-    all_wind_production = pd.DataFrame(res.db.getResultGeneratorPower(genWindIdx, time_max_min)).sum(axis=1)
+    # Dictionary to store production data
+    generation_data = {}
 
-    genSolar = 'solar'
-    genSolarIdx = res.grid.getGeneratorsPerAreaAndType()[area_OP][genSolar]
-    all_solar_production = pd.DataFrame(res.db.getResultGeneratorPower(genSolarIdx, time_max_min)).sum(axis=1)
-
-    genGas = 'fossil_gas'
-    genGasIdx = res.grid.getGeneratorsPerAreaAndType()[area_OP][genGas]
-    all_gas_production = pd.DataFrame(res.db.getResultGeneratorPower(genGasIdx, time_max_min)).sum(axis=1)
-
+    # Iterate through generation types and fetch data
+    for gen_type in generation_types:
+        try:
+            gen_idx = res.grid.getGeneratorsPerAreaAndType()[area_OP].get(gen_type, None)
+            if gen_idx:
+                production = pd.DataFrame(res.db.getResultGeneratorPower(gen_idx, time_max_min)).sum(axis=1)
+                if production.sum() > 0:  # Ensure we only include nonzero production
+                    generation_data[f"{gen_type.capitalize()}"] = production
+        except Exception as e:
+            print(f"Warning: Could not fetch data for {gen_type} in {area_OP}. Error: {e}")
 
     # Get Load Demand
-    load_demand = res.getDemandPerArea(area=area_OP)
+    load_demand = res.getDemandPerAreaFromDB(area=area_OP)
 
     # Get Avg Price for Area
     nodes_in_area = res.grid.node[res.grid.node['area'] == area_OP].index.tolist()
-    node_prices_3 = pd.DataFrame({node: res.getNodalPrices(node=node) for node in nodes_in_area})
-    node_prices_3.index = pd.date_range(DATE_START, periods=time_max_min[-1], freq='h')
-    avg_area_prices = node_prices_3.sum(axis=1) / len(nodes_in_area)
-
-    # Create DataFrame
-    df_gen = pd.DataFrame({
-        'Hydro Production': all_hydro_production,
-        'Wind Production': all_wind_production,
-        'Solar Production': all_solar_production,
-        'Gas Production': all_gas_production,
-        'Load': load_demand['sum']
+    node_prices = pd.DataFrame({
+        node: res.getNodalPrices(node=node) for node in nodes_in_area
     })
+    node_prices.index = pd.date_range(DATE_START, periods=time_max_min[-1], freq='h')
+    avg_area_prices = node_prices.sum(axis=1) / len(nodes_in_area)
+
+    # Create DataFrame with dynamically collected generation data
+    df_gen = pd.DataFrame(generation_data)
+    df_gen['Load'] = load_demand['sum']
     df_gen.index = pd.date_range(DATE_START, periods=time_max_min[-1], freq='h')
 
-    # Conditionally add Nuclear Production
-    nuclear_areas = ['SE', 'FI', 'NL', 'GB']
-    if area_OP in nuclear_areas:
-        genNuclear = 'nuclear'
-        genNuclearIdx = res.grid.getGeneratorsPerAreaAndType()[area_OP][genNuclear]
-        all_nuclear_production = pd.DataFrame(res.db.getResultGeneratorPower(genNuclearIdx, time_max_min)).sum(axis=1)
-        if all_nuclear_production.sum() > 0:
-            df_gen['Nuclear Production'] = all_nuclear_production
-
-    # Define resampling rules
-    resampling_rules = {
-        'Hydro Production': 'sum',
-        'Wind Production': 'sum',
-        'Solar Production': 'sum',
-        'Gas Production': 'sum',
-        'Load': 'sum'
-    }
-
-    # Conditionally include Nuclear Production in resampling
-    if 'Nuclear Production' in df_gen.columns:
-        resampling_rules['Nuclear Production'] = 'sum'
+    # Define resampling rules dynamically
+    resampling_rules = {col: 'sum' for col in df_gen.columns}
 
     # Resample the data based on the defined rules
     df_gen_resampled = df_gen.resample('7D').agg(resampling_rules)
 
-    df_prices = pd.DataFrame({
-        'Price': avg_area_prices
-    })
+    # Create price DataFrame
+    df_prices = pd.DataFrame({'Price': avg_area_prices})
     df_prices.index = pd.date_range(DATE_START, periods=time_max_min[-1], freq='h')
-    df_prices_resampled = df_prices.resample('1D').agg({
-        'Price': 'mean'
-    })
+    df_prices_resampled = df_prices.resample('1D').agg({'Price': 'mean'})
 
-    total_production = sum(all_hydro_production) + sum(all_wind_production) + sum(all_solar_production) + sum(all_gas_production)
-    if 'Nuclear Production' in df_gen_resampled.columns:
-        total_production += sum(all_nuclear_production)
+    total_production = df_gen.sum().sum()
 
     return df_gen_resampled, df_prices_resampled, total_production
-
-def get_production_by_type_FromDB(data: GridData, db: Database, area_OP, time_max_min, DATE_START):
-    time_period = time_max_min[-1] - time_max_min[0]
-    # Get Generation by type
-    genHydro = 'hydro'
-    genHydroIdx = data.getGeneratorsPerAreaAndType()[area_OP][genHydro]
-    all_hydro_production = pd.DataFrame(db.getResultGeneratorPower(genHydroIdx, time_max_min)).sum(axis=1)
-
-    genWind = 'wind_on'
-    genWindIdx = data.getGeneratorsPerAreaAndType()[area_OP][genWind]
-    all_wind_production = pd.DataFrame(db.getResultGeneratorPower(genWindIdx, time_max_min)).sum(axis=1)
-
-    genSolar = 'solar'
-    genSolarIdx = data.getGeneratorsPerAreaAndType()[area_OP][genSolar]
-    all_solar_production = pd.DataFrame(db.getResultGeneratorPower(genSolarIdx, time_max_min)).sum(axis=1)
-
-    genGas = 'fossil_gas'
-    genGasIdx = data.getGeneratorsPerAreaAndType()[area_OP][genGas]
-    all_gas_production = pd.DataFrame(db.getResultGeneratorPower(genGasIdx, time_max_min)).sum(axis=1)
-
-    # Get Load Demand
-    load_demand = getDemandPerAreaFromDB(data, db, area='NO', timeMaxMin=time_max_min)
-
-    # Get Avg Price for Area
-    nodes_in_area = data.node[data.node['area'] == area_OP].index.tolist()
-    node_prices_3 = pd.DataFrame({node: getNodalPricesFromDB(db, node=node, timeMaxMin=time_max_min) for node in nodes_in_area})
-    node_prices_3.index = pd.date_range(DATE_START, periods=time_period, freq='h')
-    avg_area_prices = node_prices_3.sum(axis=1) / len(nodes_in_area)
-
-    # Create DataFrame
-    df_gen = pd.DataFrame({
-        'Hydro Production': all_hydro_production,
-        'Wind Production': all_wind_production,
-        'Solar Production': all_solar_production,
-        'Gas Production': all_gas_production,
-        'Load': load_demand['sum']
-    })
-    df_gen.index = pd.date_range(DATE_START, periods=time_period, freq='h')
-
-    # Conditionally add Nuclear Production
-    nuclear_areas = ['SE', 'FI', 'NL', 'GB']
-    if area_OP in nuclear_areas:
-        genNuclear = 'nuclear'
-        genNuclearIdx = data.getGeneratorsPerAreaAndType()[area_OP][genNuclear]
-        all_nuclear_production = pd.DataFrame(db.getResultGeneratorPower(genNuclearIdx, time_max_min)).sum(axis=1)
-        if all_nuclear_production.sum() > 0:
-            df_gen['Nuclear Production'] = all_nuclear_production
-
-    # Define resampling rules
-    resampling_rules = {
-        'Hydro Production': 'sum',
-        'Wind Production': 'sum',
-        'Solar Production': 'sum',
-        'Gas Production': 'sum',
-        'Load': 'sum'
-    }
-
-    # Conditionally include Nuclear Production in resampling
-    if 'Nuclear Production' in df_gen.columns:
-        resampling_rules['Nuclear Production'] = 'sum'
-
-    # Resample the data based on the defined rules
-    df_gen_resampled = df_gen.resample('7D').agg(resampling_rules)
-
-    df_prices = pd.DataFrame({
-        'Price': avg_area_prices
-    })
-    df_prices.index = pd.date_range(DATE_START, periods=time_period, freq='h')
-    df_prices_resampled = df_prices.resample('1D').agg({
-        'Price': 'mean'
-    })
-
-    total_production = sum(all_hydro_production) + sum(all_wind_production) + sum(all_solar_production) + sum(all_gas_production)
-
-    if 'Nuclear Production' in df_gen_resampled.columns:
-        total_production += sum(all_nuclear_production)
-
-    return df_gen_resampled, df_prices_resampled, total_production
-
-
 
 
 
@@ -1160,7 +1053,7 @@ def plot_production(df_gen_resampled, df_prices_resampled, DATE_START, DATE_END,
         else:
             ax1.legend(lines1 + lines2, labels1 + labels2,
                        loc='upper center', bbox_to_anchor=(0.5, -0.2),
-                       ncol=3, frameon=False)  # Adjust ncol to fit the number of legend items
+                       ncol=4, frameon=False)  # Adjust ncol to fit the number of legend items
 
         plt.title(TITLE)
         plt.grid(True)
@@ -1172,7 +1065,7 @@ def plot_production(df_gen_resampled, df_prices_resampled, DATE_START, DATE_END,
                 "font.family": "serif",
                 "font.serif": ["Computer Modern Roman"]})
         if save_fig:
-            plt.savefig(OUTPUT_PATH_PLOTS / 'production_prices_full_timeline.pdf')
+            plt.savefig(OUTPUT_PATH_PLOTS / 'production_prices_full_timeline.pdf', dpi=300, bbox_inches="tight")
         plt.show()
 
     else:

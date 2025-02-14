@@ -1,11 +1,50 @@
 
 
 # Steg 1
+
+week_MSO = {'FI_10':16,
+            'FI_12':36,
+            'SE3_3':20,
+            'SE3_6':24,
+            'GB':32,
+            'NL':28
+            }
+
 res = solve_lp(data, SQL_FILE, loss_method, replace=True, nuclear_availability=0.7, week_MSO)
 
 -----------------------------------------------------------------------------------------------
 # Steg 2 bytt ut denne i solve_lp i global_functions.py
-lp.solve(res, solver="glpk", nuclear_availability=nuclear_availability, week_MSO=week_MSO)
+
+def solve_lp(data,
+             sql_file,
+             loss_method,
+             replace,
+             nuclear_availability=None,
+             week_MSO=None):
+    """
+    Solves a linear programming problem using the given grid data and stores the results in a SQL file.
+
+    Parameters:
+        data (powergama.GridData): The grid data to be used for the linear programming problem.
+        sql_file (str): The path to the SQL file where the results will be stored.
+
+    Returns:
+        powergama.Results: The results of the linear programming problem.
+    """
+
+    lp = powergama.LpProblem(grid=data, lossmethod=loss_method)  # lossmethod; 0=no losses, 1=linearised losses, 2=added as load
+    # if replace = False, bruker kun sql_file som input
+    res = powergama.Results(data, sql_file, replace=replace)
+    if replace:
+        start_time = time.time()
+        lp.solve(res, solver="glpk", nuclear_availability=nuclear_availability, week_MSO=week_MSO)
+        end_time = time.time()
+        print("\nSimulation time = {:.2f} seconds".format(end_time - start_time))
+        print("\nSimulation time = {:.2f} minutes".format((end_time - start_time)/60))
+    return res
+
+
+
 
 -----------------------------------------------------------------------------------------------
 # Steg 3 - bytt ut def solve med denne i LpProblemPyomo.py
@@ -50,9 +89,6 @@ def _updateLpProblem(self, timestep, nuclear_availability: float = None, week_MS
     month = (day_of_year // 30) + 1  # Approximate month (not perfect, but sufficient for this purpose)
 
     self.nuclear_availability = {}
-
-
-
 
 
     # 1. Generator output limits:

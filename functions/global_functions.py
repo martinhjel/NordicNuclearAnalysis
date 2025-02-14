@@ -41,7 +41,7 @@ def read_grid_data(year,
     """
     # Calculate and print the number of simulation hours and years
     datapath_GridData = data_path / "system"
-    file_storval_filling = data_path / f"storage/profiles_storval_filling_52_v1.csv"
+    file_storval_filling = data_path / f"storage/profiles_storval_filling_{version}.csv"
     file_30y_profiles = data_path / "timeseries_profiles.csv"
 
     # Initialize GridData object
@@ -983,7 +983,7 @@ def get_production_by_type(res, area_OP, time_max_min, DATE_START):
             print(f"Warning: Could not fetch data for {gen_type} in {area_OP}. Error: {e}")
 
     # Get Load Demand
-    load_demand = res.getDemandPerAreaFromDB(area=area_OP)
+    load_demand = res.getDemandPerArea(area=area_OP)
 
     # Get Avg Price for Area
     nodes_in_area = res.grid.node[res.grid.node['area'] == area_OP].index.tolist()

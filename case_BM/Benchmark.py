@@ -7,6 +7,7 @@ from scripts.case_doc import *
 # Define global variables
 YEAR_SCENARIO = 2025
 case = 'BM'
+
 version = '52_v16'
 YEAR_START = 2010
 YEAR_END = 2010

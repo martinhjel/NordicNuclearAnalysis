@@ -6,7 +6,7 @@ YEAR_SCENARIO = 2025
 YEAR_START = 2020
 YEAR_END = 2020
 case = 'BM'
-version = '52_v4'
+version = '52_v12'
 
 # DATE_START = f"{YEAR_START}-01-01"
 DATE_START = pd.Timestamp(f'{YEAR_START}-01-01 00:00:00', tz='UTC')
@@ -74,9 +74,10 @@ def plot_Map(data: GridData, database: Database, time_max_min, OUTPUT_PATH, vers
 
 # plot_Map(data, database, time_max_min, OUTPUT_PATH, version)
 
-# %%
+# %% Storage Filling
+# OBS OBS, sjekk timeMaxMin, hva den er, husk timeMaxMin henter ut data fra timeseries_profile
 
-def calcPlot_SF_FromDB(data: GridData, database: Database, time_max_min, OUTPUT_PATH_PLOTS, DATE_START):
+def calcPlot_SF_Areas_FromDB(data: GridData, database: Database, time_max_min, OUTPUT_PATH_PLOTS, DATE_START):
     storfilling = pd.DataFrame()
     areas = ["NO"]          # When plotting multiple years in one year, recommend to only use one area
     relative=True           # Relative storage filling, True gives percentage
@@ -119,6 +120,51 @@ def calcPlot_SF_FromDB(data: GridData, database: Database, time_max_min, OUTPUT_
 
 
 # calcPlot_SF_FromDB(data, database, time_max_min, OUTPUT_PATH_PLOTS, DATE_START)
+
+
+
+def calcPlot_SF_Zones_FromDB(data: GridData, database: Database, time_max_min, OUTPUT_PATH_PLOTS, DATE_START):
+    storfilling = pd.DataFrame()
+    zones = ['NO1', 'NO2']          # When plotting multiple years in one year, recommend to only use one area
+    relative=True           # Relative storage filling, True gives percentage
+    interval=1              # Month interval for x-axis if plot_by_year is False
+    plot_by_year = False    # True: Split plot by year, or False: Plot all years in one plot
+    duration_curve = False  # True: Plot duration curve, or False: Plot storage filling over time
+    save_plot_SF = False    # True: Save plot as pdf
+
+    time_SF = time_max_min #get_time_steps_for_period(2000, 2001) # eller time_max_min
+
+    for zone in zones:
+        storfilling[zone] = getStorageFillingInZonesFromDB(data=data,
+                                                           db=database,
+                                                           zones=[zone],
+                                                           generator_type="hydro",
+                                                           relative_storage=relative,
+                                                           timeMaxMin=time_SF)
+        if relative:
+            storfilling[zone] = storfilling[zone] * 100
+
+    # Compute the correct DATE_START for this year
+    correct_date_start_SF = DATE_START + pd.Timedelta(hours=time_SF[0])
+    correct_date_end_SF = DATE_START + pd.Timedelta(hours=time_SF[-1])
+
+    storfilling.index = pd.date_range(correct_date_start_SF, periods=time_SF[-1] - time_SF[0], freq='h')
+    storfilling['year'] = storfilling.index.year    # Add year column to DataFrame
+    title_storage_filling = f'Reservoir Filling in {zones} for period {correct_date_start_SF.year}-{correct_date_end_SF.year}'
+    plot_storage_filling_area(storfilling=storfilling,
+                              DATE_START=correct_date_start_SF,
+                              DATE_END=correct_date_end_SF,
+                              areas=zones,
+                              interval=interval,
+                              title=title_storage_filling,
+                              OUTPUT_PATH_PLOTS=OUTPUT_PATH_PLOTS,
+                              relative=relative,
+                              plot_by_year=plot_by_year,
+                              save_plot=save_plot_SF,
+                              duration_curve=duration_curve,
+                              tex_font=False)
+
+calcPlot_SF_Zones_FromDB(data, database, time_max_min, OUTPUT_PATH_PLOTS, DATE_START)
 
 
 

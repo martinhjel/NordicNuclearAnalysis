@@ -983,7 +983,7 @@ def get_production_by_type(res, area_OP, time_max_min, DATE_START):
             print(f"Warning: Could not fetch data for {gen_type} in {area_OP}. Error: {e}")
 
     # Get Load Demand
-    load_demand = res.getDemandPerAreaFromDB(area=area_OP)
+    load_demand = res.getDemandPerArea(area=area_OP)
 
     # Get Avg Price for Area
     nodes_in_area = res.grid.node[res.grid.node['area'] == area_OP].index.tolist()

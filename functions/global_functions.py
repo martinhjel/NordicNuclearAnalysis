@@ -308,10 +308,16 @@ def plot_storage_filling_area(storfilling, DATE_START, DATE_END, areas, interval
                     if duration_curve:
                         # Duration curve: sort values in descending order
                         sorted_values = group[area].sort_values(ascending=False).reset_index(drop=True)
-                        ax.plot(sorted_values, label=f"{year} (Duration Curve)")
+                        if area[-1].isdigit():
+                            ax.plot(sorted_values, label=f"{area} (Duration Curve)")
+                        else:
+                            ax.plot(sorted_values, label=f"{year} (Duration Curve)")
                     else:
                         # Standard plot with day of year
-                        ax.plot(group.index.dayofyear, group[area], label=f"{year}")
+                        if area[-1].isdigit():
+                            ax.plot(group.index.dayofyear, group[area], label=f"{area}")
+                        else:
+                            ax.plot(group.index.dayofyear, group[area], label=f"{year}")
                 else:
                     raise ValueError(f"{area} not found in storfilling DataFrame columns")
 

@@ -3,10 +3,7 @@ import pathlib
 import folium
 import pandas as pd
 import os
-
-from pygments.styles.dracula import yellow
-
-
+from pygments.styles.dracula import DraculaStyle
 # from networkx.classes import nodes
 # from pandas.io.formats.style import color
 
@@ -135,7 +132,7 @@ def grid_plot(scenario_data):
     return map
 
 def main():
-    case = 'xx'
+    case = 'BM'
     # year = 2025
     scenario_data = read_data(case)
     grid_map = grid_plot(scenario_data)

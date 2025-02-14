@@ -1,14 +1,14 @@
 # Imports
 from powergama.database import Database  # Import Database-Class specifically
 from functions.global_functions import *
-# from scripts.case_doc import *
+from scripts.case_doc import *
 
 
 # Define global variables
 YEAR_SCENARIO = 2025
 case = 'BM'
-version = '52_v1'
-YEAR_START = 2020
+version = '52_v13'
+YEAR_START = 1991
 YEAR_END = 2020
 
 # SQL_FILE = "powergama_2025_30y_v1.sqlite"
@@ -16,7 +16,7 @@ YEAR_END = 2020
 DATE_START = pd.Timestamp(f'{YEAR_START}-01-01 00:00:00', tz='UTC')
 
 # DATE_END = f"{YEAR_END}-01-02"
-DATE_END = pd.Timestamp(f'{YEAR_END}-04-30 23:00:00', tz='UTC')
+DATE_END = pd.Timestamp(f'{YEAR_END}-12-31 23:00:00', tz='UTC')
 
 
 loss_method = 0
@@ -59,7 +59,7 @@ week_MSO = {'FI_10':16,
 
 # %%
 # Configure grid and run simulation
-# create_case_doc('BM') # Create case documentation
+create_case_doc('BM') # Create case documentation
 data, time_max_min = setup_grid(YEAR_SCENARIO, version, DATE_START, DATE_END, DATA_PATH, new_scenario, save_scenario)
 res = solve_lp(data, SQL_FILE, loss_method, replace=True, nuclear_availability=0.7, week_MSO=week_MSO)
 
@@ -105,13 +105,18 @@ plot_imp_exp_cross_border_Flow_NEW(db=database,
 storfilling = pd.DataFrame()
 areas = ["NO"]          # When plotting multiple years in one year, recommend to only use one area
 relative=True           # Relative storage filling, True gives percentage
-interval=1              # Month interval for x-axis if plot_by_year is False
+interval=12              # Month interval for x-axis if plot_by_year is False
 plot_by_year = True    # True: Split plot by year, or False: Plot all years in one plot
 duration_curve = False  # True: Plot duration curve, or False: Plot storage filling over time
 save_plot_SF = False    # True: Save plot as pdf
 
 for area in areas:
-    storfilling[area] = res.getStorageFillingInAreas(areas=[area], generator_type="hydro", relative_storage=relative)
+    storfilling[area] = res.getStorageFillingInAreas(areas=[area],
+                                                     generator_type="hydro",
+                                                     relative_storage=relative)
+    if relative:
+        storfilling[area] = storfilling[area] * 100
+
 storfilling.index = pd.date_range(DATE_START, periods=time_max_min[-1], freq='h')
 storfilling['year'] = storfilling.index.year    # Add year column to DataFrame
 title_storage_filling = f'Reservoir Filling in {areas} for period {DATE_START.year}-{DATE_END.year}'

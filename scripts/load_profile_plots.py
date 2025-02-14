@@ -8,7 +8,7 @@ countries  = ['norway', 'sweden', 'finland', 'denmark']
 
 data = pd.DataFrame()
 for cunt in countries :
-    file_path = pathlib.Path(f"data/entso-e/Total Load Forecast - Year Ahead_{cunt}.csv")
+    file_path = pathlib.Path().cwd() / f"files/entso-e/Total Load Forecast - Year Ahead_{cunt}.csv"
 
     # Read CSV file for the current country
     temp = pd.read_csv(file_path)

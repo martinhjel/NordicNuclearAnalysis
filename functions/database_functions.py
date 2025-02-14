@@ -181,6 +181,46 @@ def getStorageFillingInAreasFromDB(data: GridData, db: Database, areas, generato
     return filling
 
 
+def getStorageFillingInZonesFromDB(data: GridData, db: Database, zones, generator_type, relative_storage, timeMaxMin):
+    """
+    Get the storage filling in areas from the database.
+
+    Parameters
+    ----------
+    data : dict
+        The data dictionary.
+    db : Database
+        The database object.
+    zones : list
+        List of zones.
+    generator_type : str
+        The generator type.
+    relative_storage : bool
+        If True, the relative storage is returned.
+    timeMaxMin : list (default = None)
+        [min, max] - lower and upper time interval
+
+    Returns
+    -------
+    filling : dict
+        The storage filling.
+    """
+    storageGen = data.getIdxGeneratorsWithStorage()
+    storageTypes = data.generator.type
+    nodeNames = data.generator.node
+    nodeZones = data.node.zone
+    storCapacities = data.generator.storage_cap
+    generators = []
+    capacity = 0
+    for gen in storageGen:
+        zone = nodeZones[data.node.id.tolist().index(nodeNames[gen])]
+        if zone in zones and storageTypes[gen] == generator_type:
+            generators.append(gen)
+            if relative_storage:
+                capacity += storCapacities[gen]
+        filling = db.getResultStorageFillingMultiple(generators, timeMaxMin, capacity)
+    return filling
+
 
 
 def getDemandPerAreaFromDB(data: GridData, db: Database, area, timeMaxMin):

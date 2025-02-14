@@ -1,22 +1,23 @@
 # Imports
 from powergama.database import Database  # Import Database-Class specifically
 from functions.global_functions import *
-# from scripts.case_doc import *
+from scripts.case_doc import *
 
 
 # Define global variables
 YEAR_SCENARIO = 2025
 case = 'BM'
-version = '52_v6'
-YEAR_START = 1991
-YEAR_END = 2020
+
+version = '52_v16'
+YEAR_START = 2010
+YEAR_END = 2010
 
 # SQL_FILE = "powergama_2025_30y_v1.sqlite"
 # DATE_START = f"{YEAR_START}-01-01"
 DATE_START = pd.Timestamp(f'{YEAR_START}-01-01 00:00:00', tz='UTC')
 
 # DATE_END = f"{YEAR_END}-01-02"
-DATE_END = pd.Timestamp(f'{YEAR_END}-04-30 23:00:00', tz='UTC')
+DATE_END = pd.Timestamp(f'{YEAR_END}-12-31 23:00:00', tz='UTC')
 
 
 loss_method = 0
@@ -59,7 +60,7 @@ week_MSO = {'FI_10':16,
 
 # %%
 # Configure grid and run simulation
-# create_case_doc('BM') # Create case documentation
+create_case_doc('BM') # Create case documentation
 data, time_max_min = setup_grid(YEAR_SCENARIO, version, DATE_START, DATE_END, DATA_PATH, new_scenario, save_scenario)
 res = solve_lp(data, SQL_FILE, loss_method, replace=True, nuclear_availability=0.7, week_MSO=week_MSO)
 

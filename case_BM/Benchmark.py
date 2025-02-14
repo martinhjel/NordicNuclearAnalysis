@@ -7,9 +7,10 @@ from scripts.case_doc import *
 # Define global variables
 YEAR_SCENARIO = 2025
 case = 'BM'
-version = '52_v12'
-YEAR_START = 2020
-YEAR_END = 2020
+
+version = '52_v16'
+YEAR_START = 2010
+YEAR_END = 2010
 
 # SQL_FILE = "powergama_2025_30y_v1.sqlite"
 # DATE_START = f"{YEAR_START}-01-01"

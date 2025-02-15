@@ -3,10 +3,10 @@ from functions.database_functions import  * # Functions like 'getSystemCostFromD
 
 
 YEAR_SCENARIO = 2025
-YEAR_START = 2020
+YEAR_START = 1991
 YEAR_END = 2020
 case = 'BM'
-version = '52_v12'
+version = '52_v17'
 
 # DATE_START = f"{YEAR_START}-01-01"
 DATE_START = pd.Timestamp(f'{YEAR_START}-01-01 00:00:00', tz='UTC')
@@ -39,15 +39,11 @@ data, time_max_min = setup_grid(YEAR_SCENARIO, version, DATE_START, DATE_END, DA
 database = Database(SQL_FILE)
 
 
-
-# Example usage:
-timeMaxMin_YEAR = get_time_steps_for_period(2000, 2000)
-print(f"Time steps for 2000: {timeMaxMin_YEAR}")
-list_of_years = get_time_steps_for_years(selected_years=[1993, 2001, 2009, 2018])
-print(f"Time steps for years: {list_of_years}")
-
-
-
+# # Example usage:
+# timeMaxMin_YEAR = get_time_steps_for_period(2000, 2000)
+# print(f"Time steps for 2000: {timeMaxMin_YEAR}")
+# list_of_years = get_time_steps_for_years(selected_years=[1993, 2001, 2009, 2018])
+# print(f"Time steps for years: {list_of_years}")
 
 
 
@@ -86,7 +82,7 @@ def calcPlot_SF_Areas_FromDB(data: GridData, database: Database, time_max_min, O
     duration_curve = False  # True: Plot duration curve, or False: Plot storage filling over time
     save_plot_SF = False    # True: Save plot as pdf
 
-    time_SF = time_max_min #get_time_steps_for_period(2000, 2001) # eller time_max_min
+    time_SF = get_time_steps_for_period(2015, 2015) # eller time_max_min
 
     for area in areas:
         storfilling[area] = getStorageFillingInAreasFromDB(data=data,
@@ -119,20 +115,20 @@ def calcPlot_SF_Areas_FromDB(data: GridData, database: Database, time_max_min, O
                               tex_font=False)
 
 
-# calcPlot_SF_FromDB(data, database, time_max_min, OUTPUT_PATH_PLOTS, DATE_START)
+calcPlot_SF_Areas_FromDB(data, database, time_max_min, OUTPUT_PATH_PLOTS, DATE_START)
 
 
 
 def calcPlot_SF_Zones_FromDB(data: GridData, database: Database, time_max_min, OUTPUT_PATH_PLOTS, DATE_START):
     storfilling = pd.DataFrame()
-    zones = ['NO1', 'NO2']          # When plotting multiple years in one year, recommend to only use one area
+    zones = ['NO1', 'NO2', 'NO3', 'NO4', 'NO5']   # When plotting multiple years in one year, recommend to only use one area
     relative=True           # Relative storage filling, True gives percentage
     interval=1              # Month interval for x-axis if plot_by_year is False
     plot_by_year = False    # True: Split plot by year, or False: Plot all years in one plot
     duration_curve = False  # True: Plot duration curve, or False: Plot storage filling over time
     save_plot_SF = False    # True: Save plot as pdf
 
-    time_SF = time_max_min #get_time_steps_for_period(2000, 2001) # eller time_max_min
+    time_SF = get_time_steps_for_period(2015, 2015) # eller time_max_min
 
     for zone in zones:
         storfilling[zone] = getStorageFillingInZonesFromDB(data=data,
@@ -164,7 +160,7 @@ def calcPlot_SF_Zones_FromDB(data: GridData, database: Database, time_max_min, O
                               duration_curve=duration_curve,
                               tex_font=False)
 
-calcPlot_SF_Zones_FromDB(data, database, time_max_min, OUTPUT_PATH_PLOTS, DATE_START)
+ calcPlot_SF_Zones_FromDB(data, database, time_max_min, OUTPUT_PATH_PLOTS, DATE_START)
 
 
 

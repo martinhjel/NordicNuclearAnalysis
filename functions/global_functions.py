@@ -337,7 +337,7 @@ def plot_storage_filling_area(storfilling, DATE_START, DATE_END, areas, interval
         # Add legend and title
         lines, labels = ax.get_legend_handles_labels()
         # print("Lines:", lines)
-        print("Labels:", labels)
+        # print("Labels:", labels)
 
         # Place legend below the plot
         ax.legend(lines, labels,
@@ -1435,6 +1435,63 @@ def filter_cross_country_connections(grid_data_path):
     return AC_cross_country_connections, DC_cross_country_connections
 
 
+
+
+def get_connections(datapath_GridData, chosen_connections):
+    """
+    Retrieve and filter AC and DC branch data from CSV files.
+
+    This function reads AC and DC branch data from CSV files, filters for
+    cross-country connections, and returns separate dictionaries for each.
+
+    Parameters:
+        datapath_GridData (Path): Path to the grid data directory.
+
+    Returns:
+        tuple: Two dictionaries (AC_dict, DC_dict), where each dictionary has branch indices as keys
+               and tuples of (node_from, node_to) as values for AC and DC branches, respectively.
+    """
+    AC_connections, DC_connections = filter_connections_by_list(datapath_GridData, chosen_connections)
+
+    # Create dictionaries with index as key and tuple (node_from, node_to) as value for each
+    AC_dict = {
+        int(row['Unnamed: 0']): (row['node_from'], row['node_to'])
+        for _, row in AC_connections.iterrows()
+    }
+    DC_dict = {
+        int(row['Unnamed: 0']): (row['node_from'], row['node_to'])
+        for _, row in DC_connections.iterrows()
+    }
+    return AC_dict, DC_dict
+
+
+
+def filter_connections_by_list(grid_data_path, chosen_connections=None):
+    AC_branch_path = grid_data_path / "branch.csv"
+    DC_branch_path = grid_data_path / "dcbranch.csv"
+    AC_branch_df = pd.read_csv(AC_branch_path)
+    DC_branch_df = pd.read_csv(DC_branch_path)
+
+    if chosen_connections:
+        # Filter AC branches where the pair [node_from, node_to] matches any in chosen_connections
+        AC_connections = AC_branch_df[
+            AC_branch_df.apply(lambda row: [row['node_from'], row['node_to']] in chosen_connections
+                                           or [row['node_to'], row['node_from']] in chosen_connections, axis=1)
+        ]
+        # Example filter for DC branches: Difference between node_from and node_to countries
+        DC_connections = DC_branch_df[
+            DC_branch_df.apply(lambda row: [row['node_from'], row['node_to']] in chosen_connections
+                                           or [row['node_to'], row['node_from']] in chosen_connections, axis=1)
+        ]
+    else:
+        # If no chosen connections are provided, return all branches
+        AC_connections = AC_branch_df
+        DC_connections = DC_branch_df
+
+    return AC_connections, DC_connections
+
+
+
 def plot_LDC_interconnections(db, grid_data_path, time_max_min, OUTPUT_PATH_PLOTS, tex_font):
     AC_interconnections, DC_interconnections = filter_cross_country_connections(grid_data_path)
 
@@ -1754,7 +1811,7 @@ def plot_time_series(row, DATE_START, OUTPUT_PATH_PLOTS, save_fig, interval, tex
 
 
 def plot_imp_exp_cross_border_Flow_NEW(db, DATE_START, time_max_min, grid_data_path, OUTPUT_PATH_PLOTS, by_year, duration_curve,
-                                       duration_relative, save_fig, interval, check, tex_font):
+                                       duration_relative, save_fig, interval, check, tex_font, chosen_connections=None):
     """
     Generates plots for cross-border AC and DC power flows.
 
@@ -1780,6 +1837,18 @@ def plot_imp_exp_cross_border_Flow_NEW(db, DATE_START, time_max_min, grid_data_p
     # Collect AC and DC flow data
     flow_data_AC = collect_flow_data(db, time_max_min, AC_cross_country_dict, AC_interconnections_capacity, ac=True)
     flow_data_DC = collect_flow_data(db, time_max_min, DC_cross_country_dict, DC_interconnections_capacity, ac=False)
+
+    if chosen_connections is not None:
+        # Filter flow_data_AC
+        flow_data_AC = [
+            row for row in flow_data_AC
+            if [row['from'], row['to']] in chosen_connections
+        ]
+
+        flow_data_DC = [
+            row for row in flow_data_DC
+            if [row['from'], row['to']] in chosen_connections
+        ]
 
     # Combine data into a single DataFrame
     flow_df = pd.concat([
@@ -1807,6 +1876,58 @@ def plot_imp_exp_cross_border_Flow_NEW(db, DATE_START, time_max_min, grid_data_p
             plot_time_series(row, DATE_START, OUTPUT_PATH_PLOTS, save_fig, interval, tex_font)
 
 
+
+
+def plot_Flow_fromDB(db, DATE_START, time_max_min, grid_data_path, OUTPUT_PATH_PLOTS, by_year, duration_curve,
+                                       duration_relative, save_fig, interval, check, tex_font, chosen_connections=None):
+    """
+    Generates plots for AC and DC power flows.
+
+    Parameters:
+    - db: Database object to retrieve flow data.
+    - grid_data_path: Path to the grid data.
+    - time_max_min: Time range for the analysis.
+    - OUTPUT_PATH_PLOTS: Directory path to save the plots.
+    - by_year (bool): If True, generate separate plots for each year.
+    - plot_duration_curve (bool): If True, plot duration curves instead of time series.
+    - save_fig (bool): If True, save the plots as PDF files.
+    """
+
+    AC_interconnections, DC_interconnections = filter_connections_by_list(grid_data_path, chosen_connections)
+    AC_interconnections_capacity = AC_interconnections['capacity']
+    DC_interconnections_capacity = DC_interconnections['capacity']
+
+    # Get connections
+    AC_dict, DC_dict = get_connections(grid_data_path, chosen_connections)
+
+    # Collect AC and DC flow data
+    flow_data_AC = collect_flow_data(db, time_max_min, AC_dict, AC_interconnections_capacity, ac=True)
+    flow_data_DC = collect_flow_data(db, time_max_min, DC_dict, DC_interconnections_capacity, ac=False)
+
+    # Combine data into a single DataFrame
+    flow_df = pd.concat([
+        pd.DataFrame(flow_data_AC),
+        pd.DataFrame(flow_data_DC)
+    ], ignore_index=True)
+
+    # Ensure OUTPUT_PATH_PLOTS is a Path object
+    OUTPUT_PATH_PLOTS = pathlib.Path(OUTPUT_PATH_PLOTS)
+    OUTPUT_PATH_PLOTS.mkdir(parents=True, exist_ok=True)
+
+    if check:
+        return flow_df
+    # Plot import/ export load flow with respect to time for each interconnection
+    for index, row in flow_df.iterrows():
+
+        if by_year and duration_curve:
+            # Plot duration curves for each year
+            plot_duration_curve_by_year(row, DATE_START, OUTPUT_PATH_PLOTS, save_fig, duration_relative, tex_font)
+        elif by_year and not duration_curve:
+            plot_by_year(row, DATE_START, OUTPUT_PATH_PLOTS, save_fig, interval, tex_font)
+        elif duration_curve and not by_year:
+            plot_duration_curve(row, OUTPUT_PATH_PLOTS, save_fig, duration_relative, tex_font)
+        else:
+            plot_time_series(row, DATE_START, OUTPUT_PATH_PLOTS, save_fig, interval, tex_font)
 
 
 

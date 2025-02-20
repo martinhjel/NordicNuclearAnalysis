@@ -511,7 +511,7 @@ def get_production_by_type_FromDB(data: GridData, db: Database, area_OP, time_ma
 
 
 
-def get_production_by_type_FromDB_ZoneLevel(data: GridData, db: Database, area, time_max_min, DATE_START):
+def get_production_by_type_FromDB_ZoneLevel(data: GridData, db: Database, area, time_max_min, DATE_START, week=True):
     time_period = time_max_min[-1] - time_max_min[0]
     print("Analyzing production by type in", area)
 
@@ -571,12 +571,14 @@ def get_production_by_type_FromDB_ZoneLevel(data: GridData, db: Database, area, 
     # Pivot table to create a time-series format with GenerationType as columns
     df_gen_pivot = df_gen.pivot_table(index='Timestamp', columns=['Zone', 'GenerationType'], values='Production', aggfunc='sum')
 
-    # Define resampling rules (sum over 7-day periods)
-    resampling_rules = {col: 'sum' for col in df_gen_pivot.columns}
+    if week:
+        # Define resampling rules (sum over 7-day periods)
+        resampling_rules = {col: 'sum' for col in df_gen_pivot.columns}
 
-    # Resample data to 7-day intervals
-    df_gen_resampled = df_gen_pivot.resample('7D').agg(resampling_rules)
-
+        # Resample data to 7-day intervals
+        df_gen_resampled = df_gen_pivot.resample('7D').agg(resampling_rules)
+    else:
+        df_gen_resampled = df_gen_pivot
 
     # total_production = df_gen_resampled.sum().sum()
 
@@ -585,7 +587,7 @@ def get_production_by_type_FromDB_ZoneLevel(data: GridData, db: Database, area, 
 
 
 
-def get_production_by_type_FromDB_NodesInZone(data: GridData, db: Database, zone, time_max_min, DATE_START):
+def get_production_by_type_FromDB_NodesInZone(data: GridData, db: Database, zone, time_max_min, DATE_START, week=True):
     time_period = time_max_min[-1] - time_max_min[0]
     print("Analyzing production by type for nodes in", zone)
     area = zone[0:2] # Two first letters
@@ -648,11 +650,14 @@ def get_production_by_type_FromDB_NodesInZone(data: GridData, db: Database, zone
     # Pivot table to create a time-series format with GenerationType as columns
     df_gen_pivot = df_gen.pivot_table(index='Timestamp', columns=['Node', 'GenerationType'], values='Production', aggfunc='sum')
 
-    # Define resampling rules (sum over 7-day periods)
-    resampling_rules = {col: 'sum' for col in df_gen_pivot.columns}
+    if week:
+        # Define resampling rules (sum over 7-day periods)
+        resampling_rules = {col: 'sum' for col in df_gen_pivot.columns}
 
-    # Resample data to 7-day intervals
-    df_gen_resampled = df_gen_pivot.resample('7D').agg(resampling_rules)
+        # Resample data to 7-day intervals
+        df_gen_resampled = df_gen_pivot.resample('7D').agg(resampling_rules)
+    else:
+        df_gen_resampled = df_gen_pivot
 
 
     return df_gen_resampled

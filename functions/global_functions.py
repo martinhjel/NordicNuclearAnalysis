@@ -107,6 +107,7 @@ def setup_grid(year,
         data (Scenario): Configured grid data for simulation.
         time_max_min (list): List containing the start and end indices for the simulation timeframe.
     """
+    print(f"Using version: {version}")
     data = read_grid_data(year, version, date_start, date_end, data_path)
     time_max_min = [0, len(data.timerange)]
     scenario_file = pathlib.Path(data_path / f"scenario_{year}.csv")

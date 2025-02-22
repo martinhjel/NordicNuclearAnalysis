@@ -8,7 +8,6 @@ YEAR_END = 2020
 case = 'BM'
 version = '52_v20'
 
-
 # DATE_START = f"{YEAR_START}-01-01"
 DATE_START = pd.Timestamp(f'{YEAR_START}-01-01 00:00:00', tz='UTC')
 # DATE_END = f"{YEAR_END}-12-31"
@@ -158,9 +157,7 @@ def calcPlot_SF_Areas_FromDB(data: GridData, database: Database, time_max_min, O
     duration_curve = False  # True: Plot duration curve, or False: Plot storage filling over time
     save_plot_SF = False    # True: Save plot as pdf
 
-
     time_SF = get_time_steps_for_period(1991, 2020) # eller time_max_min
-
 
     for area in areas:
         storfilling[area] = getStorageFillingInAreasFromDB(data=data,
@@ -193,7 +190,7 @@ def calcPlot_SF_Areas_FromDB(data: GridData, database: Database, time_max_min, O
                               tex_font=False)
 
 
-calcPlot_SF_Areas_FromDB(data, database, time_max_min, OUTPUT_PATH_PLOTS, DATE_START)
+# calcPlot_SF_Areas_FromDB(data, database, time_max_min, OUTPUT_PATH_PLOTS, DATE_START)
 
 
 # %%
@@ -208,7 +205,6 @@ def calcPlot_SF_Zones_FromDB(data: GridData, database: Database, time_max_min, O
     plot_by_year = True    # True: Split plot by year, or False: Plot all years in one plot
     duration_curve = False  # True: Plot duration curve, or False: Plot storage filling over time
     save_plot_SF = False    # True: Save plot as pdf
-
 
     # TODO: Fix plot by year til å faktisk plotte flere plots for hvert år.
 
@@ -271,7 +267,7 @@ def calcPlot_SF_Zones_FromDB(data: GridData, database: Database, time_max_min, O
 
 # %% Plot nodal prices Norway
 def calcPlot_NP_FromDB(data: GridData, database: Database, time_max_min, OUTPUT_PATH_PLOTS, DATE_START):
-    zone = 'NO2'
+    zone = 'NO4'
 
     plot_all_nodes = False                   # Plot nodal prices for all nodes in the zone(True) or average(False)
     interval = 1                           # Month interval for x-axis if plot_by_year_nodal is False

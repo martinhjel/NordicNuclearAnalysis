@@ -123,6 +123,7 @@ plot_SF_Areas_FromDB(data, database, time_SF, OUTPUT_PATH_PLOTS, DATE_START, plo
 START_YEAR = 2000
 END_YEAR = 2000
 
+
 # === PLOT CONFIGURATIONS ===
 plot_config = {
     'zones': ['NO1', 'NO2', 'NO3', 'NO4', 'NO5'],   # When plotting multiple years in one year, recommend to only use one zone
@@ -137,6 +138,7 @@ plot_config = {
 # Remember that you then have to reset the console run
 time_SF = get_time_steps_for_period(START_YEAR, END_YEAR)
 plot_SF_Zones_FromDB(data, database, time_SF, OUTPUT_PATH_PLOTS, DATE_START, plot_config)
+
 
 
 

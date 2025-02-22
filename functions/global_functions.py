@@ -161,6 +161,9 @@ def get_time_steps_for_period(start_year, end_year):
     start_year (int): The starting year of the period (between 1991 and 2020).
     end_year (int): The ending year of the period (between 1991 and 2020).
 
+    # Example usage:
+    timeMaxMin_YEAR = get_time_steps_for_period(2000, 2000)
+
     Returns:
     list: [min_time_step, max_time_step]
     """
@@ -195,6 +198,8 @@ def get_time_steps_for_years(selected_years):
 
     Parameters:
     selected_years (list of int): The years to include (between 1991 and 2020).
+
+    list_of_years = get_time_steps_for_years(selected_years=[1993, 2001, 2009, 2018])
 
     Returns:
     dict: {year: [min_time_step, max_time_step]} for each selected year.
@@ -644,7 +649,7 @@ def calculate_Hydro_Res_Inflow_FromDB(data: GridData, db: Database, DATE_START, 
     hydro_production_sum = pd.DataFrame(db.getResultGeneratorPower(genTypeIdx, time_max_min)).sum(axis=1)
 
     # Storage filling
-    storage_filling = getStorageFillingInAreasFromDB(data, db, areas=['NO'], generator_type="hydro", relative_storage=relative_storage, timeMaxMin=time_max_min)
+    storage_filling = getStorageFillingInAreasFromDB(data, db, areas=area_OP, generator_type=genType, relative_storage=relative_storage, timeMaxMin=time_max_min)
     storage_filling_percentage = [value * 100 for value in storage_filling]
 
     if include_pump:

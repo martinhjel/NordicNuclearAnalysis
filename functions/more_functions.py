@@ -1,3 +1,5 @@
+from fontTools.cffLib import topDictOperators
+
 from functions.global_functions import *
 from functions.database_functions import *
 
@@ -7,7 +9,7 @@ def calcSystemCostAndMeanPriceFromDB(data: GridData, database: Database, time_SC
     print(f"Mean area price {sum(getAreaPricesAverageFromDB(data=data, db=database, areas=None, timeMaxMin=time_MP).values()) / len(getAreaPricesAverageFromDB(data=data, db=database, areas=None, timeMaxMin=time_MP)):.2f} EUR/MWh")
 
 
-
+#Todo: Navn på HTML filen bær inneholde version (som den gjør), DB, og tidsperiode.
 def plot_Map(data: GridData, database: Database, time_Map, OUTPUT_PATH, version):
     output_path = OUTPUT_PATH / f'prices_and_branch_utilization_map_{version}.html'
     create_price_and_utilization_map_FromDB(data, database, time_max_min=time_Map, output_path=output_path)

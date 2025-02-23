@@ -152,7 +152,7 @@ END_YEAR = 2000
 # === PLOT CONFIGURATIONS ===
 plot_config = {
     'zone': 'NO3',                                     # When plotting multiple years in one year, recommend to only use one zone
-    'plot_all_nodes': False,                           # Relative storage filling, True gives percentage (HØRER DENNE TIL ET ANNET PLOT?)
+    'plot_all_nodes': True,                           # Relative storage filling, True gives percentage (HØRER DENNE TIL ET ANNET PLOT?)
     "plot_by_year": False,                             # Each year in individual plot or all years collected in one plot
     "duration_curve": False,                           # True: Plot duration curve, or False: Plot storage filling over time
     "save_fig": False,                                 # True: Save plot as pdf
@@ -275,7 +275,7 @@ START_YEAR = 2000
 END_YEAR = 2000
 
 area = None
-zone = 'NO1'
+zone = 'NO4'
 
 # Juster area for å se på sonene, og zone for å se på nodene i sonen
 time_Prod = get_time_steps_for_period(START_YEAR, END_YEAR)

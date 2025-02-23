@@ -151,12 +151,12 @@ END_YEAR = 2000
 
 # === PLOT CONFIGURATIONS ===
 plot_config = {
-    'zone': 'NO2',                          # When plotting multiple years in one year, recommend to only use one zone
-    'plot_all_nodes': False,                # Relative storage filling, True gives percentage
-    "plot_by_year": False,                  # Each year in individual plot or all years collected in one plot
-    "duration_curve": False,                # True: Plot duration curve, or False: Plot storage filling over time
-    "save_fig": False,                      # True: Save plot as pdf
-    "interval": 1                           # Number of months on x-axis. 1 = Step is one month, 12 = Step is 12 months
+    'zone': 'NO3',                                     # When plotting multiple years in one year, recommend to only use one zone
+    'plot_all_nodes': False,                           # Relative storage filling, True gives percentage (HØRER DENNE TIL ET ANNET PLOT?)
+    "plot_by_year": False,                             # Each year in individual plot or all years collected in one plot
+    "duration_curve": False,                           # True: Plot duration curve, or False: Plot storage filling over time
+    "save_fig": False,                                 # True: Save plot as pdf
+    "interval": 1                                      # Number of months on x-axis. 1 = Step is one month, 12 = Step is 12 months
 }
 
 

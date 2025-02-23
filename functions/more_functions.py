@@ -33,8 +33,8 @@ def plot_SF_Areas_FromDB(data: GridData, database: Database, time_SF, OUTPUT_PAT
     correct_date_end_SF = DATE_START + pd.Timedelta(hours=time_SF[-1])
 
     storfilling.index = pd.date_range(correct_date_start_SF, periods=time_SF[-1] - time_SF[0], freq='h')
-    storfilling['year'] = storfilling.index.year    # Add year column to DataFrame
-    title_storage_filling = f'Reservoir Filling in {plot_config['areas']} for period {correct_date_start_SF.year}-{correct_date_end_SF.year}'
+    storfilling['year'] = storfilling.index.year  # Add year column to DataFrame
+    title_storage_filling = f"Reservoir Filling in {plot_config['areas']} for period {correct_date_start_SF.year}-{correct_date_end_SF.year}"
     plot_storage_filling_area(storfilling=storfilling,
                               DATE_START=correct_date_start_SF,
                               DATE_END=correct_date_end_SF,
@@ -73,7 +73,7 @@ def plot_SF_Zones_FromDB(data: GridData, database: Database, time_SF ,OUTPUT_PAT
 
     if plot_by_year:
         for year in storfilling['year'].unique():
-            title_storage_filling = f'Reservoir Filling in {"Zones: " + ", ".join(plot_config['zones'])} for year {year}'
+            title_storage_filling = f"Reservoir Filling in {'Zones: ' + ', '.join(plot_config['zones'])} for year {year}"
             storfilling_year = storfilling[storfilling['year'] == year]
             storfilling_year.index = pd.date_range(correct_date_start_SF, periods=storfilling_year.shape[0], freq='h')
             plot_storage_filling_area(storfilling=storfilling_year,
@@ -90,7 +90,7 @@ def plot_SF_Zones_FromDB(data: GridData, database: Database, time_SF ,OUTPUT_PAT
                                       tex_font=False)
 
     else:
-        title_storage_filling = f'Reservoir Filling in {plot_config['zones']} for period {correct_date_start_SF.year}-{correct_date_end_SF.year}'
+        title_storage_filling = f"Reservoir Filling in {plot_config['zones']} for period {correct_date_start_SF.year}-{correct_date_end_SF.year}"
         plot_storage_filling_area(storfilling=storfilling,
                                   DATE_START=correct_date_start_SF,
                                   DATE_END=correct_date_end_SF,

@@ -8,7 +8,7 @@ YEAR_SCENARIO = 2025
 YEAR_START = 1991
 YEAR_END = 2020
 case = 'BM'
-version = '52_v20'
+version = '52_v21'
 
 
 DATE_START = pd.Timestamp(f'{YEAR_START}-01-01 00:00:00', tz='UTC')
@@ -56,8 +56,8 @@ calcSystemCostAndMeanPriceFromDB(data, database, time_max_min, time_SC, time_MP)
 # %% Map prices and branch utilization
 
 # === INITIALIZATIONS ===
-START_YEAR = 2000
-END_YEAR = 2000
+START_YEAR = 2017
+END_YEAR = 2017
 
 time_Map = get_time_steps_for_period(START_YEAR, END_YEAR)
 
@@ -69,19 +69,19 @@ plot_Map(data, database, time_Map, OUTPUT_PATH, version)
 # %% GET FLOW ON CHOSEN BRANCHES
 
 # === INITIALIZATIONS ===
-START_YEAR = 2000
-END_YEAR = 2000
+START_YEAR = 1991
+END_YEAR = 2020
 
 # === PLOT CONFIGURATIONS ===
 PLOT_BY_YEAR = False       # Each year in individual plot or all years collected in one plot
-DURATION_CURVE = False
+DURATION_CURVE = True
 DURATION_RELATIVE = True   # Hours(False) or Percentage(True)
-SAVE_FIG = False
+SAVE_FIG = True
 AXIS_INTERVAL = 1         # Number of months on x-axis. 1 = Step is one month, 12 = Step is 12 months
 
 # === CHOOSE BRANCHES TO CHECK ===
 # See branch CSV files for correct connections
-SELECTED_BRANCHES  = [['DK1_3','DK1_1'],['FI_3','SE1_2'], ['SE4_2','DE']]
+SELECTED_BRANCHES  = [['NO3_1','NO4_3']]
 
 # === COMPUTE TIME RANGE ===
 time_Lines = get_time_steps_for_period(START_YEAR, END_YEAR)
@@ -98,15 +98,15 @@ plot_Flow_fromDB(db=database, DATE_START=correct_date_start_Lines, time_max_min=
 # %% Storage Filling
 
 # === INITIALIZATIONS ===
-START_YEAR = 2000
-END_YEAR = 2000
+START_YEAR = 1991
+END_YEAR = 2020
 
 # === PLOT CONFIGURATIONS ===
 plot_config = {
     'areas': ['NO'],            # When plotting multiple years in one year, recommend to only use one area
     'relative': True,           # Relative storage filling, True gives percentage
-    "plot_by_year": False,      # Each year in individual plot or all years collected in one plot
-    "duration_curve": True,     # True: Plot duration curve, or False: Plot storage filling over time
+    "plot_by_year": False,       # True: One curve for each year in same plot, or False:all years collected in one plot over the whole simulation period
+    "duration_curve": False,    # True: Plot duration curve, or False: Plot storage filling over time
     "save_fig": False,          # True: Save plot as pdf
     "interval": 12              # Number of months on x-axis. 1 = Step is one month, 12 = Step is 12 months
 }
@@ -117,18 +117,18 @@ plot_SF_Areas_FromDB(data, database, time_SF, OUTPUT_PATH_PLOTS, DATE_START, plo
 
 # %%
 # Her trengs det fortsatt litt jobb med scaleringen av selve plottet, men det er ikke krise enda.
-
+# Todo: Får ikke alle år i et plot for en gitt zone. Eks. NO4 fra 1991 til 2020. Skule hatt et plot med alle år inni.
 
 # === INITIALIZATIONS ===
-START_YEAR = 2000
-END_YEAR = 2000
+START_YEAR = 1991
+END_YEAR = 2020
 
 
 # === PLOT CONFIGURATIONS ===
 plot_config = {
-    'zones': ['NO1', 'NO2', 'NO3', 'NO4', 'NO5'],   # When plotting multiple years in one year, recommend to only use one zone
+    'zones': ['NO4'],                             # When plotting multiple years in one year, recommend to only use one zone
     'relative': True,                               # Relative storage filling, True gives percentage
-    "plot_by_year": False,                           # Each year in individual plot or all years collected in one plot
+    "plot_by_year": True,                           # Each year in individual plot or all years collected in one plot
     "duration_curve": False,                         # True: Plot duration curve, or False: Plot storage filling over time
     "save_fig": False,                              # True: Save plot as pdf
     "interval": 1                                   # Number of months on x-axis. 1 = Step is one month, 12 = Step is 12 months
@@ -152,7 +152,7 @@ END_YEAR = 2000
 # === PLOT CONFIGURATIONS ===
 plot_config = {
     'zone': 'NO3',                                     # When plotting multiple years in one year, recommend to only use one zone
-    'plot_all_nodes': True,                           # Relative storage filling, True gives percentage (HØRER DENNE TIL ET ANNET PLOT?)
+    'plot_all_nodes': True,                           # Relative storage filling, True gives percentage
     "plot_by_year": False,                             # Each year in individual plot or all years collected in one plot
     "duration_curve": False,                           # True: Plot duration curve, or False: Plot storage filling over time
     "save_fig": False,                                 # True: Save plot as pdf

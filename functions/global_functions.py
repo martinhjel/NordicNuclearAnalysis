@@ -550,6 +550,73 @@ def plot_nodal_prices_FromDB(data: GridData, node_prices, nodes_in_zone, zone, D
 
 
 
+def plot_zonal_prices_FromDB(data: GridData, zone_prices, zones, DATE_START, DATE_END, interval, TITLE,
+                      save_plot_nodal, OUTPUT_PATH_PLOTS, plot_by_year, duration_curve_nodal, tex_font):
+
+    fig, ax1 = plt.subplots(figsize=(10, 6))
+    if not plot_by_year:
+        if not duration_curve_nodal:
+            for zone in zones:
+
+                ax1.plot(zone_prices.index, zone_prices[f'avg_price_{zone}'], label=f'Avg. Price - {zone}')
+            ax1.set_xlabel('Date')
+            ax1.set_ylabel('Price (EUR/MWh)')
+            # Customize x-axis to show ticks every second month
+            ax1.xaxis.set_major_locator(mdates.MonthLocator(interval=interval))
+            ax1.xaxis.set_major_formatter(mdates.DateFormatter('%b %Y'))
+            plt.setp(ax1.xaxis.get_majorticklabels(), rotation=45)
+            ax1.set_xlim(pd.to_datetime(DATE_START), pd.to_datetime(DATE_END))
+        else:
+            for zone in zones:
+                sorted_values = zone_prices[f'avg_price_{zone}'].sort_values(ascending=False).reset_index(drop=True)
+                ax1.plot(sorted_values, label=f'Avg. Price - {zone}')
+            ax1.set_xlabel('Rank')
+            ax1.set_ylabel('Price (EUR/MWh)')
+    else:
+        for year in zone_prices['year'].unique():
+            group = zone_prices[zone_prices['year'] == year]
+            if duration_curve_nodal:
+                for zone in zones:
+                    sorted_values = group[f'avg_price_{zone}'].sort_values(ascending=False).reset_index(drop=True)
+                    ax1.plot(sorted_values, label=f"{zone} - {year}")
+                ax1.set_xlabel('Hour')
+                ax1.set_ylabel('Price (EUR/MWh)')
+            else:
+                for zone in zones:
+                    ax1.plot(group.index.dayofyear, group[f'avg_price_{zone}'], label=f"{zone} - {year}")
+                ax1.set_xlabel('Date')
+                ax1.set_ylabel('Price (EUR/MWh)')
+
+        if not duration_curve_nodal:
+            # Customize x-axis to show ticks every month
+            ax1.xaxis.set_major_locator(mdates.MonthLocator(interval=1))
+            ax1.xaxis.set_major_formatter(mdates.DateFormatter('%b'))
+            plt.setp(ax1.xaxis.get_majorticklabels(), rotation=45)
+            ax1.set_xlim(0, 365)
+
+    lines1, labels1 = ax1.get_legend_handles_labels()
+    ax1.legend(lines1, labels1, loc='upper right')  # , bbox_to_anchor=(1, 0))
+
+    plt.title(TITLE)
+    plt.grid(True)
+    plt.tight_layout()
+    if tex_font:
+        plt.rcParams.update({
+            "text.usetex": True,
+            "font.family": "serif",
+            "font.serif": ["Computer Modern Roman"]})
+    if save_plot_nodal:
+        plt.savefig(OUTPUT_PATH_PLOTS / f'nodal_price_{+ ', '.join(plot_config['zones'])}.pdf')
+    plt.show()
+
+
+
+
+
+
+
+
+
 def calculate_Hydro_Res_Inflow(res, data, DATE_START, area_OP, genType, time_max_min, include_pump):
     """
     Calculate hydro reservoir inflow, production, and storage filling.
@@ -1884,8 +1951,7 @@ def plot_imp_exp_cross_border_Flow_NEW(db, DATE_START, time_max_min, grid_data_p
 
 
 
-def plot_Flow_fromDB(db, DATE_START, time_max_min, grid_data_path, OUTPUT_PATH_PLOTS, by_year, duration_curve,
-                                       duration_relative, save_fig, interval, check, tex_font, chosen_connections=None):
+def plot_Flow_fromDB(db, DATE_START, time_max_min, grid_data_path, OUTPUT_PATH_PLOTS, plot_config, chosen_connections=None):
     """
     Generates plots for AC and DC power flows.
 
@@ -1898,6 +1964,7 @@ def plot_Flow_fromDB(db, DATE_START, time_max_min, grid_data_path, OUTPUT_PATH_P
     - plot_duration_curve (bool): If True, plot duration curves instead of time series.
     - save_fig (bool): If True, save the plots as PDF files.
     """
+    DATE_START = DATE_START + pd.Timedelta(hours=time_max_min[0])
 
     AC_interconnections, DC_interconnections = filter_connections_by_list(grid_data_path, chosen_connections)
     AC_interconnections_capacity = AC_interconnections['capacity']
@@ -1920,20 +1987,20 @@ def plot_Flow_fromDB(db, DATE_START, time_max_min, grid_data_path, OUTPUT_PATH_P
     OUTPUT_PATH_PLOTS = pathlib.Path(OUTPUT_PATH_PLOTS)
     OUTPUT_PATH_PLOTS.mkdir(parents=True, exist_ok=True)
 
-    if check:
+    if plot_config['check']:
         return flow_df
     # Plot import/ export load flow with respect to time for each interconnection
     for index, row in flow_df.iterrows():
 
-        if by_year and duration_curve:
+        if plot_config['plot_by_year'] and plot_config['duration_curve']:
             # Plot duration curves for each year
-            plot_duration_curve_by_year(row, DATE_START, OUTPUT_PATH_PLOTS, save_fig, duration_relative, tex_font)
-        elif by_year and not duration_curve:
-            plot_by_year(row, DATE_START, OUTPUT_PATH_PLOTS, save_fig, interval, tex_font)
-        elif duration_curve and not by_year:
-            plot_duration_curve(row, OUTPUT_PATH_PLOTS, save_fig, duration_relative, tex_font)
+            plot_duration_curve_by_year(row, DATE_START, OUTPUT_PATH_PLOTS, plot_config['save_fig'], plot_config['duration_relative'], plot_config['tex_font'])
+        elif plot_config['plot_by_year'] and not plot_config['duration_curve']:
+            plot_by_year(row, DATE_START, OUTPUT_PATH_PLOTS, plot_config['save_fig'], plot_config['interval'], plot_config['tex_font'])
+        elif plot_config['duration_curve'] and not plot_config['plot_by_year']:
+            plot_duration_curve(row, OUTPUT_PATH_PLOTS, plot_config['save_fig'], plot_config['duration_relative'], plot_config['tex_font'])
         else:
-            plot_time_series(row, DATE_START, OUTPUT_PATH_PLOTS, save_fig, interval, tex_font)
+            plot_time_series(row, DATE_START, OUTPUT_PATH_PLOTS, plot_config['save_fig'], plot_config['interval'], plot_config['tex_font'])
 
 
 

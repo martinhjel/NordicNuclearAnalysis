@@ -223,7 +223,7 @@ NO4_3,NO4_3 biomass,biomass,36.3635972,0,15,1,const,0,1,const,const,0.6,0,0,0,,,
 NO4_3,NO4_3 ror,ror,340.9677555,0,0,0.46,inflow_NO4,0,1,const,const,0.6,0,0,0,,,,created
 NO5_1,NO5_1 ror,ror,533.9819013,0,0,0.46,inflow_NO5,0,1,const,const,0.6,0,0,0,,,,created
 NO5_1,NO5_1 fossil_gas,fossil_gas,114.9378084,0,137.52,1,const,0,1,const,const,0.6,0,0,0,,,,created
-NO5_1,NO5_1 hydro,hydro,4541.839333,0,0,0.46,inflow_NO5,10329436.89,22.5,hydro,const,0.6,0,0,5,,,,updated
+NO5_1,NO5_1 hydro,hydro,4252.66752,0,0,0.46,inflow_NO5,10329436.89,22.5,hydro,const,0.6,0,0,5,,,,updated
 NO5_1,NO5_1 solar,solar,12.22776481,0,0.01,0.75,solar_NO5,0,1,const,const,0.6,0,0,0,,,,updated
 NO5_1,NO5_1 wind_on,wind_on,42.16624013,0,0.015,0.95,windon_NO5,0,1,const,const,0.6,0,0,0,,,,updated
 NO5_1,NO5_1 biomass,biomass,19.15630139,0,15,1,const,0,1,const,const,0.6,0,0,0,,,,created
@@ -231,7 +231,7 @@ NO5_2,NO5_2 ror,ror,358.0180987,0,0,0.46,inflow_NO5,0,1,const,const,0.6,0,0,0,,,
 NO5_2,NO5_2 biomass,biomass,12.84369861,0,15,1,const,0,1,const,const,0.6,0,0,0,,,,created
 NO5_2,NO5_2 wind_on,wind_on,98.6603901,0,0.015,0.95,windon_NO5,0,1,const,const,0.6,0,0,0,,,,updated
 NO5_2,NO5_2 solar,solar,10.75460769,0,0.01,0.75,solar_NO5,0,1,const,const,0.6,0,0,0,,,,updated
-NO5_2,NO5_2 hydro,hydro,3045.160667,0,0,0.46,inflow_NO5,6925563.108,22.5,hydro,const,0.6,0,0,5,,,,updated
+NO5_2,NO5_2 hydro,hydro,2851.33248,0,0,0.46,inflow_NO5,6925563.108,22.5,hydro,const,0.6,0,0,5,,,,updated
 NO5_2,NO5_2 fossil_gas,fossil_gas,77.06219164,0,137.52,1,const,0,1,const,const,0.6,0,0,0,,,,updated
 SE1_1,SE1_1 fossil_other,fossil_other,101.022412,0,110.19,1,const,0,1,const,const,0.6,0,0,0,,,,created
 SE1_1,SE1_1 solar,solar,11.88498965,0,0.01,0.75,solar_SE1,0,1,const,const,0.6,0,0,0,,,,created

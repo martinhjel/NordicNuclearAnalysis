@@ -242,5 +242,5 @@ def create_case_doc(case):
     save_to_excel(gen_node, gen_zone, gen_country, gen_total, case)
 
 
-create_case_doc('BM')
+# create_case_doc('BM')
 

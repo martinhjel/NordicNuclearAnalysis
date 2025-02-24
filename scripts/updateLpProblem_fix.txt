@@ -91,6 +91,9 @@ def _updateLpProblem(self, timestep, nuclear_availability: float = None, week_MS
     self.nuclear_availability = {}
 
 
+
+
+
     # 1. Generator output limits:
     #    -> power output constraints
     P_storage = self._storage / self.timeDelta
@@ -130,6 +133,7 @@ def _updateLpProblem(self, timestep, nuclear_availability: float = None, week_MS
                 self.p_gen_pmin[i] = min(max(0, P_inflow + P_storage[i]), P_min[i])
             self.p_gen_pmax[i] = min(max(0, P_inflow + P_storage[i]), P_max[i])
 
+    # TODO: re-create constraint - if persistent solver
 
     # 2. Update demand
     #    -> power balance constraint
@@ -151,12 +155,48 @@ def _updateLpProblem(self, timestep, nuclear_availability: float = None, week_MS
         fillinglevel = self._storage[i] / storagecapacity
         filling_col = int(round(fillinglevel * 100))
         if this_type_filling == 'hydro':
-            week = f"week {profile_week}"
-            storagevalue = (
-                    self._grid.generator.loc[i, "storage_price"]
-                    * self._grid.storagevalue_filling.loc[filling_col, week]
-                    * self._grid.storagevalue_time.loc[timestep, this_type_time]
-            )
+            if 'NO1' in self._grid.generator.loc[i, 'node']:
+                week = f"NO1 week {profile_week}"
+                storagevalue = (
+                        self._grid.generator.loc[i, "storage_price"]
+                        * self._grid.storagevalue_filling.loc[filling_col, week]
+                        * self._grid.storagevalue_time.loc[timestep, this_type_time]
+                )
+            elif 'NO2' in self._grid.generator.loc[i, 'node']:
+                week = f"NO2 week {profile_week}"
+                storagevalue = (
+                        self._grid.generator.loc[i, "storage_price"]
+                        * self._grid.storagevalue_filling.loc[filling_col, week]
+                        * self._grid.storagevalue_time.loc[timestep, this_type_time]
+                )
+            elif 'NO3' in self._grid.generator.loc[i, 'node']:
+                week = f"NO3 week {profile_week}"
+                storagevalue = (
+                        self._grid.generator.loc[i, "storage_price"]
+                        * self._grid.storagevalue_filling.loc[filling_col, week]
+                        * self._grid.storagevalue_time.loc[timestep, this_type_time]
+                )
+            elif 'NO4' in self._grid.generator.loc[i, 'node']:
+                week = f"NO4 week {profile_week}"
+                storagevalue = (
+                        self._grid.generator.loc[i, "storage_price"]
+                        * self._grid.storagevalue_filling.loc[filling_col, week]
+                        * self._grid.storagevalue_time.loc[timestep, this_type_time]
+                )
+            elif 'NO5' in self._grid.generator.loc[i, 'node']:
+                week = f"NO5 week {profile_week}"
+                storagevalue = (
+                        self._grid.generator.loc[i, "storage_price"]
+                        * self._grid.storagevalue_filling.loc[filling_col, week]
+                        * self._grid.storagevalue_time.loc[timestep, this_type_time]
+                )
+            else:
+                week = f"NO1 week {profile_week}"
+                storagevalue = (
+                        self._grid.generator.loc[i, "storage_price"]
+                        * self._grid.storagevalue_filling.loc[filling_col, week]
+                        * self._grid.storagevalue_time.loc[timestep, this_type_time]
+                )
         else:
             storagevalue = (
                     self._grid.generator.loc[i, "storage_price"]

@@ -1,3 +1,5 @@
+from fontTools.cffLib import topDictOperators
+
 from functions.global_functions import *
 from functions.database_functions import *
 
@@ -6,15 +8,13 @@ def calcSystemCostAndMeanPriceFromDB(data: GridData, database: Database, time_SC
     print(f"System cost {sum(getSystemCostFromDB(data=data, db=database, timeMaxMin=time_SC).values()):.2f} EUR, or {sum(getSystemCostFromDB(data=data, db=database, timeMaxMin=time_SC).values())/1e9:.2f} Billion EUR")
     print(f"Mean area price {sum(getAreaPricesAverageFromDB(data=data, db=database, areas=None, timeMaxMin=time_MP).values()) / len(getAreaPricesAverageFromDB(data=data, db=database, areas=None, timeMaxMin=time_MP)):.2f} EUR/MWh")
 
-
-
+    
 def plot_Map(data: GridData, database: Database, time_Map, DATE_START, OUTPUT_PATH, version):
     correct_date_start = DATE_START + pd.Timedelta(hours=time_Map[0])
     correct_date_end = DATE_START + pd.Timedelta(hours=time_Map[-1])
     output_path = OUTPUT_PATH / f'prices_and_branch_utilization_map_{version}_{correct_date_start.year}_{correct_date_end.year}.html'
+
     create_price_and_utilization_map_FromDB(data, database, time_max_min=time_Map, output_path=output_path)
-
-
 
 
 def plot_SF_Areas_FromDB(data: GridData, database: Database, time_SF, OUTPUT_PATH_PLOTS, DATE_START, plot_config):
@@ -35,8 +35,8 @@ def plot_SF_Areas_FromDB(data: GridData, database: Database, time_SF, OUTPUT_PAT
     correct_date_end_SF = DATE_START + pd.Timedelta(hours=time_SF[-1])
 
     storfilling.index = pd.date_range(correct_date_start_SF, periods=time_SF[-1] - time_SF[0], freq='h')
-    storfilling['year'] = storfilling.index.year    # Add year column to DataFrame
-    title_storage_filling = f'Reservoir Filling in {plot_config['areas']} for period {correct_date_start_SF.year}-{correct_date_end_SF.year}'
+    storfilling['year'] = storfilling.index.year  # Add year column to DataFrame
+    title_storage_filling = f"Reservoir Filling in {plot_config['areas']} for period {correct_date_start_SF.year}-{correct_date_end_SF.year}"
     plot_storage_filling_area(storfilling=storfilling,
                               DATE_START=correct_date_start_SF,
                               DATE_END=correct_date_end_SF,

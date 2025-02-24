@@ -10,6 +10,7 @@ case = 'BM'
 version = 'geo'
 
 YEAR_START = 2020
+
 YEAR_END = 2020
 
 # SQL_FILE = "powergama_2025_30y_v1.sqlite"

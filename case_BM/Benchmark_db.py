@@ -50,7 +50,7 @@ END_YEAR = 2000
 
 time_SC = get_time_steps_for_period(START_YEAR, END_YEAR)
 time_MP = get_time_steps_for_period(START_YEAR, END_YEAR)
-# calcSystemCostAndMeanPriceFromDB(data, database, time_max_min, time_SC, time_MP)
+calcSystemCostAndMeanPriceFromDB(data, database, time_max_min, time_SC, time_MP)
 
 
 # %% Map prices and branch utilization
@@ -62,7 +62,7 @@ END_YEAR = 2000
 time_Map = get_time_steps_for_period(START_YEAR, END_YEAR)
 
 # If one smaller period is wanted, choose time_Map = [start, end] for the given timestep you want
-# plot_Map(data, database, time_Map, DATE_START, OUTPUT_PATH, version)
+plot_Map(data, database, time_Map, DATE_START, OUTPUT_PATH, version)
 
 
 
@@ -91,7 +91,7 @@ SELECTED_BRANCHES  = [['DK1_3','DK1_1'],['FI_3','SE1_2'], ['SE4_2','DE']] # See 
 
 # === COMPUTE TIMERANGE AND PLOT FLOW ===
 time_Lines = get_time_steps_for_period(START_YEAR, END_YEAR)
-# plot_Flow_fromDB(database, DATE_START, time_Lines, GRID_DATA_PATH, OUTPUT_PATH_PLOTS, plot_config, SELECTED_BRANCHES)
+plot_Flow_fromDB(database, DATE_START, time_Lines, GRID_DATA_PATH, OUTPUT_PATH_PLOTS, plot_config, SELECTED_BRANCHES)
 
 
 
@@ -113,7 +113,7 @@ plot_config = {
 
 # === COMPUTE TIMERANGE AND PLOT FLOW ===
 time_SF = get_time_steps_for_period(START_YEAR, END_YEAR)
-# plot_SF_Areas_FromDB(data, database, time_SF, OUTPUT_PATH_PLOTS, DATE_START, plot_config)
+plot_SF_Areas_FromDB(data, database, time_SF, OUTPUT_PATH_PLOTS, DATE_START, plot_config)
 
 # %% PLOT STORAGE FILLING ZONES
 
@@ -138,7 +138,7 @@ plot_config = {
 # Remember that you then have to reset the console run
 # === COMPUTE TIMERANGE AND PLOT FLOW ===
 time_SF = get_time_steps_for_period(START_YEAR, END_YEAR)
-# plot_SF_Zones_FromDB(data, database, time_SF, OUTPUT_PATH_PLOTS, DATE_START, plot_config)
+plot_SF_Zones_FromDB(data, database, time_SF, OUTPUT_PATH_PLOTS, DATE_START, plot_config)
 
 
 
@@ -162,7 +162,7 @@ plot_config = {
 
 # === COMPUTE TIMERANGE AND PLOT FLOW ===
 time_NP = get_time_steps_for_period(START_YEAR, END_YEAR)
-# calcPlot_NP_FromDB(data, database, time_NP, OUTPUT_PATH_PLOTS, DATE_START, plot_config)
+calcPlot_NP_FromDB(data, database, time_NP, OUTPUT_PATH_PLOTS, DATE_START, plot_config)
 
 
 # %% PLOT ZONAL PRICES

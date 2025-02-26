@@ -1,14 +1,29 @@
 from functions.more_functions import *
 from functions.global_functions import *  # Functions like 'read_grid_data', 'solve_lp' m.m.
 from functions.database_functions import  * # Functions like 'getSystemCostFromDB' m.m.
+from zoneinfo import ZoneInfo
+
+#midlertidig:
+
+from powergama.database import Database  # Import Database-Class specifically
+from datetime import datetime, timedelta
+from powergama.GridData import GridData
+import pandas as pd
+from openpyxl import Workbook, load_workbook
+from openpyxl.chart import LineChart, Reference
+import os
+from openpyxl import Workbook
+from openpyxl.chart import BarChart, LineChart, Reference
+
 
 
 # === General Configurations ===
 YEAR_SCENARIO = 2025
-YEAR_START = 1991
-YEAR_END = 2020
+YEAR_START = 1991           # Start year for the main simulation  (SQL-file)
+YEAR_END = 2020             # End year for the main simulation  (SQL-file)
 case = 'BM'
-version = '52_v21'
+version = '52_V16'
+TIMEZONE = ZoneInfo("UTC")  # Definerer UTC tidssone
 
 
 DATE_START = pd.Timestamp(f'{YEAR_START}-01-01 00:00:00', tz='UTC')
@@ -40,6 +55,8 @@ OUTPUT_PATH_PLOTS = BASE_DIR / 'results' / 'plots'
 # === Initialize Database and Grid Data ===
 data, time_max_min = setup_grid(YEAR_SCENARIO, version, DATE_START, DATE_END, DATA_PATH, new_scenario, save_scenario)
 database = Database(SQL_FILE)
+
+
 
 
 # %% Collect the system cost and mean area price for the system for a given period
@@ -267,12 +284,16 @@ print(f"Total production in {plot_config['area']}: {tot_prod:.2f} MWh")
 """ Initialize data for Production"""
 # La area eller zone være None om de ikke skal brukes.
 
+# TODO: DENNE FUNGERER KUN FOR SQL FILER SOM ER KJØRT FOR ALLE VÆRÅR (1991 - 2020). MÅ FIKSES SLIK AT MAN KAN KJØRE FOR EKSEMPELVIS 5 VÆR ÅR.
+
+
+
 # === INITIALIZATIONS ===
-START_YEAR = 2000
-END_YEAR = 2000
+START_YEAR = 2005
+END_YEAR = 2005
 
 area = None
-zone = 'NO4'
+zone = 'NO1'
 
 # Juster area for å se på sonene, og zone for å se på nodene i sonen
 # === COMPUTE TIMERANGE AND PLOT FLOW ===
@@ -284,5 +305,35 @@ if zone is not None:
     nodes_in_zone_prod = getProductionNodesInZone(data, database, zone, time_Prod, correct_date_start_Prod, week=True)
 
 
-# For å get month april in nodes_in_zone_prod, endre time til riktig column name
-# nodes_in_april = nodes_in_zone_prod[nodes_in_zone_prod['time'].dt.month == 4]
+
+#%% EINAR ###
+"""
+Production, consumption, and price data for specific nodes within a given time period.
+
+Main Features:
+- Handles time using Python's built-in datetime objects.
+- Retrieves simulated production, consumption, and price data from a given SQL file for selected nodes within a specified timeframe.
+- Organizes data and exports it to an Excel file for further analysis.
+"""
+
+# === INITIALIZATIONS ===
+START = {"year": 2002, "month": 1, "day": 1, "hour": 0}
+END = {"year": 2002, "month": 1, "day": 2, "hour": 0}
+Nodes = ['NO4_1', 'NO4_2']
+# ======================================================================================================================
+
+start_hour, end_hour = get_hour_range(YEAR_START, YEAR_END, TIMEZONE, START, END)
+production_per_node, gen_idx, gen_type = GetProductionAtSpecificNodes(Nodes, data, database, start_hour, end_hour)
+consumption_per_node = GetConsumptionAtSpecificNodes(Nodes, data, database, start_hour, end_hour)
+nodal_prices_per_node = GetPriceAtSpecificNodes(Nodes, data, database, start_hour, end_hour)
+excel_filename = ExportToExcel(Nodes, production_per_node, consumption_per_node, nodal_prices_per_node, START, END, case, version)
+
+
+
+
+
+
+
+
+
+

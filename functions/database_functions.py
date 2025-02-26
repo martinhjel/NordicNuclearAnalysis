@@ -626,6 +626,8 @@ def get_production_by_type_FromDB_NodesInZone(data: GridData, db: Database, zone
 
                 except Exception as e:
                     print(f"Warning: Could not fetch data for {gt} in {node}. Error: {e}")
+                else:
+                    print(f"Skipping {gt} in {node}, gen_idx is empty")
 
         # Get Load Demand (ensure this data is fetched for each zone)
         try:

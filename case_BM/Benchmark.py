@@ -10,7 +10,6 @@ case = 'BM'
 version = 'geo'
 
 YEAR_START = 2020
-
 YEAR_END = 2020
 
 # SQL_FILE = "powergama_2025_30y_v1.sqlite"
@@ -18,7 +17,7 @@ YEAR_END = 2020
 DATE_START = pd.Timestamp(f'{YEAR_START}-01-01 00:00:00', tz='UTC')
 
 # DATE_END = f"{YEAR_END}-01-02"
-DATE_END = pd.Timestamp(f'{YEAR_END}-01-02 23:00:00', tz='UTC')
+DATE_END = pd.Timestamp(f'{YEAR_END}-01-03 23:00:00', tz='UTC')
 
 
 loss_method = 0
@@ -36,7 +35,7 @@ except NameError:
     BASE_DIR = BASE_DIR / f'case_{case}'
 
 
-SQL_FILE = BASE_DIR / f"powergama_{case}_{version}.sqlite"
+SQL_FILE = BASE_DIR / f"powergama_{case}_{version}_{YEAR_START}_{YEAR_END}.sqlite"
 
 
 # File paths

@@ -606,7 +606,7 @@ def plot_zonal_prices_FromDB(data: GridData, zone_prices, zones, DATE_START, DAT
             "font.family": "serif",
             "font.serif": ["Computer Modern Roman"]})
     if save_plot_nodal:
-        plt.savefig(OUTPUT_PATH_PLOTS / f'nodal_price_{+ ', '.join(plot_config['zones'])}.pdf')
+        plt.savefig(OUTPUT_PATH_PLOTS / f"nodal_price_{ ', '.join(plot_config['zones'])}.pdf")
     plt.show()
 
 

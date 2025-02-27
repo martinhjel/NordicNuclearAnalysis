@@ -5,6 +5,7 @@ from functions.database_functions import *
 from datetime import datetime, timedelta    # For time calculations
 from openpyxl import Workbook
 from datetime import datetime, timedelta
+from pathlib import Path
 
 
 def calcSystemCostAndMeanPriceFromDB(data: GridData, database: Database, time_SC, time_MP):
@@ -413,7 +414,7 @@ def GetPriceAtSpecificNodes(Nodes, data, database, start_hour, end_hour):
 
 
 
-def ExportToExcel(Nodes, production_per_node, consumption_per_node, nodal_prices_per_node, START, END, case, version):
+def ExportToExcel(Nodes, production_per_node, consumption_per_node, nodal_prices_per_node, START, END, case, version, OUTPUT_PATH):
     """
     Eksporterer produksjons-, forbruks- og nodalprisdata til en Excel-fil.
 
@@ -426,6 +427,7 @@ def ExportToExcel(Nodes, production_per_node, consumption_per_node, nodal_prices
         END (dict): Sluttidspunkt som dictionary (f.eks. {"year": 2019, "month": 6, "day": 1, "hour": 12}).
         case (str): Navn på caset.
         version (str): Versjonsnummer.
+        OUTPUT_PATH: Filsti for lagring.
 
     Returns:
         str: Filnavn på den lagrede Excel-filen.
@@ -497,9 +499,10 @@ def ExportToExcel(Nodes, production_per_node, consumption_per_node, nodal_prices
         wb.remove(wb["Sheet"])
 
     # === LAGRE FIL ===
-    wb.save(filename)
+    filepath = Path(OUTPUT_PATH) / filename
+    wb.save(filepath)
 
-    print(f"\n Excel-fil '{filename}' er lagret!")
+    print(f"\nExcel-fil '{filename}' er lagret i {OUTPUT_PATH}!")
 
     return filename
 

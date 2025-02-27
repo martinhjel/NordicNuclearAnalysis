@@ -326,7 +326,7 @@ start_hour, end_hour = get_hour_range(YEAR_START, YEAR_END, TIMEZONE, START, END
 production_per_node, gen_idx, gen_type = GetProductionAtSpecificNodes(Nodes, data, database, start_hour, end_hour)
 consumption_per_node = GetConsumptionAtSpecificNodes(Nodes, data, database, start_hour, end_hour)
 nodal_prices_per_node = GetPriceAtSpecificNodes(Nodes, data, database, start_hour, end_hour)
-excel_filename = ExportToExcel(Nodes, production_per_node, consumption_per_node, nodal_prices_per_node, START, END, case, version)
+excel_filename = ExportToExcel(Nodes, production_per_node, consumption_per_node, nodal_prices_per_node, START, END, case, version, OUTPUT_PATH)
 
 
 

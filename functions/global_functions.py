@@ -25,6 +25,7 @@ def read_grid_data(year,
                    date_start,
                    date_end,
                    data_path,
+                   case,
                    ):
     """
     Reads and processes grid data for a specified year and date range.
@@ -41,7 +42,7 @@ def read_grid_data(year,
     """
     # Calculate and print the number of simulation hours and years
     datapath_GridData = data_path / "system"
-    file_storval_filling = data_path / f"storage/profiles_storval_filling_{version}.csv"
+    file_storval_filling = data_path / f"storage/profiles_storval_filling_{case}_{version}.csv"
     file_30y_profiles = data_path / "timeseries_profiles.csv"
 
     # Initialize GridData object
@@ -90,6 +91,7 @@ def setup_grid(year,
                data_path,
                new_scenario,
                save_scenario,
+               case,
                ):
     """
     Set up grid data and initialize a simulation scenario.
@@ -108,7 +110,7 @@ def setup_grid(year,
         time_max_min (list): List containing the start and end indices for the simulation timeframe.
     """
     print(f"Using version: {version}")
-    data = read_grid_data(year, version, date_start, date_end, data_path)
+    data = read_grid_data(year, version, date_start, date_end, data_path, case)
     time_max_min = [0, len(data.timerange)]
     scenario_file = pathlib.Path(data_path / f"scenario_{year}.csv")
     if new_scenario:

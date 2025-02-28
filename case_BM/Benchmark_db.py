@@ -21,10 +21,10 @@ from openpyxl.chart import BarChart, LineChart, Reference
 
 # === General Configurations ===
 YEAR_SCENARIO = 2025
-YEAR_START = 1990           # Start year for the main simulation  (SQL-file)
-YEAR_END = 2000             # End year for the main simulation  (SQL-file)
+YEAR_START = 1991           # Start year for the main simulation  (SQL-file)
+YEAR_END = 2020             # End year for the main simulation  (SQL-file)
 case = 'BM'
-version = 'v32'
+version = 'v30'
 TIMEZONE = ZoneInfo("UTC")  # Definerer UTC tidssone
 
 
@@ -144,12 +144,12 @@ plot_SF_Areas_FromDB(data, database, time_SF, OUTPUT_PATH_PLOTS, DATE_START, plo
 # === INITIALIZATIONS ===
 
 START_YEAR = 1991
-END_YEAR = 2000
+END_YEAR = 1995
 
 
 # === PLOT CONFIGURATIONS ===
 plot_config = {
-    'zones': ['NO4'],                             # When plotting multiple years in one year, recommend to only use one zone
+    'zones': ['NO1', 'NO2','NO5'],                             # When plotting multiple years in one year, recommend to only use one zone
     'relative': True,                               # Relative storage filling, True gives percentage
     "plot_by_year": False,                           # Each year in individual plot or all years collected in one plot
     "duration_curve": False,                         # True: Plot duration curve, or False: Plot storage filling over time
@@ -322,8 +322,8 @@ Main Features:
 """
 
 # === INITIALIZATIONS ===
-START = {"year": 1996, "month": 9, "day": 5, "hour": 0}
-END = {"year": 1997, "month": 9, "day": 7, "hour": 0}
+START = {"year": 1992, "month": 1, "day": 1, "hour": 0}
+END = {"year": 1993, "month": 1, "day": 1, "hour": 0}
 Nodes = ['NO5_1', 'NO5_2']
 # ======================================================================================================================
 

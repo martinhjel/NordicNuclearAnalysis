@@ -414,15 +414,16 @@ def GetPriceAtSpecificNodes(Nodes, data, database, start_hour, end_hour):
 
 
 
-def ExportToExcel(Nodes, production_per_node, consumption_per_node, nodal_prices_per_node, START, END, case, version, OUTPUT_PATH):
+def ExportToExcel(Nodes, production_per_node, consumption_per_node, nodal_prices_per_node, reservoir_filling_per_node, storage_cap, START, END, case, version, OUTPUT_PATH):
     """
-    Eksporterer produksjons-, forbruks- og nodalprisdata til en Excel-fil.
+    Eksporterer produksjons-, forbruks-, fyllingsgrads- og nodalprisdata til en Excel-fil.
 
     Args:
         Nodes (list): Liste over nodenavn.
         production_per_node (dict): Produksjonsdata per node og type.
         consumption_per_node (dict): Forbruksdata per node.
         nodal_prices_per_node (dict): Nodalpriser per node.
+        reservoir_filling_per_node (dict): Reservoarfylling per node.
         START (dict): Starttidspunkt som dictionary (f.eks. {"year": 2019, "month": 5, "day": 1, "hour": 12}).
         END (dict): Sluttidspunkt som dictionary (f.eks. {"year": 2019, "month": 6, "day": 1, "hour": 12}).
         case (str): Navn på caset.
@@ -456,11 +457,14 @@ def ExportToExcel(Nodes, production_per_node, consumption_per_node, nodal_prices
         ws_production = wb.create_sheet(f"Production {node}")
         ws_consumption = wb.create_sheet(f"Consumption {node}")
         ws_price = wb.create_sheet(f"Price {node}")
+        ws_reservoir = wb.create_sheet(f"Reservoir {node}")
 
         # === LEGG TIL OVERSKRIFTER ===
         ws_production.append(["Timestamp"] + all_types)
         ws_consumption.append(["Timestamp", "Fixed", "Flexible", "Consumption"])
         ws_price.append(["Timestamp", "Nodal Price"])
+        ws_reservoir.append(["Timestamp", "Reservoir Filling", "Max storage capacity", "Reservoir Filling [%]"])
+
 
         # === FYLL PRODUKSJONSARKET ===
         for t, timestamp in enumerate(time_stamps):
@@ -494,6 +498,36 @@ def ExportToExcel(Nodes, production_per_node, consumption_per_node, nodal_prices
                 price_value,
             ])
 
+        # === FYLL RESERVOARFYLLINGSARKET ===
+
+        for t, timestamp in enumerate(time_stamps):
+            # Henter og pakker ut reservoardata
+            if node in reservoir_filling_per_node:
+                reservoir_data = reservoir_filling_per_node.get(node, [])
+                if isinstance(reservoir_data, list):  # Sikrer riktig format
+                    reservoir_values = [sum(x) for x in zip(*reservoir_data)]  # Slår sammen flere generatorer
+                else:
+                    reservoir_values = [0] * len(time_stamps)  # Hvis data er feil format
+            else:
+                reservoir_values = [0] * len(time_stamps)  # Hvis noden ikke finnes
+
+            # Hent riktig verdi fra tidsserien eller sett 0
+            reservoir_value = reservoir_values[t] if t < len(reservoir_values) else 0
+
+            # Hent maks kapasitet for noden
+            max_capacity = storage_cap.get(node, 0)  # Standard 0 hvis ikke funnet
+
+            # Beregn fyllingsgrad (%)
+            filling_percentage = (reservoir_value / max_capacity) * 100 if max_capacity > 0 else 0
+
+            ws_reservoir.append([
+                timestamp.strftime("%Y-%m-%d %H:%M"),
+                round(reservoir_value, 4),  # Rund av til 4 desimaler
+                round(max_capacity, 4) if max_capacity > 0 else "",  # Tom celle hvis ikke kapasitet
+                round(filling_percentage, 8)  # Rund av til 8 desimaler
+            ])
+
+
     # Fjern default ark
     if "Sheet" in wb.sheetnames:
         wb.remove(wb["Sheet"])
@@ -506,6 +540,40 @@ def ExportToExcel(Nodes, production_per_node, consumption_per_node, nodal_prices
 
     return filename
 
+
+def GetReservoirFillingAtSpecificNodes(Nodes, data, database, start_hour, end_hour):
+    """
+    Henter reservoarfylling og maksimal kapasitet for spesifikke noder.
+    """
+
+    # === FINN INDEKSENE FOR NODENE ===
+    node_idx = [int(data.node[data.node['id'] == node].index[0]) for node in Nodes]
+
+    # === HENT LAGRINGSENHETER OG DERES KAPASITET ===
+    storage_data = data.generator[
+        (data.generator["node"].isin(Nodes)) &
+        (data.generator["storage_cap"] > 0) &
+        (data.generator["type"] == "hydro")
+    ][["node", "storage_cap"]]
+
+    storage_idx = storage_data.groupby("node").apply(lambda x: list(x.index)).to_dict()
+    storage_cap = storage_data.groupby("node")["storage_cap"].sum().to_dict()  # Summerer kapasitet for hver node
+
+    flat_storage_idx = [gen for sublist in storage_idx.values() for gen in sublist]
+
+    # === HENT RESERVOARFYLLINGSNIVÅ FRA DATABASE ===
+    storage_filling = {gen: database.getResultStorageFilling(gen, (start_hour, end_hour)) for gen in flat_storage_idx}
+
+    # === ORGANISERE DATA ===
+    reservoir_filling_per_node = {node: [] for node in Nodes}
+
+    for node, gen_list in storage_idx.items():
+        node_values = []
+        for gen in gen_list:
+            node_values.append(storage_filling.get(gen, [0]))  # Hent fyllingsdata eller 0
+        reservoir_filling_per_node[node] = node_values
+
+    return reservoir_filling_per_node, storage_cap
 
 
 

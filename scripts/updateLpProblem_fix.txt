@@ -251,3 +251,55 @@ def _updateLpProblem(self, timestep, nuclear_availability: float = None, week_MS
         self.p_loadflex_cost[i] = storagevalue_flex
 
     return
+
+
+
+    ## EINAR 17.03.2025
+
+            # 3a. generators with storage (storage value)
+        for i in self._idx_generatorsWithStorage:
+            this_type_filling = self._grid.generator.loc[i, "storval_filling_ref"]
+            this_type_time = self._grid.generator.loc[i, "storval_time_ref"]
+            storagecapacity = self._grid.generator.loc[i, "storage_cap"]
+            fillinglevel = self._storage[i] / storagecapacity
+            filling_col = int(round(fillinglevel * 100))
+
+            # Dynamisk regiondeteksjon (NO1-NO5)
+            node = self._grid.generator.loc[i, 'node']
+            region = next((f"NO{n}" for n in range(1, 6) if f"NO{n}" in node), "NO1")
+
+            # Beregn uketall og reset etter uke 52
+            profile_week = ((self.week - 1) % 52) + 1
+            week_column = f"{region} week {profile_week}"
+
+            # Sjekk om kolonnen finnes i storagevalue_filling
+            if week_column not in self._grid.storagevalue_filling.columns:
+                raise ValueError(f"Week column '{week_column}' not found in storagevalue_filling.")
+
+            # Sjekk om filling_col og timestep finnes i DataFrame
+            if filling_col not in self._grid.storagevalue_filling.index:
+                raise ValueError(f"Filling column '{filling_col}' not found in storagevalue_filling.")
+            if timestep not in self._grid.storagevalue_time.index:
+                raise ValueError(f"Timestep '{timestep}' not found in storagevalue_time.")
+            if this_type_time not in self._grid.storagevalue_time.columns:
+                raise ValueError(f"Storage time reference '{this_type_time}' not found in storagevalue_time.")
+
+            # Beregn storage value
+            if this_type_filling == 'hydro':
+                storagevalue = (
+                        self._grid.generator.loc[i, "storage_price"]
+                        * self._grid.storagevalue_filling.loc[filling_col, week_column]
+                        * self._grid.storagevalue_time.loc[timestep, this_type_time]
+                )
+            else:
+                storagevalue = (
+                        self._grid.generator.loc[i, "storage_price"]
+                        * self._grid.storagevalue_filling.loc[filling_col, this_type_filling]
+                        * self._grid.storagevalue_time.loc[timestep, this_type_time]
+                )
+
+            # Oppdater generatorverdier
+            self.p_gen_cost[i] = storagevalue
+            if i in self._idx_generatorsWithPumping:
+                deadband = self._grid.generator.pump_deadband[i]
+                self.p_genpump_cost[i] = storagevalue - deadband

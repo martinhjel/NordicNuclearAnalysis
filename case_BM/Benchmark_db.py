@@ -1,14 +1,31 @@
+from pickle import FALSE
+
 from functions.more_functions import *
 from functions.global_functions import *  # Functions like 'read_grid_data', 'solve_lp' m.m.
 from functions.database_functions import  * # Functions like 'getSystemCostFromDB' m.m.
+from zoneinfo import ZoneInfo
+
+#midlertidig:
+
+from powergama.database import Database  # Import Database-Class specifically
+from datetime import datetime, timedelta
+from powergama.GridData import GridData
+import pandas as pd
+from openpyxl import Workbook, load_workbook
+from openpyxl.chart import LineChart, Reference
+import os
+from openpyxl import Workbook
+from openpyxl.chart import BarChart, LineChart, Reference
+
 
 
 # === General Configurations ===
 YEAR_SCENARIO = 2025
-YEAR_START = 1991
-YEAR_END = 2020
+YEAR_START = 1991           # Start year for the main simulation  (SQL-file)
+YEAR_END = 2020             # End year for the main simulation  (SQL-file)
 case = 'BM'
-version = '52_v21'
+version = 'v30'
+TIMEZONE = ZoneInfo("UTC")  # Definerer UTC tidssone
 
 
 DATE_START = pd.Timestamp(f'{YEAR_START}-01-01 00:00:00', tz='UTC')
@@ -31,18 +48,21 @@ except NameError:
 
 
 # === File Paths ===
-SQL_FILE = BASE_DIR / f"powergama_{case}_{version}.sqlite"
+SQL_FILE = BASE_DIR / f"powergama_{case}_{version}_{YEAR_START}_{YEAR_END}.sqlite"
 DATA_PATH = BASE_DIR / 'data'
 GRID_DATA_PATH = DATA_PATH / 'system'
 OUTPUT_PATH = BASE_DIR / 'results'
 OUTPUT_PATH_PLOTS = BASE_DIR / 'results' / 'plots'
 
 # === Initialize Database and Grid Data ===
-data, time_max_min = setup_grid(YEAR_SCENARIO, version, DATE_START, DATE_END, DATA_PATH, new_scenario, save_scenario)
+data, time_max_min = setup_grid(YEAR_SCENARIO, version, DATE_START, DATE_END, DATA_PATH, new_scenario, save_scenario, case)
 database = Database(SQL_FILE)
 
 
+
+
 # %% Collect the system cost and mean area price for the system for a given period
+#TODO: TypeError: calcSystemCostAndMeanPriceFromDB() takes 4 positional arguments but 5 were given
 
 # === INITIALIZATIONS ===
 START_YEAR = 2000
@@ -56,8 +76,8 @@ calcSystemCostAndMeanPriceFromDB(data, database, time_max_min, time_SC, time_MP)
 # %% Map prices and branch utilization
 
 # === INITIALIZATIONS ===
-START_YEAR = 2017
-END_YEAR = 2017
+START_YEAR = 2020
+END_YEAR = 2020
 
 time_Map = get_time_steps_for_period(START_YEAR, END_YEAR)
 
@@ -98,7 +118,7 @@ plot_Flow_fromDB(database, DATE_START, time_Lines, GRID_DATA_PATH, OUTPUT_PATH_P
 
 # === INITIALIZATIONS ===
 START_YEAR = 1991
-END_YEAR = 2020
+END_YEAR = 2000
 
 # === PLOT CONFIGURATIONS ===
 plot_config = {
@@ -118,19 +138,20 @@ plot_SF_Areas_FromDB(data, database, time_SF, OUTPUT_PATH_PLOTS, DATE_START, plo
 
 # Her trengs det fortsatt litt jobb med scaleringen av selve plottet, men det er ikke krise enda.
 # Todo: Får ikke alle år i et plot for en gitt zone. Eks. NO4 fra 1991 til 2020. Skule hatt et plot med alle år inni.
+# Todo: Må OGSÅ ha mulighet til å plotte storage filling ned på node nivå.
+# Todo: START_YEAR, END_YEAR fungerer ikke med mindre SQL filen inneholder resultater for alle værår (1991-2020). Eks. Dersom jeg kun kjører for 1994, så må start year og end year stå på 1991, siden den teller bare tidssteg og vet ikke hvilket år vi er i.
 
 # === INITIALIZATIONS ===
 
 START_YEAR = 1991
-END_YEAR = 2020
+END_YEAR = 1995
 
 
 # === PLOT CONFIGURATIONS ===
 plot_config = {
-    'zones': ['NO4'],                             # When plotting multiple years in one year, recommend to only use one zone
-
+    'zones': ['NO1', 'NO2','NO5'],                             # When plotting multiple years in one year, recommend to only use one zone
     'relative': True,                               # Relative storage filling, True gives percentage
-    "plot_by_year": True,                           # Each year in individual plot or all years collected in one plot
+    "plot_by_year": False,                           # Each year in individual plot or all years collected in one plot
     "duration_curve": False,                         # True: Plot duration curve, or False: Plot storage filling over time
     "save_fig": False,                              # True: Save plot as pdf
     "interval": 1                                   # Number of months on x-axis. 1 = Step is one month, 12 = Step is 12 months
@@ -146,17 +167,18 @@ plot_SF_Zones_FromDB(data, database, time_SF, OUTPUT_PATH_PLOTS, DATE_START, plo
 
 # %% Plot nodal prices Norway in a zone
 
+#Todo: Denne fungerer ikke:"plot_by_year": True,  # Each year in individual plot or all years collected in one plot
 
 # === INITIALIZATIONS ===
-START_YEAR = 2000
-END_YEAR = 2000
+START_YEAR = 2010
+END_YEAR = 2020
 
 # === PLOT CONFIGURATIONS ===
 plot_config = {
-    'zone': 'NO2',                          # When plotting multiple years in one year, recommend to only use one zone
-    'plot_all_nodes': False,                # Plot all nodes in a zone or avg of all nodes
-    "plot_by_year": False,                  # Each year in individual plot or all years collected in one plot
-    "duration_curve": False,                # True: Plot duration curve, or False: Plot storage filling over time
+    'zone': 'NO1',                          # When plotting multiple years in one year, recommend to only use one zone
+    'plot_all_nodes': False,                 # Plot all nodes in a zone or avg of all nodes
+    "plot_by_year": True,                   # Each year in individual plot or all years collected in one plot
+    "duration_curve": False,                # True: Plot duration curve, or False: Plot storage filling over time PRICE OVER TIME?
     "save_fig": False,                      # True: Save plot as pdf
     "interval": 1,                          # Number of months on x-axis. 1 = Step is one month, 12 = Step is 12 months
     "tex_font": False
@@ -176,7 +198,7 @@ END_YEAR = 2002
 
 # === PLOT CONFIGURATIONS ===
 plot_config = {
-    'zones': ['NO2', 'NO3', 'NO4', 'NO5'],                # Zones for plotting
+    'zones': ['NO5'],                # Zones for plotting
     "plot_by_year": True,                  # Each year in individual plot or all years collected in one plot
     "duration_curve": False,                # True: Plot duration curve, or False: Plot storage filling over time
     "save_fig": False,                      # True: Save plot as pdf
@@ -185,7 +207,7 @@ plot_config = {
 }
 
 # === COMPUTE TIMERANGE AND PLOT FLOW ===
-time_ZP = get_time_steps_for_period(START_YEAR, END_YEAR)
+time_ZP = get_time_steps_for_period(1991, 1995) #get_time_steps_for_period(START_YEAR, END_YEAR)
 calcPlot_ZonalPrices_FromDB(data, database, time_ZP, OUTPUT_PATH_PLOTS, DATE_START, plot_config)
 
 
@@ -267,12 +289,16 @@ print(f"Total production in {plot_config['area']}: {tot_prod:.2f} MWh")
 """ Initialize data for Production"""
 # La area eller zone være None om de ikke skal brukes.
 
+# TODO: DENNE FUNGERER KUN FOR SQL FILER SOM ER KJØRT FOR ALLE VÆRÅR (1991 - 2020). MÅ FIKSES SLIK AT MAN KAN KJØRE FOR EKSEMPELVIS 5 VÆR ÅR.
+
+
+
 # === INITIALIZATIONS ===
-START_YEAR = 2000
-END_YEAR = 2000
+START_YEAR = 2005
+END_YEAR = 2005
 
 area = None
-zone = 'NO4'
+zone = 'NO1'
 
 # Juster area for å se på sonene, og zone for å se på nodene i sonen
 # === COMPUTE TIMERANGE AND PLOT FLOW ===
@@ -284,5 +310,36 @@ if zone is not None:
     nodes_in_zone_prod = getProductionNodesInZone(data, database, zone, time_Prod, correct_date_start_Prod, week=True)
 
 
-# For å get month april in nodes_in_zone_prod, endre time til riktig column name
-# nodes_in_april = nodes_in_zone_prod[nodes_in_zone_prod['time'].dt.month == 4]
+
+#%% EINAR ###
+"""
+Production, consumption, and price data for specific nodes within a given time period.
+
+Main Features:
+- Handles time using Python's built-in datetime objects.
+- Retrieves simulated production, consumption, and price data from a given SQL file for selected nodes within a specified timeframe.
+- Organizes data and exports it to an Excel file for further analysis.
+"""
+
+# === INITIALIZATIONS ===
+START = {"year": 1992, "month": 1, "day": 1, "hour": 0}
+END = {"year": 1993, "month": 1, "day": 1, "hour": 0}
+Nodes = ['NO5_1', 'NO5_2']
+# ======================================================================================================================
+
+start_hour, end_hour = get_hour_range(YEAR_START, YEAR_END, TIMEZONE, START, END)
+production_per_node, gen_idx, gen_type = GetProductionAtSpecificNodes(Nodes, data, database, start_hour, end_hour)
+consumption_per_node = GetConsumptionAtSpecificNodes(Nodes, data, database, start_hour, end_hour)
+nodal_prices_per_node = GetPriceAtSpecificNodes(Nodes, data, database, start_hour, end_hour)
+reservoir_filling_per_node, storage_cap = GetReservoirFillingAtSpecificNodes(Nodes, data, database, start_hour, end_hour)
+excel_filename = ExportToExcel(Nodes, production_per_node, consumption_per_node, nodal_prices_per_node, reservoir_filling_per_node, storage_cap, START, END, case, version, OUTPUT_PATH)
+
+
+
+
+
+
+
+
+
+

@@ -222,6 +222,22 @@ def getStorageFillingInZonesFromDB(data: GridData, db: Database, zones, generato
     return filling
 
 
+def getProductionPerAreaFromDB(data: GridData, database: Database, time_Prod, area):
+
+    # === FINN INDEKSENE FOR NODENE I GITT OMRÅDE ===
+    node_idx = data.node[data.node['id'].str.startswith('NO')].index.tolist()
+
+    # === HENT ALLE GENERATORER VED DISSE NODENE ===
+    gen_idx = [[gen for gen in data.getGeneratorsAtNode(idx)] for idx in node_idx]
+    flat_gen_idx = [gen for sublist in gen_idx for gen in sublist]  # Flater ut listen
+
+    # === SUMMER PRODUKSJON ===
+    totalProd = 0
+    for gen in flat_gen_idx:
+        prod = database.getResultGeneratorPower([gen], time_Prod)
+        totalProd += sum(prod)
+
+    return totalProd
 
 def getDemandPerAreaFromDB(data: GridData, db: Database, area, timeMaxMin):
     """
@@ -344,92 +360,6 @@ def getDemandPerNodeFromDB(data: GridData, db: Database, area, node, timeMaxMin)
     sum_demand = [sum(x) for x in zip(dem, flex_demand)]
     demand_per_node = {"fixed": dem, "flex": flex_demand, "sum": sum_demand}
     return demand_per_node
-
-
-
-# def get_production_by_typeFromDB(data: GridData, db: Database, area_OP, time_max_min, DATE_START):
-#     """
-#     Get production by type from the database.
-#
-#     Parameters
-#     ----------
-#     data : dict
-#         The data dictionary.
-#     db : Database
-#         The database object.
-#     area_OP : str
-#         The area.
-#     time_max_min : list
-#         The time interval.
-#     DATE_START : str
-#         The start date.
-#
-#     Returns
-#     -------
-#     df_gen_resampled : pd.DataFrame
-#         The resampled generation DataFrame.
-#     df_prices_resampled : pd.DataFrame
-#         The resampled price DataFrame.
-#     total_production : float
-#         The total production.
-#     """
-#
-#     # Get Generation by type
-#     genHydro = 'hydro'
-#     genHydroIdx = data.getGeneratorsPerAreaAndType()[area_OP][genHydro]
-#     all_hydro_production = pd.DataFrame(db.getResultGeneratorPower(genHydroIdx, time_max_min)).sum(axis=1)
-#
-#     genWind = 'wind_on'
-#     genWindIdx = data.getGeneratorsPerAreaAndType()[area_OP][genWind]
-#     all_wind_production = pd.DataFrame(db.getResultGeneratorPower(genWindIdx, time_max_min)).sum(axis=1)
-#
-#     genSolar = 'solar'
-#     genSolarIdx = data.getGeneratorsPerAreaAndType()[area_OP][genSolar]
-#     all_solar_production = pd.DataFrame(db.getResultGeneratorPower(genSolarIdx, time_max_min)).sum(axis=1)
-#
-#     genGas = 'fossil_gas'
-#     genGasIdx = data.getGeneratorsPerAreaAndType()[area_OP][genGas]
-#     all_gas_production = pd.DataFrame(db.getResultGeneratorPower(genGasIdx, time_max_min)).sum(axis=1)
-#
-#     # Get Load Demand
-#     load_demand = getDemandPerAreaFromDB(data, db, area='NO', timeMaxMin=time_max_min)
-#
-#     # Get Avg Price for Area
-#     nodes_in_area = data.node[data.node['area'] == area_OP].index.tolist()
-#     node_prices = pd.DataFrame({node: getNodalPricesFromDB(db, node=node, timeMaxMin=time_max_min) for node in nodes_in_area})
-#     node_prices.index = pd.date_range(DATE_START, periods=time_max_min[-1], freq='h')
-#     avg_area_prices = node_prices.sum(axis=1) / len(nodes_in_area)
-#
-#     # Create DataFrame
-#     df_gen = pd.DataFrame({
-#         'Hydro Production': all_hydro_production,
-#         'Wind Production': all_wind_production,
-#         'Solar Production': all_solar_production,
-#         'Gas Production': all_gas_production,
-#         'Load': load_demand['sum']
-#     })
-#     df_gen.index = pd.date_range(DATE_START, periods=time_max_min[-1], freq='h')
-#
-#     # Resample the data
-#     df_gen_resampled = df_gen.resample('7D').agg({
-#         'Hydro Production': 'sum',
-#         'Wind Production': 'sum',
-#         'Solar Production': 'sum',
-#         'Gas Production': 'sum',
-#         'Load': 'sum'
-#     })
-#
-#     df_prices = pd.DataFrame({
-#         'Price': avg_area_prices
-#     })
-#     df_prices.index = pd.date_range(DATE_START, periods=time_max_min[-1], freq='h')
-#     df_prices_resampled = df_prices.resample('1D').agg({
-#         'Price': 'mean'
-#     })
-#
-#     total_production = sum(all_hydro_production) + sum(all_wind_production) + sum(all_solar_production) + sum(all_gas_production)
-#
-#     return df_gen_resampled, df_prices_resampled, total_production
 
 
 

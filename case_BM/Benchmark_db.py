@@ -1,16 +1,14 @@
-from pickle import FALSE
-
-from functions.more_functions import *
+from functions.work_functions import *
 from functions.global_functions import *  # Functions like 'read_grid_data', 'solve_lp' m.m.
 from functions.database_functions import  * # Functions like 'getSystemCostFromDB' m.m.
 from zoneinfo import ZoneInfo
+from powergama.database import Database  # Import Database-Class specifically
+import pandas as pd
 
 #midlertidig:
 
-from powergama.database import Database  # Import Database-Class specifically
 from datetime import datetime, timedelta
 from powergama.GridData import GridData
-import pandas as pd
 from openpyxl import Workbook, load_workbook
 from openpyxl.chart import LineChart, Reference
 import os
@@ -22,9 +20,9 @@ from openpyxl.chart import BarChart, LineChart, Reference
 # === General Configurations ===
 YEAR_SCENARIO = 2025
 YEAR_START = 1991           # Start year for the main simulation  (SQL-file)
-YEAR_END = 2020             # End year for the main simulation  (SQL-file)
+YEAR_END = 1993             # End year for the main simulation  (SQL-file)
 case = 'BM'
-version = 'v30'
+version = 'v80'
 TIMEZONE = ZoneInfo("UTC")  # Definerer UTC tidssone
 
 
@@ -65,32 +63,29 @@ database = Database(SQL_FILE)
 #TODO: TypeError: calcSystemCostAndMeanPriceFromDB() takes 4 positional arguments but 5 were given
 
 # === INITIALIZATIONS ===
-START_YEAR = 2000
-END_YEAR = 2000
+START = {"year": 1992, "month": 1, "day": 1, "hour": 0}
+END = {"year": 1993, "month": 1, "day": 1, "hour": 0}
 
-time_SC = get_time_steps_for_period(START_YEAR, END_YEAR)
-time_MP = get_time_steps_for_period(START_YEAR, END_YEAR)
-calcSystemCostAndMeanPriceFromDB(data, database, time_max_min, time_SC, time_MP)
+time_SC = get_hour_range(YEAR_START, YEAR_END, TIMEZONE, START, END)
+time_MP = get_hour_range(YEAR_START, YEAR_END, TIMEZONE, START, END)
+calcSystemCostAndMeanPriceFromDB(data, database, time_SC, time_MP)
 
 
 # %% Map prices and branch utilization
 
 # === INITIALIZATIONS ===
-START_YEAR = 2020
-END_YEAR = 2020
+START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
+END = {"year": 1993, "month": 12, "day": 31, "hour": 0}
 
-time_Map = get_time_steps_for_period(START_YEAR, END_YEAR)
-
-# If one smaller period is wanted, choose time_Map = [start, end] for the given timestep you want
+time_Map = get_hour_range(YEAR_START, YEAR_END, TIMEZONE, START, END)
 plot_Map(data, database, time_Map, DATE_START, OUTPUT_PATH, version)
-
 
 
 # %% GET FLOW ON CHOSEN BRANCHES
 
 # === INITIALIZATIONS ===
-START_YEAR = 1991
-END_YEAR = 2020
+START = {"year": 1992, "month": 1, "day": 1, "hour": 0}
+END = {"year": 1993, "month": 1, "day": 1, "hour": 0}
 
 # === PLOT CONFIGURATIONS ===
 
@@ -106,63 +101,56 @@ plot_config = {
 }
 
 # === CHOOSE BRANCHES TO CHECK ===
-SELECTED_BRANCHES  = [['DK1_3','DK1_1'],['FI_3','SE1_2'], ['SE4_2','DE']] # See branch CSV files for correct connections
-
+SELECTED_BRANCHES  = [['NO3_1','SE2_4'],['NO3_1','NO4_3'], ['NO3_4','NO5_1'], ['NO3_5','NO1_1']] # See branch CSV files for correct connections
 
 # === COMPUTE TIMERANGE AND PLOT FLOW ===
-time_Lines = get_time_steps_for_period(START_YEAR, END_YEAR)
+time_Lines = get_hour_range(YEAR_START, YEAR_END, TIMEZONE, START, END)
 plot_Flow_fromDB(database, DATE_START, time_Lines, GRID_DATA_PATH, OUTPUT_PATH_PLOTS, plot_config, SELECTED_BRANCHES)
 
 
 # %% PLOT STORAGE FILLING FOR AREAS
 
 # === INITIALIZATIONS ===
-START_YEAR = 1991
-END_YEAR = 2000
+START = {"year": 1992, "month": 1, "day": 1, "hour": 0}
+END = {"year": 1993, "month": 1, "day": 1, "hour": 0}
 
 # === PLOT CONFIGURATIONS ===
 plot_config = {
     'areas': ['NO'],            # When plotting multiple years in one year, recommend to only use one area
     'relative': True,           # Relative storage filling, True gives percentage
-    "plot_by_year": False,       # True: One curve for each year in same plot, or False:all years collected in one plot over the whole simulation period
+    "plot_by_year": True,       # True: One curve for each year in same plot, or False:all years collected in one plot over the whole simulation period
     "duration_curve": False,    # True: Plot duration curve, or False: Plot storage filling over time
     "save_fig": False,          # True: Save plot as pdf
     "interval": 1               # Number of months on x-axis. 1 = Step is one month, 12 = Step is 12 months
 }
 
 # === COMPUTE TIMERANGE AND PLOT FLOW ===
-time_SF = get_time_steps_for_period(START_YEAR, END_YEAR)
-plot_SF_Areas_FromDB(data, database, time_SF, OUTPUT_PATH_PLOTS, DATE_START, plot_config)
+time_SF = get_hour_range(YEAR_START, YEAR_END, TIMEZONE, START, END)
+plot_SF_Areas_FromDB(data, database, time_max_min, OUTPUT_PATH_PLOTS, DATE_START, plot_config)
 
 # %% PLOT STORAGE FILLING ZONES
-
-# Her trengs det fortsatt litt jobb med scaleringen av selve plottet, men det er ikke krise enda.
-# Todo: Får ikke alle år i et plot for en gitt zone. Eks. NO4 fra 1991 til 2020. Skule hatt et plot med alle år inni.
+# Todo: Trengs det fortsatt litt jobb med scaleringen av selve plottet, men det er ikke krise enda.
 # Todo: Må OGSÅ ha mulighet til å plotte storage filling ned på node nivå.
-# Todo: START_YEAR, END_YEAR fungerer ikke med mindre SQL filen inneholder resultater for alle værår (1991-2020). Eks. Dersom jeg kun kjører for 1994, så må start year og end year stå på 1991, siden den teller bare tidssteg og vet ikke hvilket år vi er i.
 
 # === INITIALIZATIONS ===
-
-START_YEAR = 1991
-END_YEAR = 1995
-
+START = {"year": 1992, "month": 1, "day": 1, "hour": 0}
+END = {"year": 1993, "month": 1, "day": 1, "hour": 0}
 
 # === PLOT CONFIGURATIONS ===
 plot_config = {
-    'zones': ['NO1', 'NO2','NO5'],                             # When plotting multiple years in one year, recommend to only use one zone
-    'relative': True,                               # Relative storage filling, True gives percentage
-    "plot_by_year": False,                           # Each year in individual plot or all years collected in one plot
-    "duration_curve": False,                         # True: Plot duration curve, or False: Plot storage filling over time
-    "save_fig": False,                              # True: Save plot as pdf
-    "interval": 1                                   # Number of months on x-axis. 1 = Step is one month, 12 = Step is 12 months
+    'zones': ['NO2', 'NO3'],                     # When plotting multiple years in one year, recommend to only use one zone
+    'relative': True,                            # Relative storage filling, True gives percentage
+    "plot_by_year": 1,                           # (1) Each year in individual plot, (2) Entire Timeline, (3) Each year show over 1 year timeline.
+    "duration_curve": False,                     # True: Plot duration curve, or False: Plot storage filling over time
+    "save_fig": False,                           # True: Save plot as pdf
+    "interval": 1                                # Number of months on x-axis. 1 = Step is one month, 12 = Step is 12 months
 }
 
 # If you want to go in and change title, follow the function from here to its source location and change it there.
 # Remember that you then have to reset the console run
 # === COMPUTE TIMERANGE AND PLOT FLOW ===
-time_SF = get_time_steps_for_period(START_YEAR, END_YEAR)
+time_SF = get_hour_range(YEAR_START, YEAR_END, TIMEZONE, START, END)
 plot_SF_Zones_FromDB(data, database, time_SF, OUTPUT_PATH_PLOTS, DATE_START, plot_config)
-
 
 
 # %% Plot nodal prices Norway in a zone
@@ -170,15 +158,15 @@ plot_SF_Zones_FromDB(data, database, time_SF, OUTPUT_PATH_PLOTS, DATE_START, plo
 #Todo: Denne fungerer ikke:"plot_by_year": True,  # Each year in individual plot or all years collected in one plot
 
 # === INITIALIZATIONS ===
-START_YEAR = 2010
-END_YEAR = 2020
+START = {"year": 1992, "month": 1, "day": 1, "hour": 0}
+END = {"year": 1993, "month": 1, "day": 1, "hour": 0}
 
 # === PLOT CONFIGURATIONS ===
 plot_config = {
-    'zone': 'NO1',                          # When plotting multiple years in one year, recommend to only use one zone
-    'plot_all_nodes': False,                 # Plot all nodes in a zone or avg of all nodes
-    "plot_by_year": True,                   # Each year in individual plot or all years collected in one plot
-    "duration_curve": False,                # True: Plot duration curve, or False: Plot storage filling over time PRICE OVER TIME?
+    'zone': 'NO3',                          # When plotting multiple years in one year, recommend to only use one zone
+    'plot_all_nodes': True,                 # (True) Plot all nodes in a zone or (False) avg of all nodes
+    "plot_by_year": False,                  # (True) Each year in individual plot or all years collected in one plot
+    "duration_curve": False,                # (True) Plot duration curve, or (False) Plot storage filling over time PRICE OVER TIME?
     "save_fig": False,                      # True: Save plot as pdf
     "interval": 1,                          # Number of months on x-axis. 1 = Step is one month, 12 = Step is 12 months
     "tex_font": False
@@ -186,20 +174,20 @@ plot_config = {
 }
 
 # === COMPUTE TIMERANGE AND PLOT FLOW ===
-time_NP = get_time_steps_for_period(START_YEAR, END_YEAR)
+time_NP = get_hour_range(YEAR_START, YEAR_END, TIMEZONE, START, END)
 calcPlot_NP_FromDB(data, database, time_NP, OUTPUT_PATH_PLOTS, DATE_START, plot_config)
 
 
 # %% PLOT ZONAL PRICES
 
 # === INITIALIZATIONS ===
-START_YEAR = 2000
-END_YEAR = 2002
+START = {"year": 1992, "month": 1, "day": 1, "hour": 0}
+END = {"year": 1993, "month": 1, "day": 1, "hour": 0}
 
 # === PLOT CONFIGURATIONS ===
 plot_config = {
-    'zones': ['NO5'],                # Zones for plotting
-    "plot_by_year": True,                  # Each year in individual plot or all years collected in one plot
+    'zones': ['NO5'],                       # Zones for plotting
+    "plot_by_year": True,                   # (True)Each year in individual plot or (False) all years collected in one plot
     "duration_curve": False,                # True: Plot duration curve, or False: Plot storage filling over time
     "save_fig": False,                      # True: Save plot as pdf
     "interval": 1,                          # Number of months on x-axis. 1 = Step is one month, 12 = Step is 12 months
@@ -207,41 +195,38 @@ plot_config = {
 }
 
 # === COMPUTE TIMERANGE AND PLOT FLOW ===
-time_ZP = get_time_steps_for_period(1991, 1995) #get_time_steps_for_period(START_YEAR, END_YEAR)
+time_ZP = get_hour_range(YEAR_START, YEAR_END, TIMEZONE, START, END)
 calcPlot_ZonalPrices_FromDB(data, database, time_ZP, OUTPUT_PATH_PLOTS, DATE_START, plot_config)
-
 
 
 
 # %% Hydro production, reservoir filling, inflow
 
-
 # === INITIALIZATIONS ===
-START_YEAR = 2000
-END_YEAR = 2000
+START = {"year": 1992, "month": 1, "day": 1, "hour": 0}
+END = {"year": 1993, "month": 1, "day": 1, "hour": 0}
 
 # === PLOT CONFIGURATIONS ===
 plot_config = {
     'area': 'NO',
     'genType': 'hydro',
-    'relative_storage': True,
-    "plot_full_timeline": False,
-    "box_in_frame": False,
+    'relative_storage': True,               # (True) percentage, or (False) real values
+    "plot_full_timeline": False,            # (True) plot the full timeline or (False) plot by year.
+    "box_in_frame": False,                  # (True) legend box in frame or (False) outside frame
     "save_fig": False,                      # True: Save plot as pdf
     "interval": 1                           # Number of months on x-axis. 1 = Step is one month, 12 = Step is 12 months
 }
 
 # === COMPUTE TIMERANGE AND PLOT FLOW ===
-time_HRI = get_time_steps_for_period(START_YEAR, END_YEAR)
+time_HRI = get_hour_range(YEAR_START, YEAR_END, TIMEZONE, START, END)
 calcPlot_HRI_FromDB(data, database, time_HRI, OUTPUT_PATH_PLOTS, DATE_START, plot_config)
 
 
 # %% Plot nodal prices, demand and hydro production
 
-
 # === INITIALIZATIONS ===
-START_YEAR = 2000
-END_YEAR = 2000
+START = {"year": 1992, "month": 1, "day": 1, "hour": 0}
+END = {"year": 1993, "month": 1, "day": 1, "hour": 0}
 
 # === PLOT CONFIGURATIONS ===
 plot_config = {
@@ -255,15 +240,37 @@ plot_config = {
 }
 
 # === COMPUTE TIMERANGE AND PLOT FLOW ===
-time_PLP = get_time_steps_for_period(START_YEAR, END_YEAR)
+time_PLP = get_hour_range(YEAR_START, YEAR_END, TIMEZONE, START, END)
 calcPlot_PLP_FromDB(data, database, time_PLP, OUTPUT_PATH_PLOTS, DATE_START, plot_config)
 
+# %% Check Total Consumption for a given period.
+# Demand Response
+# === INITIALIZATIONS ===
+START = {"year": 1992, "month": 1, "day": 1, "hour": 0}
+END = {"year": 1993, "month": 1, "day": 1, "hour": 0}
+
+time_Demand = get_hour_range(YEAR_START, YEAR_END, TIMEZONE, START, END)
+demandTotal = getDemandPerAreaFromDB(data, database, area='NO', timeMaxMin=time_Demand)
+print(sum(demandTotal['sum']))
+
+
+# %% === Get Production Data ===
+# === INITIALIZATIONS ===
+START = {"year": 1992, "month": 1, "day": 1, "hour": 0}
+END = {"year": 1993, "month": 1, "day": 1, "hour": 0}
+area = 'NO'
+
+time_Prod = get_hour_range(YEAR_START, YEAR_END, TIMEZONE, START, END)
+total_Production = getProductionPerAreaFromDB(data, database, time_Prod, area)
+print(total_Production)
 
 # %% Load, generation by type in AREA
 
 # === INITIALIZATIONS ===
-START_YEAR = 2000
-END_YEAR = 2000
+START = {"year": 1992, "month": 1, "day": 1, "hour": 0}
+END = {"year": 1993, "month": 1, "day": 1, "hour": 0}
+
+
 
 # === PLOT CONFIGURATIONS ===
 plot_config = {
@@ -279,7 +286,7 @@ plot_config = {
 
 
 # === COMPUTE TIMERANGE AND PLOT FLOW ===
-time_LGT = get_time_steps_for_period(START_YEAR, END_YEAR)
+time_LGT = get_hour_range(YEAR_START, YEAR_END, TIMEZONE, START, END)
 df_gen_re, df_prices, tot_prod = calcPlot_LG_FromDB(data, database, time_LGT, OUTPUT_PATH_PLOTS, DATE_START, plot_config)
 print(f"Total production in {plot_config['area']}: {tot_prod:.2f} MWh")
 
@@ -294,15 +301,14 @@ print(f"Total production in {plot_config['area']}: {tot_prod:.2f} MWh")
 
 
 # === INITIALIZATIONS ===
-START_YEAR = 2005
-END_YEAR = 2005
-
+START = {"year": 1992, "month": 1, "day": 1, "hour": 0}
+END = {"year": 1993, "month": 1, "day": 1, "hour": 0}
 area = None
 zone = 'NO1'
 
 # Juster area for å se på sonene, og zone for å se på nodene i sonen
 # === COMPUTE TIMERANGE AND PLOT FLOW ===
-time_Prod = get_time_steps_for_period(START_YEAR, END_YEAR)
+time_Prod = get_hour_range(YEAR_START, YEAR_END, TIMEZONE, START, END)
 correct_date_start_Prod = DATE_START + pd.Timedelta(hours=time_Prod[0])
 if area is not None:
     zones_in_area_prod = getProductionZonesInArea(data, database, area, time_Prod, correct_date_start_Prod, week=True)

@@ -10,13 +10,8 @@ case = 'BM'
 version = 'v80'
 
 YEAR_START = 1991
-YEAR_END = 1993
-
-# SQL_FILE = "powergama_2025_30y_v1.sqlite"
-# DATE_START = f"{YEAR_START}-01-01"
+YEAR_END = 2020
 DATE_START = pd.Timestamp(f'{YEAR_START}-01-01 00:00:00', tz='UTC')
-
-# DATE_END = f"{YEAR_END}-01-02"
 DATE_END = pd.Timestamp(f'{YEAR_END}-12-31 23:00:00', tz='UTC')
 
 

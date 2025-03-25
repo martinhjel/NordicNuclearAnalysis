@@ -45,7 +45,7 @@ connections = [
 
 # Tidsperiode for datainnhenting
 start = pd.Timestamp('20150101', tz='Europe/Brussels')  # Startdato
-end = pd.Timestamp('20241130', tz='Europe/Brussels')    # Sluttdato
+end = pd.Timestamp('20250101', tz='Europe/Brussels') # Sluttdato
 
 # Maks antall forsøk ved feil
 MAX_RETRIES = 3
@@ -101,6 +101,10 @@ def fetch_and_save(connection):
     print(f"Mislyktes med å hente data for forbindelsen {from_area} - {to_area} etter {MAX_RETRIES} forsøk.")
 
 # Bruk ThreadPoolExecutor for parallellisering
+# Sørg for at katalogen eksisterer
+results_dir = os.path.join("..", "results", "Flow_bz_Entso_E")
+os.makedirs(results_dir, exist_ok=True)  # Oppretter katalogen hvis den ikke finnes
+
 with ThreadPoolExecutor(max_workers=3) as executor:  # Juster max_workers etter behov
     executor.map(fetch_and_save, connections)
 
@@ -136,7 +140,34 @@ if max_flows:
     max_flows_df.to_csv(os.path.join(results_dir, "max_flows_summary.csv"), index=False)
     print("Lagret samlet CSV-fil med maksimal flyt for alle forbindelser: max_flows_summary.csv")
 
+# %% Percentil
 
+import os
+import pandas as pd
+import numpy as np
+
+connections = [
+    ("NO1", "NO2"), ("NO1", "NO3"), ("NO1", "NO5"), ("NO2", "NO5"),
+    ("NO3", "NO4"), ("NO3", "NO5"), ("NO3", "SE2"), ("NO1", "SE3"),
+    ("NO4", "FI"), ("NO2", "DE_LU"), ("NO2", "DK1"), ("NO2", "GB"),
+    ("NO2", "NL"), ("NO4", "SE1"), ("NO4", "SE2"), ("SE1", "FI"),
+    ("SE1", "SE2"), ("SE2", "SE3"), ("SE3", "DK1"), ("SE3", "FI"),
+    ("SE3", "SE4"), ("SE4", "DE_LU"), ("SE4", "DK2"), ("SE4", "LT"),
+    ("SE4", "PL"), ("DK1", "DE_LU"), ("DK1", "DK2"), ("DK1", "GB"),
+    ("DK1", "NL"), ("DK2", "DE_LU"), ("FI", "EE")
+]
+
+
+# Katalog for lagrede CSV-filer
+results_dir = os.path.join("..", "NordicNuclearAnalysis", "results", "Flow_bz_Entso_E")
+
+print(f"Sjekker katalog: {os.path.abspath(results_dir)}")
+
+# Variabel for percentil-verdi (kan enkelt endres her)
+PERCENTILE_VALUE = 98.5
+
+# Liste for å samle percentilverdier for hver forbindelse
+percentile_flows = []
 
 median_flows = []
 
@@ -160,52 +191,90 @@ for connection in connections:
             "median_top_20_flow": median_flow
         })
 
-if median_flows:
-    median_flows_df = pd.DataFrame(median_flows)
-    median_flows_df.to_csv(os.path.join(results_dir, "median_top_20_flows_summary.csv"), index=False)
-    print("Lagret CSV-fil med median av topp 20 flyt for alle forbindelser: median_top_20_flows_summary.csv")
+        # Beregn ønsket percentil
+        percentile_value = np.percentile(combined_flows.dropna(), PERCENTILE_VALUE)
 
+        percentile_flows.append({
+            "From": from_area,
+            "To": to_area,
+            f"{PERCENTILE_VALUE}_percentile_flow": percentile_value
+        })
 
-def summarize_annual_import_export():
-    annual_flows = []
-
-    results_dir = os.path.join("..", "results", "Flow_bz_Entso_E")
-
-    for connection in connections:
-        from_area, to_area = connection
-        filename = f"Flow_bz_{from_area}_to_{to_area}.csv"
-        filepath = os.path.join(results_dir, filename)
-
-        if os.path.exists(filepath):
-            # Les CSV-filen
-            df = pd.read_csv(filepath)
-
-            # Konverter 'Timestamp' til datetime med eksplisitt UTC
-            df['Timestamp'] = pd.to_datetime(df['Timestamp'], utc=True, errors='coerce')
-
-            if df['Timestamp'].isna().all():
-                print(f"Advarsel: Alle tidsstempler er ugyldige for {filename}. Skipping.")
-                continue
-
-            # Ekstraher år fra tidsstemplene
-            df['Year'] = df['Timestamp'].dt.year
-
-            # Gruppér etter år og summer import og eksport
-            yearly_summary = df.groupby('Year')[['Import', 'Export']].sum().reset_index()
-            yearly_summary['From'] = from_area
-            yearly_summary['To'] = to_area
-
-            # Legg til resultatene i listen
-            annual_flows.extend(yearly_summary.to_dict('records'))
-
-    if annual_flows:
-        annual_flows_df = pd.DataFrame(annual_flows)
-        annual_flows_df = annual_flows_df[['Year', 'From', 'To', 'Import', 'Export']]  # Rekkefølge på kolonner
-        output_file = os.path.join(results_dir, "annual_imp_exp_BZ_summary.csv")
-        annual_flows_df.to_csv(output_file, index=False)
-        print(f"CSV-fil med årlig import og eksport mellom alle prisområder: {output_file}")
+# Lag en samlet DataFrame og lagre som CSV
+if percentile_flows:
+    percentile_flows_df = pd.DataFrame(percentile_flows)
+    percentile_flows_df.to_csv(os.path.join(results_dir, f"percentile_{PERCENTILE_VALUE}_flows_summary.csv"), index=False)
+    print(f"Lagret CSV-fil med {PERCENTILE_VALUE}-percentilen for alle forbindelser: percentile_{PERCENTILE_VALUE}_flows_summary.csv")
 
 
 
+# %%
 
-summarize_annual_import_export()
+# median_flows = []
+#
+# for connection in connections:
+#     from_area, to_area = connection
+#     filename = f"Flow_bz_{from_area}_to_{to_area}.csv"
+#     filepath = os.path.join(results_dir, filename)
+#
+#     if os.path.exists(filepath):
+#         df = pd.read_csv(filepath)
+#         combined_flows = pd.concat([df['Import'], df['Export']])
+#         top_20_flows = combined_flows.nlargest(20)
+#         median_flow = top_20_flows.median()
+#
+#         median_timestamp = df.loc[top_20_flows.index]['Timestamp'].iloc[0]
+#
+#         median_flows.append({
+#             "Timestamp": median_timestamp,
+#             "From": from_area,
+#             "To": to_area,
+#             "median_top_20_flow": median_flow
+#         })
+#
+# if median_flows:
+#     median_flows_df = pd.DataFrame(median_flows)
+#     median_flows_df.to_csv(os.path.join(results_dir, "median_top_20_flows_summary.csv"), index=False)
+#     print("Lagret CSV-fil med median av topp 20 flyt for alle forbindelser: median_top_20_flows_summary.csv")
+#
+#
+# def summarize_annual_import_export():
+#     annual_flows = []
+#
+#     results_dir = os.path.join("..", "results", "Flow_bz_Entso_E")
+#
+#     for connection in connections:
+#         from_area, to_area = connection
+#         filename = f"Flow_bz_{from_area}_to_{to_area}.csv"
+#         filepath = os.path.join(results_dir, filename)
+#
+#         if os.path.exists(filepath):
+#             # Les CSV-filen
+#             df = pd.read_csv(filepath)
+#
+#             # Konverter 'Timestamp' til datetime med eksplisitt UTC
+#             df['Timestamp'] = pd.to_datetime(df['Timestamp'], utc=True, errors='coerce')
+#
+#             if df['Timestamp'].isna().all():
+#                 print(f"Advarsel: Alle tidsstempler er ugyldige for {filename}. Skipping.")
+#                 continue
+#
+#             # Ekstraher år fra tidsstemplene
+#             df['Year'] = df['Timestamp'].dt.year
+#
+#             # Gruppér etter år og summer import og eksport
+#             yearly_summary = df.groupby('Year')[['Import', 'Export']].sum().reset_index()
+#             yearly_summary['From'] = from_area
+#             yearly_summary['To'] = to_area
+#
+#             # Legg til resultatene i listen
+#             annual_flows.extend(yearly_summary.to_dict('records'))
+#
+#     if annual_flows:
+#         annual_flows_df = pd.DataFrame(annual_flows)
+#         annual_flows_df = annual_flows_df[['Year', 'From', 'To', 'Import', 'Export']]  # Rekkefølge på kolonner
+#         output_file = os.path.join(results_dir, "annual_imp_exp_BZ_summary.csv")
+#         annual_flows_df.to_csv(output_file, index=False)
+#         print(f"CSV-fil med årlig import og eksport mellom alle prisområder: {output_file}")
+#
+# summarize_annual_import_export()

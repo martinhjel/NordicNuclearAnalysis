@@ -19,6 +19,7 @@ from powergama.database import Database  # Import Database-Class specifically
 from powergama.GridData import GridData  # Import GridData-Class specifically
 from functions.database_functions import *
 from openpyxl import Workbook
+from openpyxl.utils import get_column_letter
 from datetime import datetime, timedelta
 
 
@@ -162,6 +163,73 @@ def solve_lp(data,
 
 ########################################### MAP FUNCTIONS ######################################################
 
+def nordic_grid_map_fromDB(data, db: Database, time_range, OUTPUT_PATH, version, START, END, exchange_rate_NOK_EUR=11.38):
+    """
+    Generate an interactive map displaying nodal prices and branch utilization.
+
+    This function creates a folium map that visualizes:
+    - Nodes representing average nodal prices.
+    - Branches representing line utilization for both AC and DC connections.
+
+    The generated map is saved as an HTML file for easy visualization.
+
+    Parameters:
+        data (Scenario):
+            The simulation data containing node and branch information.
+        db (Database):
+            Database object used to retrieve average prices, utilization rates, and flow data.
+        time_range (list):
+            List specifying the start and end time steps for the simulation.
+        OUTPUT_PATH (str):
+            Directory path where the HTML map file will be saved.
+        version (str):
+            Version identifier for the map output file.
+        START (dict):
+            Dictionary specifying the start date and time (e.g., {'year': 2023, 'month': 1, 'day': 1, 'hour': 0}).
+        END (dict):
+            Dictionary specifying the end date and time in the same format as START.
+        exchange_rate_NOK_EUR (float, optional):
+            Conversion rate from EUR to NOK for displaying prices in both currencies.
+            Default is 11.38.
+
+    Returns:
+        None: The generated map is saved directly to the specified `OUTPUT_PATH`.
+    """
+
+    avg_nodal_prices = list(map(float, getAverageNodalPricesFromDB(db, time_range)))
+    avg_area_price = {key: float(value) for key, value in getAreaPricesAverageFromDB(data, db, timeMaxMin=time_range).items()}
+    avg_zone_price = getZonePricesAverageFromDB(data, db, time_range)
+    ac_utilisation = list(map(float, getAverageUtilisationFromDB(data, db, time_range, branchtype="ac")))
+    dc_utilisation = list(map(float, getAverageUtilisationFromDB(data, db, time_range, branchtype="dc")))
+    ac_flows = convert_to_float(getAverageBranchFlowsFromDB(db, time_range, branchtype="ac"))
+    dc_flows = convert_to_float(getAverageBranchFlowsFromDB(db, time_range, branchtype="dc"))
+
+    f = folium.Figure(width=700, height=800)
+    m = folium.Map(location=[data.node["lat"].mean(), data.node["lon"].mean()], zoom_start=4.4)
+    m.add_to(f)
+
+    colormap = cm.LinearColormap(['green', 'yellow', 'red'], vmin=min(avg_nodal_prices), vmax=max(avg_nodal_prices))
+    colormap.caption = 'Nodal Prices'
+    colormap.add_to(m)
+
+    for i, price in enumerate(avg_nodal_prices):
+        add_node_marker(data, i, price, avg_area_price, avg_zone_price, m, colormap,exchange_rate_NOK_EUR)
+
+    line_colormap = cm.LinearColormap(['green', 'yellow', 'red'], vmin=0, vmax=1)
+    line_colormap.caption = 'Branch Utilisation'
+    line_colormap.add_to(m)
+
+    add_branch_lines(data, ac_utilisation, ac_flows, 'AC', m, line_colormap)
+    add_branch_lines(data, dc_utilisation, dc_flows, 'DC', m, line_colormap, dashed=True)
+
+    start_str = f"{START['year']}_{START['month']}_{START['day']}_{START['hour']}"
+    end_str = f"{END['year']}_{END['month']}_{END['day']}_{END['hour']}"
+    output_path = OUTPUT_PATH / f'nordic_grid_map_{version}_{start_str}__to__{end_str}.html'
+    m.save(output_path)
+
+
+
+
 """Flow Based Functions"""
 def create_price_and_utilization_map(data, res, time_max_min, output_path, dc=None):
     """
@@ -265,7 +333,7 @@ def create_price_and_utilization_map_FromDB(data: GridData, db: Database, time_m
     display(m)
 
 
-def add_node_marker(data, index, price, avg_national_prices, m, colormap):
+def add_node_marker(data, index, price, avg_national_prices, avg_zone_price, m, colormap, exchange_rate_NOK_EUR):
     """
     Add a marker to the map for a specific node, displaying its price and zone information.
 
@@ -287,7 +355,11 @@ def add_node_marker(data, index, price, avg_national_prices, m, colormap):
     node_id = data.node.loc[index, 'id']
     node_zone = data.node.loc[index, 'zone']
     area = data.node.loc[index, 'area']
+    zonal_price = avg_zone_price.get(node_zone, 'N/A')
     area_price = avg_national_prices.get(area, 'N/A')
+    nodal_price_nok = (price * exchange_rate_NOK_EUR) / 10
+    zonal_price_nok = (zonal_price * exchange_rate_NOK_EUR) / 10
+    area_price_nok = (area_price * exchange_rate_NOK_EUR) / 10
 
     # EUR_TO_ORE_PER_KWH = eur_to_nok / 1000 * 100
     # price_nok = price * EUR_TO_ORE_PER_KWH
@@ -297,9 +369,10 @@ def add_node_marker(data, index, price, avg_national_prices, m, colormap):
         f"<b>Node index:</b> {node_idx}<br>"
         f"<b>Node id:</b> {node_id}<br>"
         f"<b>Zone:</b> {node_zone}<br>"
-        f"<b>Price:</b> {price:.2f} EUR/MWh<br>"
-        f"<b>National Price:</b> {f'{area_price:.2f} EUR/MWh' if isinstance(area_price, (int, float)) else 'N/A'}<br>",
-        max_width=200
+        f"<b>Price:</b> {price:.2f} EUR/MWh = {nodal_price_nok:.2f} Øre/KWh <br>"
+        f"<b>Zonal Price:</b> {f'{zonal_price:.2f} EUR/MWh = {zonal_price_nok:.2f} Øre/KWh' if isinstance(zonal_price, (int, float)) else 'N/A'}<br>"
+        f"<b>National Price:</b> {f'{area_price:.2f} EUR/MWh = {area_price_nok:.2f} Øre/KWh' if isinstance(area_price_nok, (int, float)) else 'N/A'}<br>",
+        max_width=300
     )
     folium.CircleMarker(
         location=[lat, lon],
@@ -337,7 +410,7 @@ def add_branch_lines(data, utilisation, flows, branch_type, m, line_colormap, da
 
         popup_content = folium.Popup(
             f"<b>{branch_type} Line</b><br>"
-            f"<b>Power Flow:</b> {flows[idx]:.2f} MW<br>"
+            f"<b>Power Flow:</b> {flows[2][idx]:.2f} MW<br>"
             f"<b>Utilisation:</b> {utilisation_percent:.2f}%",
             max_width=150
         )
@@ -352,7 +425,14 @@ def add_branch_lines(data, utilisation, flows, branch_type, m, line_colormap, da
         ).add_to(m)
 
         mid_lat, mid_lon = _pointBetween((nodeA['lat'], nodeA['lon']), (nodeB['lat'], nodeB['lon']), weight=0.5)
-        angle = math.degrees(math.atan2(nodeB['lon'] - nodeA['lon'], nodeB['lat'] - nodeA['lat']))
+
+        flow_A_to_B = flows[0][idx]  # Flyt fra A til B
+        flow_B_to_A = flows[1][idx]  # Flyt fra B til A
+
+        if flow_A_to_B >= flow_B_to_A:
+            angle = math.degrees(math.atan2(nodeB['lon'] - nodeA['lon'], nodeB['lat'] - nodeA['lat']))
+        else:
+            angle = math.degrees(math.atan2(nodeA['lon'] - nodeB['lon'], nodeA['lat'] - nodeB['lat']))
 
         folium.RegularPolygonMarker(
             location=[mid_lat, mid_lon],
@@ -667,6 +747,25 @@ def get_hour_range(YEAR_START, YEAR_END, TIMEZONE, start, end):
     return start_hour_index, end_hour_index
 
 
+def auto_adjust_column_width(ws, max_width=30):
+    for col_idx, col_cells in enumerate(ws.columns, 1):  # 1-based index
+        lengths = []
+
+        for cell in col_cells:
+            if cell.value is not None:
+                value_length = len(str(cell.value))
+                lengths.append(value_length)
+
+        if lengths:
+            # Take 90th percentile length or max header length, whichever is greater
+            content_width = int(np.percentile(lengths, 90))
+            header_width = lengths[0]  # First cell is header
+            adjusted_width = min(max(content_width, header_width) + 2, max_width)
+
+            col_letter = get_column_letter(col_idx)
+            ws.column_dimensions[col_letter].width = adjusted_width
+
+
 #### Get production in specific node
 
 def GetProductionAtSpecificNodes(Nodes, data: GridData, database: Database, start_hour, end_hour):
@@ -686,6 +785,7 @@ def GetProductionAtSpecificNodes(Nodes, data: GridData, database: Database, star
             - gen_idx (list): Liste over generator-IDer per node.
             - gen_type (list): Liste over generatortyper per node.
     """
+    print(f'Collecting Production at Nodes {", ".join(Nodes)}')
 
     # === FINN INDEKSENE FOR NODENE ===
     node_idx = [int(data.node[data.node['id'] == node].index[0]) for node in Nodes]
@@ -722,6 +822,7 @@ def GetConsumptionAtSpecificNodes(Nodes, data: GridData, database: Database, sta
     Returns:
         dict: Forbruksdata per node med kategoriene "fixed", "flex" og "sum".
     """
+    print(f'Collecting Consumption at Nodes {", ".join(Nodes)}')
 
     # === FINN INDEKSENE FOR NODENE ===
     node_idx = [int(data.node[data.node['id'] == node].index[0]) for node in Nodes]
@@ -754,6 +855,7 @@ def GetPriceAtSpecificNodes(Nodes, data: GridData, database: Database, start_hou
     Returns:
         dict: Nodalpris per node.
     """
+    print(f'Collecting Prices at Nodes {", ".join(Nodes)}')
 
     # === FINN INDEKSENE FOR NODENE ===
     node_idx = [int(data.node[data.node['id'] == node].index[0]) for node in Nodes]
@@ -766,7 +868,7 @@ def GetPriceAtSpecificNodes(Nodes, data: GridData, database: Database, start_hou
 
 
 
-def ExportToExcel(Nodes, production_per_node, consumption_per_node, nodal_prices_per_node, reservoir_filling_per_node, storage_cap, START, END, case, version, OUTPUT_PATH):
+def ExportToExcel(Nodes, production_per_node, consumption_per_node, nodal_prices_per_node, reservoir_filling_per_node, storage_cap, flow_data, START, END, case, version, OUTPUT_PATH):
     """
     Eksporterer produksjons-, forbruks-, fyllingsgrads- og nodalprisdata til en Excel-fil.
 
@@ -776,6 +878,7 @@ def ExportToExcel(Nodes, production_per_node, consumption_per_node, nodal_prices
         consumption_per_node (dict): Forbruksdata per node.
         nodal_prices_per_node (dict): Nodalpriser per node.
         reservoir_filling_per_node (dict): Reservoarfylling per node.
+        flow_data (DataFrame): Flow data for valgte linjer
         START (dict): Starttidspunkt som dictionary (f.eks. {"year": 2019, "month": 5, "day": 1, "hour": 12}).
         END (dict): Sluttidspunkt som dictionary (f.eks. {"year": 2019, "month": 6, "day": 1, "hour": 12}).
         case (str): Navn på caset.
@@ -785,6 +888,7 @@ def ExportToExcel(Nodes, production_per_node, consumption_per_node, nodal_prices
     Returns:
         str: Filnavn på den lagrede Excel-filen.
     """
+    print(f'Collecting Data to Excel')
 
     # Konverter START og END til datetime-objekter
     start_datetime = datetime(START["year"], START["month"], START["day"], START["hour"])
@@ -793,10 +897,12 @@ def ExportToExcel(Nodes, production_per_node, consumption_per_node, nodal_prices
     all_types = ["nuclear", "hydro", "biomass", "ror", "wind_on", "wind_off", "solar", "fossile_other", "fossile_gas"]
 
     # === GENERER TIDSSTEG BASERT PÅ get_hour_range() ===
-    time_stamps = [start_datetime + timedelta(hours=i) for i in range(int((end_datetime - start_datetime).total_seconds() // 3600) + 1)]
+    # time_stamps = [start_datetime + timedelta(hours=i) for i in range(int((end_datetime - start_datetime).total_seconds() // 3600) + 1)]
+    datetime_range = pd.date_range(start=start_datetime, end=end_datetime, freq='h', inclusive='left')
+
 
     # === GENERER FILNAVN ===
-    timestamp = datetime.now().strftime("%Y-%m-%d")
+    # timestamp = datetime.now().strftime("%Y-%m-%d")
     start_str = start_datetime.strftime("%Y-%m-%d-%H")
     end_str = end_datetime.strftime("%Y-%m-%d-%H")
     filename = f"Prod_demand_nodes_{case}_{version}_{start_str}_to_{end_str}.xlsx"
@@ -819,16 +925,17 @@ def ExportToExcel(Nodes, production_per_node, consumption_per_node, nodal_prices
 
 
         # === FYLL PRODUKSJONSARKET ===
-        for t, timestamp in enumerate(time_stamps):
+        for t, timestamp in enumerate(datetime_range):
             row = [timestamp.strftime("%Y-%m-%d %H:%M")]  # Formater tid riktig
             for typ in all_types:
                 values = production_per_node[node].get(typ, [[0]])[0]  # Fjern dobbel liste-nesting
                 value = values[t] if t < len(values) else 0  # Hent riktig indeks eller sett 0
                 row.append(value)
             ws_production.append(row)
+        auto_adjust_column_width(ws_production)
 
         # === FYLL FORBRUKSARKET ===
-        for t, timestamp in enumerate(time_stamps):
+        for t, timestamp in enumerate(datetime_range):
             fixed = consumption_per_node[node]["fixed"]
             flex = consumption_per_node[node]["flex"]
             total = consumption_per_node[node]["sum"]
@@ -839,9 +946,10 @@ def ExportToExcel(Nodes, production_per_node, consumption_per_node, nodal_prices
                 flex[t] if t < len(flex) else 0,
                 total[t] if t < len(total) else 0,
             ])
+        auto_adjust_column_width(ws_consumption)
 
         # === FYLL NODALPRISARKET ===
-        for t, timestamp in enumerate(time_stamps):
+        for t, timestamp in enumerate(datetime_range):
             nodal_price = nodal_prices_per_node[node]  # Hent liste over nodalpriser for noden
             price_value = nodal_price[t] if t < len(nodal_price) else 0  # Hent pris eller sett 0 hvis ikke nok data
 
@@ -849,19 +957,19 @@ def ExportToExcel(Nodes, production_per_node, consumption_per_node, nodal_prices
                 timestamp.strftime("%Y-%m-%d %H:%M"),
                 price_value,
             ])
+        auto_adjust_column_width(ws_price)
 
         # === FYLL RESERVOARFYLLINGSARKET ===
-
-        for t, timestamp in enumerate(time_stamps):
+        for t, timestamp in enumerate(datetime_range):
             # Henter og pakker ut reservoardata
             if node in reservoir_filling_per_node:
                 reservoir_data = reservoir_filling_per_node.get(node, [])
                 if isinstance(reservoir_data, list):  # Sikrer riktig format
                     reservoir_values = [sum(x) for x in zip(*reservoir_data)]  # Slår sammen flere generatorer
                 else:
-                    reservoir_values = [0] * len(time_stamps)  # Hvis data er feil format
+                    reservoir_values = [0] * len(datetime_range)  # Hvis data er feil format
             else:
-                reservoir_values = [0] * len(time_stamps)  # Hvis noden ikke finnes
+                reservoir_values = [0] * len(datetime_range)  # Hvis noden ikke finnes
 
             # Hent riktig verdi fra tidsserien eller sett 0
             reservoir_value = reservoir_values[t] if t < len(reservoir_values) else 0
@@ -878,7 +986,41 @@ def ExportToExcel(Nodes, production_per_node, consumption_per_node, nodal_prices
                 round(max_capacity, 4) if max_capacity > 0 else "",  # Tom celle hvis ikke kapasitet
                 round(filling_percentage, 8)  # Rund av til 8 desimaler
             ])
+        auto_adjust_column_width(ws_reservoir)
 
+    # === LEGG TIL FLOW-DATA HVIS TILGJENGELIG ===
+    if flow_data is not None:
+        for idx, row in flow_data.iterrows():
+            from_node = row['from']
+            to_node = row['to']
+            sheet_name = f"Flow {from_node} → {to_node}"[:31]  # Excel begrensning
+
+            # Forsøk å laste liste
+            try:
+                load_list = eval(row['load [MW]']) if isinstance(row['load [MW]'], str) else row['load [MW]']
+            except Exception as e:
+                print(f"❌ Hopper over {from_node} → {to_node}: feil i lesing av data ({e})")
+                continue
+
+            if len(load_list) != len(datetime_range):
+                print(
+                    f"⚠️ Hopper over {from_node} → {to_node}: Lengdemismatch ({len(load_list)} vs {len(datetime_range)})")
+                continue
+
+            if sheet_name in wb.sheetnames:
+                print(f"⚠️ Ark {sheet_name} finnes allerede – hopper over.")
+                continue
+
+            # Lag ark og legg inn data
+            ws_flow = wb.create_sheet(sheet_name)
+            ws_flow.append(["Timestamp", "Load [MW]"])
+
+            for t, timestamp in enumerate(datetime_range):
+                ws_flow.append([
+                    timestamp.strftime("%Y-%m-%d %H:%M"),
+                    load_list[t]
+                ])
+            auto_adjust_column_width(ws_flow)
 
     # Fjern default ark
     if "Sheet" in wb.sheetnames:
@@ -897,6 +1039,7 @@ def GetReservoirFillingAtSpecificNodes(Nodes, data: GridData, database: Database
     """
     Henter reservoarfylling og maksimal kapasitet for spesifikke noder.
     """
+    print(f'Collecting Reservoir Filling at Nodes {", ".join(Nodes)}')
 
     # === FINN INDEKSENE FOR NODENE ===
     node_idx = [int(data.node[data.node['id'] == node].index[0]) for node in Nodes]
@@ -928,3 +1071,103 @@ def GetReservoirFillingAtSpecificNodes(Nodes, data: GridData, database: Database
     return reservoir_filling_per_node, storage_cap
 
 
+
+# === FLOW TO EXCEL ===
+
+def getFlowDataOnBranches(db: Database, time_max_min, grid_data_path, chosen_connections):
+    """
+    Collect flow on chosen connections.
+    :param db:
+    :param time_max_min:
+    :param grid_data_path:
+    :param chosen_connections:
+    :return: flow_df
+    """
+    print(f'Collecting Flow Data at Lines {", ".join([f"{f} → {t}" for f, t in chosen_connections])}')
+
+
+    AC_interconnections, DC_interconnections = filter_connections_by_list(grid_data_path, chosen_connections)
+    AC_interconnections_capacity = AC_interconnections['capacity']
+    DC_interconnections_capacity = DC_interconnections['capacity']
+
+    # Get connections
+    AC_dict, DC_dict = get_connections(grid_data_path, chosen_connections)
+
+    # Collect AC and DC flow data
+    flow_data_AC = collect_flow_data(db, time_max_min, AC_dict, AC_interconnections_capacity, ac=True)
+    flow_data_DC = collect_flow_data(db, time_max_min, DC_dict, DC_interconnections_capacity, ac=False)
+
+    # Combine data into a single DataFrame
+    flow_df = pd.concat([
+        pd.DataFrame(flow_data_AC),
+        pd.DataFrame(flow_data_DC)
+    ], ignore_index=True)
+
+    return flow_df
+
+
+def writeFlowToExcel(flow_data, START, END, OUTPUT_PATH, case, version):
+    """
+    Writes flow data to Excel spreadsheet
+    Args:
+        flow_data (pandas.DataFrame): flow data from getFlowDataOnBranches
+        START (pandas.DataFrame): start time of flow data
+        END (pandas.DataFrame): end time of flow data
+        TIMEZONE (pandas.DataFrame): timezone of flow data
+        OUTPUT_PATH (pathlib.Path): output path
+
+    Returns:
+        str: Excel spreadsheet path
+    """
+    # Konverter START og END til datetime-objekter
+    start_datetime = datetime(START["year"], START["month"], START["day"], START["hour"])
+    end_datetime = datetime(END["year"], END["month"], END["day"], END["hour"])
+
+    datetime_range = pd.date_range(start=start_datetime, end=end_datetime, freq='h', inclusive='left')
+
+    # Create filename with timestamp
+    filename = f"flow_data_{case}_{version}.xlsx"
+    full_path = OUTPUT_PATH / filename
+
+    # Track if any sheet was written
+    sheet_written = False
+
+    with pd.ExcelWriter(full_path, engine='openpyxl') as writer:
+        for idx, row in flow_data.iterrows():
+            from_node = row['from']
+            to_node = row['to']
+            sheet_name = f"{from_node} → {to_node}"[:31]
+
+            # Load list safely
+            try:
+                load_list = eval(row['load [MW]']) if isinstance(row['load [MW]'], str) else row['load [MW]']
+            except Exception as e:
+                print(f"❌ Failed to parse load for {from_node} → {to_node}: {e}")
+                continue
+
+            # Length check
+            if len(load_list) != len(datetime_range):
+                print(
+                    f"⚠️ Skipping {from_node} → {to_node}: Length mismatch ({len(load_list)} vs {len(datetime_range)})")
+                continue
+
+            # Write sheet
+            flow_df = pd.DataFrame({
+                "Datetime": datetime_range,
+                "Load [MW]": load_list
+            })
+            flow_df.to_excel(writer, sheet_name=sheet_name, index=False)
+            sheet_written = True
+            worksheet = writer.sheets[sheet_name]
+
+            # Auto-adjust column widths
+            for idx, col in enumerate(flow_df.columns, 1):
+                max_length = max(flow_df[col].astype(str).map(len).max(), len(col)) + 2
+                worksheet.column_dimensions[get_column_letter(idx)].width = max_length
+
+    if not sheet_written:
+        print("❗️No valid sheets were written. Excel file was not saved.")
+        return None
+
+    print(f"\n✅ Excel file saved at: {full_path}")
+    return str(full_path)

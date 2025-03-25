@@ -90,6 +90,32 @@ def getNodalPricesFromDB(db: Database, node, timeMaxMin = None):
     return prices
 
 
+def getZonePricesAverageFromDB(data: GridData, database: Database, time_range):
+    """
+    Calculate average zonal prices based on nodal prices.
+
+    This function retrieves nodal prices from the database, associates them with their respective zones,
+    and calculates the average price for each zone. The results are returned as a dictionary.
+
+    Parameters:
+        data (GridData):
+            Simulation data containing node information, including zones.
+        database (Database):
+            Database object used to retrieve nodal prices.
+        time_range (list):
+            List specifying the time range for which data should be retrieved.
+
+    Returns:
+        dict: A dictionary where keys are zone names and values are their corresponding average prices.
+    """
+    avg_nodal_prices = list(map(float, getAverageNodalPricesFromDB(database, time_range)))
+    zones = data.node['zone']
+    combined = pd.concat([zones, pd.Series(avg_nodal_prices)], axis=1)
+    combined.columns = ['zone', 'price']
+    avg_zonal_prices = combined.groupby('zone')['price'].mean().to_dict()
+
+    return avg_zonal_prices
+
 
 def getAreaPricesAverageFromDB(data: GridData, db: Database, areas=None, timeMaxMin=None):
     """
@@ -222,10 +248,10 @@ def getStorageFillingInZonesFromDB(data: GridData, db: Database, zones, generato
     return filling
 
 
-def getProductionPerAreaFromDB(data: GridData, database: Database, time_Prod, area):
+def getProductionPerAreaFromDB(data: GridData, database, time_Prod, area):
 
     # === FINN INDEKSENE FOR NODENE I GITT OMRÅDE ===
-    node_idx = data.node[data.node['id'].str.startswith('NO')].index.tolist()
+    node_idx = data.node[data.node['id'].str.startswith(area)].index.tolist()
 
     # === HENT ALLE GENERATORER VED DISSE NODENE ===
     gen_idx = [[gen for gen in data.getGeneratorsAtNode(idx)] for idx in node_idx]
@@ -593,6 +619,26 @@ def get_production_by_type_FromDB_NodesInZone(data: GridData, db: Database, zone
 
 
     return df_gen_resampled
+
+
+
+# Function to collect flow data
+def collect_flow_data(db, time_max_min, cross_country_dict, interconnections_capacity, ac=True):
+    flow_data = []
+    branch_type = "AC" if ac else "DC"
+    for branch_index, (node_from, node_to) in cross_country_dict.items():
+        branch_flows = db.getResultBranchFlow(branch_index, time_max_min, ac=ac)
+        max_capacity = interconnections_capacity[branch_index]
+        flow_data.append({
+            'index': branch_index,
+            'type': branch_type,
+            'from': node_from,
+            'to': node_to,
+            'load [MW]': branch_flows,
+            'capacity [MW]': max_capacity,
+        })
+    return flow_data
+
 
 
 

@@ -20,7 +20,7 @@ from openpyxl.chart import BarChart, LineChart, Reference
 # === General Configurations ===
 YEAR_SCENARIO = 2025
 YEAR_START = 1991           # Start year for the main simulation  (SQL-file)
-YEAR_END = 1993             # End year for the main simulation  (SQL-file)
+YEAR_END = 2020             # End year for the main simulation  (SQL-file)
 case = 'BM'
 version = 'v80'
 TIMEZONE = ZoneInfo("UTC")  # Definerer UTC tidssone
@@ -57,7 +57,106 @@ data, time_max_min = setup_grid(YEAR_SCENARIO, version, DATE_START, DATE_END, DA
 database = Database(SQL_FILE)
 
 
+# %% Nordic Grid Map
 
+# === INITIALIZATIONS ===
+START = {"year": 2019, "month": 1, "day": 1, "hour": 0}
+END = {"year": 2019, "month": 12, "day": 31, "hour": 23}
+nordic_grid_map_fromDB(data, database, time_range = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END),
+                       OUTPUT_PATH = OUTPUT_PATH, version = version, START = START, END = END, exchange_rate_NOK_EUR = 11.38)
+
+
+# %% === ZONAL PRICE MAP ===
+
+
+# START = {"year": 1992, "month": 1, "day": 1, "hour": 0}
+# END = {"year": 1993, "month": 1, "day": 1, "hour": 0}
+#
+# time_ZP = get_hour_range(YEAR_START, YEAR_END, TIMEZONE, START, END)
+
+def createZonePriceMatrix(zones, year_range, TIMEZONE):
+    zonal_price_map = pd.DataFrame(index=zones)
+
+    for year in year_range:
+        START = {"year": year, "month": 1, "day": 1, "hour": 0}
+        if year >= 2020:
+            END = {"year": year, "month": 12, "day": 31, "hour": 23}
+        else:
+            END = {"year": year + 1, "month": 1, "day": 1, "hour": 0}
+
+        # Time setup
+        try:
+            start_datetime = datetime(START["year"], START["month"], START["day"], START["hour"], 0, tzinfo=TIMEZONE)
+            end_datetime = datetime(END["year"], END["month"], END["day"], END["hour"], 0, tzinfo=TIMEZONE)
+
+            time_range = get_hour_range(YEAR_START, YEAR_END, TIMEZONE, START, END)
+            date_index = pd.date_range(start=start_datetime, end=end_datetime, freq='h', inclusive='left')
+
+        except Exception as e:
+            print(f"❌ Failed to generate time range for year {year}: {e}")
+            continue
+
+        for zone in zones:
+            try:
+                nodes_in_zone = data.node[data.node['zone'] == zone].index.tolist()
+                if not nodes_in_zone:
+                    print(f"⚠️ No nodes found for zone {zone} — skipping.")
+                    continue
+
+                print(f"📡 Fetching nodal prices for zone {zone} in year {year}...")
+
+                # Fetch nodal prices for each node
+                node_prices = {}
+                for node in nodes_in_zone:
+                    try:
+                        node_prices[node] = getNodalPricesFromDB(database, node, time_range)
+                    except Exception as e:
+                        print(f"❌ Failed to fetch prices for node {node} in zone {zone}: {e}")
+                        continue
+
+                if not node_prices:
+                    print(f"⚠️ No prices available for zone {zone} in year {year}. Skipping.")
+                    continue
+
+                df = pd.DataFrame(node_prices)
+                df.index = date_index
+
+                avg_price = df.mean(axis=1).mean()
+                zonal_price_map.loc[zone, str(year)] = round(avg_price, 2)
+
+            except Exception as e:
+                print(f"❌ Failed processing zone {zone} in year {year}: {e}")
+                continue
+
+    return zonal_price_map
+
+
+    # zonal_prices = pd.DataFrame()
+    # for zone in zones:
+    #     nodes_in_zone = data.node[data.node['zone'] == zone].index.tolist() # Get all nodes in the zone
+    #     # Get nodal prices for all nodes in the zone in one step node_prices
+    #     node_prices = pd.DataFrame({node: getNodalPricesFromDB(database, node, time_ZP) for node in nodes_in_zone})
+    #     node_prices.index = pd.date_range(DATE_START, periods=time_ZP[-1] - time_ZP[0], freq='h')
+    #     avg_node_prices = pd.DataFrame((node_prices.sum(axis=1) / len(nodes_in_zone)), columns=[f'avg_price_{zone}'])
+    #     zonal_prices[f'avg_price_{zone}'] = avg_node_prices[f'avg_price_{zone}']
+
+
+zones = ['NO1', 'NO2', 'NO3', 'NO4', 'NO5', 'SE1', 'SE2', 'SE3', 'SE4', 'DK1', 'DK2', 'FI', 'DE', 'GB', 'NL', 'LT', 'PL', 'EE']
+year_range = list(range(YEAR_START, YEAR_END + 1))
+price_matrix = createZonePriceMatrix(zones, year_range, TIMEZONE)
+
+
+# %%
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+plt.figure(figsize=(12, 6))
+sns.heatmap(price_matrix.astype(float), annot=True,fmt='.0f', cmap="YlOrRd", linewidths=0.5)
+plt.title("Zonal Average Prices per Year")
+plt.xlabel("Year")
+plt.ylabel("Zone")
+plt.tight_layout()
+plt.show()
 
 # %% Collect the system cost and mean area price for the system for a given period
 #TODO: TypeError: calcSystemCostAndMeanPriceFromDB() takes 4 positional arguments but 5 were given
@@ -74,8 +173,8 @@ calcSystemCostAndMeanPriceFromDB(data, database, time_SC, time_MP)
 # %% Map prices and branch utilization
 
 # === INITIALIZATIONS ===
-START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1993, "month": 12, "day": 31, "hour": 0}
+START = {"year": 2009, "month": 1, "day": 1, "hour": 0}
+END = {"year": 2010, "month": 12, "day": 31, "hour": 0}
 
 time_Map = get_hour_range(YEAR_START, YEAR_END, TIMEZONE, START, END)
 plot_Map(data, database, time_Map, DATE_START, OUTPUT_PATH, version)
@@ -108,11 +207,12 @@ time_Lines = get_hour_range(YEAR_START, YEAR_END, TIMEZONE, START, END)
 plot_Flow_fromDB(database, DATE_START, time_Lines, GRID_DATA_PATH, OUTPUT_PATH_PLOTS, plot_config, SELECTED_BRANCHES)
 
 
+
 # %% PLOT STORAGE FILLING FOR AREAS
 
 # === INITIALIZATIONS ===
-START = {"year": 1992, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1993, "month": 1, "day": 1, "hour": 0}
+START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
+END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
 
 # === PLOT CONFIGURATIONS ===
 plot_config = {
@@ -246,8 +346,8 @@ calcPlot_PLP_FromDB(data, database, time_PLP, OUTPUT_PATH_PLOTS, DATE_START, plo
 # %% Check Total Consumption for a given period.
 # Demand Response
 # === INITIALIZATIONS ===
-START = {"year": 1992, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1993, "month": 1, "day": 1, "hour": 0}
+START = {"year": 2010, "month": 1, "day": 1, "hour": 0}
+END = {"year": 2011, "month": 1, "day": 1, "hour": 0}
 
 time_Demand = get_hour_range(YEAR_START, YEAR_END, TIMEZONE, START, END)
 demandTotal = getDemandPerAreaFromDB(data, database, area='NO', timeMaxMin=time_Demand)
@@ -256,8 +356,8 @@ print(sum(demandTotal['sum']))
 
 # %% === Get Production Data ===
 # === INITIALIZATIONS ===
-START = {"year": 1992, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1993, "month": 1, "day": 1, "hour": 0}
+START = {"year": 1999, "month": 1, "day": 1, "hour": 0}
+END = {"year": 1999, "month": 1, "day": 2, "hour": 0}
 area = 'NO'
 
 time_Prod = get_hour_range(YEAR_START, YEAR_END, TIMEZONE, START, END)
@@ -330,7 +430,8 @@ Main Features:
 # === INITIALIZATIONS ===
 START = {"year": 1992, "month": 1, "day": 1, "hour": 0}
 END = {"year": 1993, "month": 1, "day": 1, "hour": 0}
-Nodes = ['NO5_1', 'NO5_2']
+Nodes = ['NO5_1']
+SELECTED_BRANCHES  = [['NO3_1','SE2_4'],['NO3_1','NO4_3']] # See branch CSV files for correct connections
 # ======================================================================================================================
 
 start_hour, end_hour = get_hour_range(YEAR_START, YEAR_END, TIMEZONE, START, END)
@@ -338,8 +439,22 @@ production_per_node, gen_idx, gen_type = GetProductionAtSpecificNodes(Nodes, dat
 consumption_per_node = GetConsumptionAtSpecificNodes(Nodes, data, database, start_hour, end_hour)
 nodal_prices_per_node = GetPriceAtSpecificNodes(Nodes, data, database, start_hour, end_hour)
 reservoir_filling_per_node, storage_cap = GetReservoirFillingAtSpecificNodes(Nodes, data, database, start_hour, end_hour)
-excel_filename = ExportToExcel(Nodes, production_per_node, consumption_per_node, nodal_prices_per_node, reservoir_filling_per_node, storage_cap, START, END, case, version, OUTPUT_PATH)
+flow_data = getFlowDataOnBranches(database, [start_hour, end_hour], GRID_DATA_PATH, SELECTED_BRANCHES)
+excel_filename = ExportToExcel(Nodes, production_per_node, consumption_per_node, nodal_prices_per_node, reservoir_filling_per_node, storage_cap, flow_data, START, END, case, version, OUTPUT_PATH)
 
+
+# %% === Write Flow Data to Excel ===
+
+# === INITIALIZATIONS ===
+START = {"year": 1993, "month": 1, "day": 1, "hour": 0}
+END = {"year": 1994, "month": 1, "day": 1, "hour": 0}
+
+# === CHOOSE BRANCHES TO CHECK ===
+SELECTED_BRANCHES  = [['NO3_1','SE2_4'],['NO3_1','NO4_3'], ['NO3_4','NO5_1'], ['NO3_5','NO1_1']] # See branch CSV files for correct connections
+
+time_Flow = get_hour_range(YEAR_START, YEAR_END, TIMEZONE, START, END)
+flow_data = getFlowDataOnBranches(database, time_Flow, GRID_DATA_PATH, SELECTED_BRANCHES)
+flow_path = writeFlowToExcel(flow_data, START, END, TIMEZONE, OUTPUT_PATH, case, version)
 
 
 

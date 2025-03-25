@@ -992,22 +992,6 @@ def plot_production(df_gen_resampled, df_prices_resampled, DATE_START, DATE_END,
 
 
 """FLOW DATA PLOTS"""
-# Function to collect flow data
-def collect_flow_data(db, time_max_min, cross_country_dict, interconnections_capacity, ac=True):
-    flow_data = []
-    branch_type = "AC" if ac else "DC"
-    for branch_index, (node_from, node_to) in cross_country_dict.items():
-        branch_flows = db.getResultBranchFlow(branch_index, time_max_min, ac=ac)
-        max_capacity = interconnections_capacity[branch_index]
-        flow_data.append({
-            'index': branch_index,
-            'type': branch_type,
-            'from': node_from,
-            'to': node_to,
-            'load [MW]': branch_flows,
-            'capacity [MW]': max_capacity,
-        })
-    return flow_data
 
 def plot_duration_curve_by_year(row, DATE_START, OUTPUT_PATH_PLOTS, save_fig, duration_relative, tex_font):
     num_hours = len(row['load [MW]'])

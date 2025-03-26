@@ -22,8 +22,9 @@ YEAR_SCENARIO = 2025
 YEAR_START = 1991           # Start year for the main simulation  (SQL-file)
 YEAR_END = 2020             # End year for the main simulation  (SQL-file)
 case = 'BM'
-version = 'v80'
+version = 'v85'
 TIMEZONE = ZoneInfo("UTC")  # Definerer UTC tidssone
+
 
 
 DATE_START = pd.Timestamp(f'{YEAR_START}-01-01 00:00:00', tz='UTC')

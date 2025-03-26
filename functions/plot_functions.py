@@ -1,4 +1,5 @@
 from functions.global_functions import *
+import seaborn as sns
 
 
 
@@ -378,12 +379,21 @@ def plot_zonal_prices_FromDB(data: GridData, zone_prices, zones, DATE_START, DAT
             "font.family": "serif",
             "font.serif": ["Computer Modern Roman"]})
     if save_plot_nodal:
-        plt.savefig(OUTPUT_PATH_PLOTS / f"nodal_price_{ ', '.join(plot_config['zones'])}.pdf")
+        plt.savefig(OUTPUT_PATH_PLOTS / f"nodal_price_{ ', '.join(zones)}.pdf")
     plt.show()
 
 
 
-
+def plotZonePriceMatrix(price_matrix, save_fig, OUTPUT_PATH_PLOTS):
+    plt.figure(figsize=(12, 6))
+    sns.heatmap(price_matrix.astype(float), annot=True,fmt='.0f', cmap="YlOrRd", linewidths=0.5)
+    plt.title("Zonal Average Prices per Year")
+    plt.xlabel("Year")
+    plt.ylabel("Zone")
+    plt.tight_layout()
+    if save_fig:
+        plt.savefig(OUTPUT_PATH_PLOTS / f"ZonePriceMap.pdf")
+    plt.show()
 
 
 

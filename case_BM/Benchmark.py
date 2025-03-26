@@ -7,12 +7,12 @@ from scripts.case_doc import *
 # Define global variables
 YEAR_SCENARIO = 2025
 case = 'BM'
-version = 'v_test'
+version = 'v85'
 
-YEAR_START = 1991
-YEAR_END = 1991
-DATE_START = pd.Timestamp(f'{YEAR_START}-01-01 00:00:00', tz='UTC')
-DATE_END = pd.Timestamp(f'{YEAR_END}-01-01 23:00:00', tz='UTC')
+SIM_YEAR_START = 1991
+SIM_YEAR_END = 1991
+DATE_START = pd.Timestamp(f'{SIM_YEAR_START}-01-01 00:00:00', tz='UTC')
+DATE_END = pd.Timestamp(f'{SIM_YEAR_END}-01-01 23:00:00', tz='UTC')
 
 
 loss_method = 0
@@ -30,7 +30,7 @@ except NameError:
     BASE_DIR = BASE_DIR / f'case_{case}'
 
 
-SQL_FILE = BASE_DIR / f"powergama_{case}_{version}_{YEAR_START}_{YEAR_END}.sqlite"
+SQL_FILE = BASE_DIR / f"powergama_{case}_{version}_{SIM_YEAR_START}_{SIM_YEAR_END}.sqlite"
 
 
 # File paths

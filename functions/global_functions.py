@@ -161,6 +161,66 @@ def solve_lp(data,
 
 
 
+########################################### DATA COLLECTION ######################################################
+
+def createZonePriceMatrix(data: GridData, database: Database, zones, year_range, TIMEZONE, SIM_YEAR_START, SIM_YEAR_END):
+    zonal_price_map = pd.DataFrame(index=zones)
+
+    for year in year_range:
+        START = {"year": year, "month": 1, "day": 1, "hour": 0}
+        if year >= 2020:
+            END = {"year": year, "month": 12, "day": 31, "hour": 23}
+        else:
+            END = {"year": year + 1, "month": 1, "day": 1, "hour": 0}
+
+        # Time setup
+        try:
+            start_datetime = datetime(START["year"], START["month"], START["day"], START["hour"], 0, tzinfo=TIMEZONE)
+            end_datetime = datetime(END["year"], END["month"], END["day"], END["hour"], 0, tzinfo=TIMEZONE)
+
+            time_range = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
+            date_index = pd.date_range(start=start_datetime, end=end_datetime, freq='h', inclusive='left')
+
+        except Exception as e:
+            print(f"❌ Failed to generate time range for year {year}: {e}")
+            continue
+
+        for zone in zones:
+            try:
+                nodes_in_zone = data.node[data.node['zone'] == zone].index.tolist()
+                if not nodes_in_zone:
+                    print(f"⚠️ No nodes found for zone {zone} — skipping.")
+                    continue
+
+                print(f"📡 Fetching nodal prices for zone {zone} in year {year}...")
+
+                # Fetch nodal prices for each node
+                node_prices = {}
+                for node in nodes_in_zone:
+                    try:
+                        node_prices[node] = getNodalPricesFromDB(database, node, time_range)
+                    except Exception as e:
+                        print(f"❌ Failed to fetch prices for node {node} in zone {zone}: {e}")
+                        continue
+
+                if not node_prices:
+                    print(f"⚠️ No prices available for zone {zone} in year {year}. Skipping.")
+                    continue
+
+                df = pd.DataFrame(node_prices)
+                df.index = date_index
+
+                avg_price = df.mean(axis=1).mean()
+                zonal_price_map.loc[zone, str(year)] = round(avg_price, 2)
+
+            except Exception as e:
+                print(f"❌ Failed processing zone {zone} in year {year}: {e}")
+                continue
+
+    return zonal_price_map
+
+
+
 ########################################### MAP FUNCTIONS ######################################################
 
 def nordic_grid_map_fromDB(data, db: Database, time_range, OUTPUT_PATH, version, START, END, exchange_rate_NOK_EUR=11.38):

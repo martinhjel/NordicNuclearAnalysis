@@ -19,16 +19,16 @@ from openpyxl.chart import BarChart, LineChart, Reference
 
 # === General Configurations ===
 YEAR_SCENARIO = 2025
-YEAR_START = 1991           # Start year for the main simulation  (SQL-file)
-YEAR_END = 2020             # End year for the main simulation  (SQL-file)
+SIM_YEAR_START = 1991           # Start year for the main simulation  (SQL-file)
+SIM_YEAR_END = 2020             # End year for the main simulation  (SQL-file)
 case = 'BM'
 version = 'v85'
 TIMEZONE = ZoneInfo("UTC")  # Definerer UTC tidssone
 
 
 
-DATE_START = pd.Timestamp(f'{YEAR_START}-01-01 00:00:00', tz='UTC')
-DATE_END = pd.Timestamp(f'{YEAR_END}-12-31 23:00:00', tz='UTC')
+DATE_START = pd.Timestamp(f'{SIM_YEAR_START}-01-01 00:00:00', tz='UTC')
+DATE_END = pd.Timestamp(f'{SIM_YEAR_END}-12-31 23:00:00', tz='UTC')
 
 loss_method = 0
 new_scenario = False
@@ -47,7 +47,7 @@ except NameError:
 
 
 # === File Paths ===
-SQL_FILE = BASE_DIR / f"powergama_{case}_{version}_{YEAR_START}_{YEAR_END}.sqlite"
+SQL_FILE = BASE_DIR / f"powergama_{case}_{version}_{SIM_YEAR_START}_{SIM_YEAR_END}.sqlite"
 DATA_PATH = BASE_DIR / 'data'
 GRID_DATA_PATH = DATA_PATH / 'system'
 OUTPUT_PATH = BASE_DIR / 'results'
@@ -69,95 +69,14 @@ nordic_grid_map_fromDB(data, database, time_range = get_hour_range(SIM_YEAR_STAR
 
 # %% === ZONAL PRICE MAP ===
 
-
-# START = {"year": 1992, "month": 1, "day": 1, "hour": 0}
-# END = {"year": 1993, "month": 1, "day": 1, "hour": 0}
-#
-# time_ZP = get_hour_range(YEAR_START, YEAR_END, TIMEZONE, START, END)
-
-def createZonePriceMatrix(zones, year_range, TIMEZONE):
-    zonal_price_map = pd.DataFrame(index=zones)
-
-    for year in year_range:
-        START = {"year": year, "month": 1, "day": 1, "hour": 0}
-        if year >= 2020:
-            END = {"year": year, "month": 12, "day": 31, "hour": 23}
-        else:
-            END = {"year": year + 1, "month": 1, "day": 1, "hour": 0}
-
-        # Time setup
-        try:
-            start_datetime = datetime(START["year"], START["month"], START["day"], START["hour"], 0, tzinfo=TIMEZONE)
-            end_datetime = datetime(END["year"], END["month"], END["day"], END["hour"], 0, tzinfo=TIMEZONE)
-
-            time_range = get_hour_range(YEAR_START, YEAR_END, TIMEZONE, START, END)
-            date_index = pd.date_range(start=start_datetime, end=end_datetime, freq='h', inclusive='left')
-
-        except Exception as e:
-            print(f"❌ Failed to generate time range for year {year}: {e}")
-            continue
-
-        for zone in zones:
-            try:
-                nodes_in_zone = data.node[data.node['zone'] == zone].index.tolist()
-                if not nodes_in_zone:
-                    print(f"⚠️ No nodes found for zone {zone} — skipping.")
-                    continue
-
-                print(f"📡 Fetching nodal prices for zone {zone} in year {year}...")
-
-                # Fetch nodal prices for each node
-                node_prices = {}
-                for node in nodes_in_zone:
-                    try:
-                        node_prices[node] = getNodalPricesFromDB(database, node, time_range)
-                    except Exception as e:
-                        print(f"❌ Failed to fetch prices for node {node} in zone {zone}: {e}")
-                        continue
-
-                if not node_prices:
-                    print(f"⚠️ No prices available for zone {zone} in year {year}. Skipping.")
-                    continue
-
-                df = pd.DataFrame(node_prices)
-                df.index = date_index
-
-                avg_price = df.mean(axis=1).mean()
-                zonal_price_map.loc[zone, str(year)] = round(avg_price, 2)
-
-            except Exception as e:
-                print(f"❌ Failed processing zone {zone} in year {year}: {e}")
-                continue
-
-    return zonal_price_map
-
-
-    # zonal_prices = pd.DataFrame()
-    # for zone in zones:
-    #     nodes_in_zone = data.node[data.node['zone'] == zone].index.tolist() # Get all nodes in the zone
-    #     # Get nodal prices for all nodes in the zone in one step node_prices
-    #     node_prices = pd.DataFrame({node: getNodalPricesFromDB(database, node, time_ZP) for node in nodes_in_zone})
-    #     node_prices.index = pd.date_range(DATE_START, periods=time_ZP[-1] - time_ZP[0], freq='h')
-    #     avg_node_prices = pd.DataFrame((node_prices.sum(axis=1) / len(nodes_in_zone)), columns=[f'avg_price_{zone}'])
-    #     zonal_prices[f'avg_price_{zone}'] = avg_node_prices[f'avg_price_{zone}']
-
-
-zones = ['NO1', 'NO2', 'NO3', 'NO4', 'NO5', 'SE1', 'SE2', 'SE3', 'SE4', 'DK1', 'DK2', 'FI', 'DE', 'GB', 'NL', 'LT', 'PL', 'EE']
-year_range = list(range(YEAR_START, YEAR_END + 1))
+zones = ['NO1', 'NO2', 'NO3', 'NO4', 'NO5', 'SE1', 'SE2', 'SE3', 'SE4',
+         'DK1', 'DK2', 'FI', 'DE', 'GB', 'NL', 'LT', 'PL', 'EE']
+year_range = list(range(SIM_YEAR_START, SIM_YEAR_END + 1))
 price_matrix = createZonePriceMatrix(zones, year_range, TIMEZONE)
-
+plotZonePriceMatrix(price_matrix, save_fig=False, OUTPUT_PATH_PLOTS=OUTPUT_PATH_PLOTS)
 
 # %%
-import seaborn as sns
-import matplotlib.pyplot as plt
 
-plt.figure(figsize=(12, 6))
-sns.heatmap(price_matrix.astype(float), annot=True,fmt='.0f', cmap="YlOrRd", linewidths=0.5)
-plt.title("Zonal Average Prices per Year")
-plt.xlabel("Year")
-plt.ylabel("Zone")
-plt.tight_layout()
-plt.show()
 
 # %% Collect the system cost and mean area price for the system for a given period
 #TODO: TypeError: calcSystemCostAndMeanPriceFromDB() takes 4 positional arguments but 5 were given

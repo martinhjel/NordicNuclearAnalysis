@@ -24,11 +24,12 @@ def plot_Map(data: GridData, database: Database, time_Map, DATE_START, OUTPUT_PA
 
 
 
-def plot_Flow_fromDB(db, DATE_START, time_max_min, grid_data_path, OUTPUT_PATH_PLOTS, plot_config, chosen_connections=None):
+def plot_Flow_fromDB(data, db, DATE_START, time_max_min, OUTPUT_PATH_PLOTS, plot_config, chosen_connections=None):
     """
     Generates plots for AC and DC power flows.
 
     Parameters:
+    - data: GridData object to retrieve grid data.
     - db: Database object to retrieve flow data.
     - grid_data_path: Path to the grid data.
     - time_max_min: Time range for the analysis.
@@ -39,12 +40,12 @@ def plot_Flow_fromDB(db, DATE_START, time_max_min, grid_data_path, OUTPUT_PATH_P
     """
     DATE_START = DATE_START + pd.Timedelta(hours=time_max_min[0])
 
-    AC_interconnections, DC_interconnections = filter_connections_by_list(grid_data_path, chosen_connections)
+    AC_interconnections, DC_interconnections = filter_connections_by_list(data, chosen_connections)
     AC_interconnections_capacity = AC_interconnections['capacity']
     DC_interconnections_capacity = DC_interconnections['capacity']
 
     # Get connections
-    AC_dict, DC_dict = get_connections(grid_data_path, chosen_connections)
+    AC_dict, DC_dict = get_connections(data, chosen_connections)
 
     # Collect AC and DC flow data
     flow_data_AC = collect_flow_data(db, time_max_min, AC_dict, AC_interconnections_capacity, ac=True)

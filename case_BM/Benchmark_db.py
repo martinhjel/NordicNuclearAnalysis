@@ -8,9 +8,9 @@ import pandas as pd
 
 # === General Configurations ===
 SIM_YEAR_START = 1991           # Start year for the main simulation  (SQL-file)
-SIM_YEAR_END = 2020             # End year for the main simulation  (SQL-file)
+SIM_YEAR_END = 1994             # End year for the main simulation  (SQL-file)
 case = 'BM'
-version = 'v83'
+version = 'v85'
 TIMEZONE = ZoneInfo("UTC")  # Definerer UTC tidssone
 
 DATE_START = pd.Timestamp(f'{SIM_YEAR_START}-01-01 00:00:00', tz='UTC')
@@ -28,7 +28,7 @@ except NameError:
     BASE_DIR = BASE_DIR / f'case_{case}'
 
 # === File Paths ===
-SQL_FILE = BASE_DIR / f"powergama_{case}_{version}_{SIM_YEAR_START}_{SIM_YEAR_END}.sqlite"
+SQL_FILE = BASE_DIR / f"powergama_{case}_{version}_{SIM_YEAR_START}_{SIM_YEAR_END}_HYDRO.sqlite"
 DATA_PATH = BASE_DIR / 'data'
 GRID_DATA_PATH = DATA_PATH / 'system'
 OUTPUT_PATH = BASE_DIR / 'results'
@@ -39,34 +39,11 @@ data, time_max_min = setup_grid(version, DATE_START, DATE_END, DATA_PATH, case)
 database = Database(SQL_FILE)
 
 
-
-# %% PLOT STORAGE FILLING FOR AREAS
-
-# === INITIALIZATIONS ===
-START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
-
-# === PLOT CONFIGURATIONS ===
-plot_config = {
-    'areas': ['NO'],            # When plotting multiple years in one year, recommend to only use one area
-    'relative': True,           # Relative storage filling, True gives percentage
-    "plot_by_year": True,       # True: One curve for each year in same plot, or False:all years collected in one plot over the whole simulation period
-    "duration_curve": False,    # True: Plot duration curve, or False: Plot storage filling over time
-    "save_fig": False,          # True: Save plot as pdf
-    "interval": 1               # Number of months on x-axis. 1 = Step is one month, 12 = Step is 12 months
-}
-
-# === COMPUTE TIMERANGE AND PLOT FLOW ===
-time_SF = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
-plot_SF_Areas_FromDB(data, database, time_SF, OUTPUT_PATH_PLOTS, DATE_START, plot_config)
-
-
-
 # %% Nordic Grid Map
 
 # === INITIALIZATIONS ===
 START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
+END = {"year": 1994, "month": 12, "day": 31, "hour": 23}
 nordic_grid_map_fromDB(data, database, time_range = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END),
                        OUTPUT_PATH = OUTPUT_PATH, version = version, START = START, END = END, exchange_rate_NOK_EUR = 11.38)
 
@@ -80,6 +57,31 @@ price_matrix = createZonePriceMatrix(data, database, zones, year_range, TIMEZONE
 
 # %% Plot Zonal Price Matrix
 plotZonePriceMatrix(price_matrix, save_fig=True, OUTPUT_PATH_PLOTS=OUTPUT_PATH_PLOTS)
+
+
+
+
+# %% Check Total Consumption for a given period.
+# Demand Response
+# === INITIALIZATIONS ===
+START = {"year": 2010, "month": 1, "day": 1, "hour": 0}
+END = {"year": 2011, "month": 1, "day": 1, "hour": 0}
+
+time_Demand = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
+demandTotal = getDemandPerAreaFromDB(data, database, area='NO', timeMaxMin=time_Demand)
+print(sum(demandTotal['sum']))
+
+
+# %% === Get Production Data ===
+# === INITIALIZATIONS ===
+START = {"year": 1999, "month": 1, "day": 1, "hour": 0}
+END = {"year": 1999, "month": 1, "day": 2, "hour": 0}
+area = 'NO'
+
+time_Prod = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
+total_Production = getProductionPerAreaFromDB(data, database, time_Prod, area)
+print(total_Production)
+
 
 
 # %% Collect the system cost and mean area price for the system for a given period
@@ -266,37 +268,18 @@ plot_config = {
 time_PLP = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
 calcPlot_PLP_FromDB(data, database, time_PLP, OUTPUT_PATH_PLOTS, DATE_START, plot_config)
 
-# %% Check Total Consumption for a given period.
-# Demand Response
-# === INITIALIZATIONS ===
-START = {"year": 2010, "month": 1, "day": 1, "hour": 0}
-END = {"year": 2011, "month": 1, "day": 1, "hour": 0}
 
-time_Demand = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
-demandTotal = getDemandPerAreaFromDB(data, database, area='NO', timeMaxMin=time_Demand)
-print(sum(demandTotal['sum']))
-
-
-# %% === Get Production Data ===
-# === INITIALIZATIONS ===
-START = {"year": 1999, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1999, "month": 1, "day": 2, "hour": 0}
-area = 'NO'
-
-time_Prod = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
-total_Production = getProductionPerAreaFromDB(data, database, time_Prod, area)
-print(total_Production)
 
 # %% Load, generation by type in AREA
 
 # === INITIALIZATIONS ===
 START = {"year": 1992, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1993, "month": 1, "day": 1, "hour": 0}
+END = {"year": 1993, "month": 6, "day": 1, "hour": 0}
 
 
 # === PLOT CONFIGURATIONS ===
 plot_config = {
-    'area': 'NO',
+    'area': 'PL',
     'title': 'Production, Consumption and Price in NO',
     "fig_size": (10, 6),
     "plot_full_timeline": True,
@@ -350,8 +333,8 @@ Main Features:
 # === INITIALIZATIONS ===
 START = {"year": 1992, "month": 1, "day": 1, "hour": 0}
 END = {"year": 1993, "month": 1, "day": 1, "hour": 0}
-Nodes = ['NO5_1']
-SELECTED_BRANCHES  = [['NO3_1','SE2_4'],['NO3_1','NO4_3']] # See branch CSV files for correct connections
+Nodes = ['PL']
+SELECTED_BRANCHES  = [['NO3_1','SE2_4']] # See branch CSV files for correct connections
 # ======================================================================================================================
 
 start_hour, end_hour = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)

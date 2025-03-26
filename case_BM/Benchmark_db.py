@@ -16,15 +16,13 @@ from openpyxl import Workbook
 from openpyxl.chart import BarChart, LineChart, Reference
 
 
-
 # === General Configurations ===
 YEAR_SCENARIO = 2025
 SIM_YEAR_START = 1991           # Start year for the main simulation  (SQL-file)
 SIM_YEAR_END = 2020             # End year for the main simulation  (SQL-file)
 case = 'BM'
-version = 'v85'
+version = 'v83'
 TIMEZONE = ZoneInfo("UTC")  # Definerer UTC tidssone
-
 
 
 DATE_START = pd.Timestamp(f'{SIM_YEAR_START}-01-01 00:00:00', tz='UTC')
@@ -73,8 +71,9 @@ zones = ['NO1', 'NO2', 'NO3', 'NO4', 'NO5', 'SE1', 'SE2', 'SE3', 'SE4',
          'DK1', 'DK2', 'FI', 'DE', 'GB', 'NL', 'LT', 'PL', 'EE']
 year_range = list(range(SIM_YEAR_START, SIM_YEAR_END + 1))
 price_matrix = createZonePriceMatrix(data, database, zones, year_range, TIMEZONE, SIM_YEAR_START, SIM_YEAR_END)
-plotZonePriceMatrix(price_matrix, save_fig=False, OUTPUT_PATH_PLOTS=OUTPUT_PATH_PLOTS)
 
+# %% Plot Zonal Price Matrix
+plotZonePriceMatrix(price_matrix, save_fig=True, OUTPUT_PATH_PLOTS=OUTPUT_PATH_PLOTS)
 
 
 # %% Collect the system cost and mean area price for the system for a given period

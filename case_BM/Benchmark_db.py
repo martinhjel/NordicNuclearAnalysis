@@ -8,10 +8,12 @@ import pandas as pd
 
 # === General Configurations ===
 SIM_YEAR_START = 1991           # Start year for the main simulation  (SQL-file)
-SIM_YEAR_END = 1994             # End year for the main simulation  (SQL-file)
+SIM_YEAR_END = 2020             # End year for the main simulation  (SQL-file)
 case = 'BM'
 version = 'v85'
 TIMEZONE = ZoneInfo("UTC")  # Definerer UTC tidssone
+
+####  PASS PÅ HARD KODING I SQL FIL
 
 DATE_START = pd.Timestamp(f'{SIM_YEAR_START}-01-01 00:00:00', tz='UTC')
 DATE_END = pd.Timestamp(f'{SIM_YEAR_END}-12-31 23:00:00', tz='UTC')
@@ -28,7 +30,7 @@ except NameError:
     BASE_DIR = BASE_DIR / f'case_{case}'
 
 # === File Paths ===
-SQL_FILE = BASE_DIR / f"powergama_{case}_{version}_{SIM_YEAR_START}_{SIM_YEAR_END}_HYDRO.sqlite"
+SQL_FILE = BASE_DIR / f"powergama_{case}_{version}_{SIM_YEAR_START}_{SIM_YEAR_END}.sqlite"
 DATA_PATH = BASE_DIR / 'data'
 GRID_DATA_PATH = DATA_PATH / 'system'
 OUTPUT_PATH = BASE_DIR / 'results'
@@ -37,6 +39,7 @@ OUTPUT_PATH_PLOTS = BASE_DIR / 'results' / 'plots'
 # === Initialize Database and Grid Data ===
 data, time_max_min = setup_grid(version, DATE_START, DATE_END, DATA_PATH, case)
 database = Database(SQL_FILE)
+
 
 
 # %% Nordic Grid Map
@@ -85,7 +88,6 @@ print(total_Production)
 
 
 # %% Collect the system cost and mean area price for the system for a given period
-#TODO: TypeError: calcSystemCostAndMeanPriceFromDB() takes 4 positional arguments but 5 were given
 
 # === INITIALIZATIONS ===
 START = {"year": 1992, "month": 1, "day": 1, "hour": 0}
@@ -129,7 +131,7 @@ SELECTED_BRANCHES  = [['NL','NO2_4'],['NO2_4','DE'], ['NO2_1','GB'], ['DK1_1','N
 
 # === COMPUTE TIMERANGE AND PLOT FLOW ===
 time_Lines = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
-plot_Flow_fromDB(database, DATE_START, time_Lines, GRID_DATA_PATH, OUTPUT_PATH_PLOTS, plot_config, SELECTED_BRANCHES)
+plot_Flow_fromDB(data, database, DATE_START, time_Lines, OUTPUT_PATH_PLOTS, plot_config, SELECTED_BRANCHES)
 
 
 

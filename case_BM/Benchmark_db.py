@@ -3,12 +3,14 @@ from functions.global_functions import *  # Functions like 'read_grid_data', 'so
 from functions.database_functions import  * # Functions like 'getSystemCostFromDB' m.m.
 from zoneinfo import ZoneInfo
 from powergama.database import Database  # Import Database-Class specifically
+import pandas as pd
+
 
 # === General Configurations ===
 SIM_YEAR_START = 1991           # Start year for the main simulation  (SQL-file)
 SIM_YEAR_END = 2020             # End year for the main simulation  (SQL-file)
 case = 'BM'
-version = 'v85'
+version = 'v83'
 TIMEZONE = ZoneInfo("UTC")  # Definerer UTC tidssone
 
 DATE_START = pd.Timestamp(f'{SIM_YEAR_START}-01-01 00:00:00', tz='UTC')
@@ -63,8 +65,8 @@ plot_SF_Areas_FromDB(data, database, time_SF, OUTPUT_PATH_PLOTS, DATE_START, plo
 # %% Nordic Grid Map
 
 # === INITIALIZATIONS ===
-START = {"year": 2019, "month": 1, "day": 1, "hour": 0}
-END = {"year": 2019, "month": 12, "day": 31, "hour": 23}
+START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
+END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
 nordic_grid_map_fromDB(data, database, time_range = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END),
                        OUTPUT_PATH = OUTPUT_PATH, version = version, START = START, END = END, exchange_rate_NOK_EUR = 11.38)
 
@@ -75,7 +77,8 @@ zones = ['NO1', 'NO2', 'NO3', 'NO4', 'NO5', 'SE1', 'SE2', 'SE3', 'SE4',
          'DK1', 'DK2', 'FI', 'DE', 'GB', 'NL', 'LT', 'PL', 'EE']
 year_range = list(range(SIM_YEAR_START, SIM_YEAR_END + 1))
 price_matrix = createZonePriceMatrix(data, database, zones, year_range, TIMEZONE, SIM_YEAR_START, SIM_YEAR_END)
-# %%
+
+# %% Plot Zonal Price Matrix
 plotZonePriceMatrix(price_matrix, save_fig=True, OUTPUT_PATH_PLOTS=OUTPUT_PATH_PLOTS)
 
 

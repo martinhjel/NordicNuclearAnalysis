@@ -289,23 +289,85 @@ def nordic_grid_map_fromDB(data, db: Database, time_range, OUTPUT_PATH, version,
 
 
 
+def nordic_grid_map(data, res, time_max_min, OUTPUT_PATH, version, exchange_rate_NOK_EUR=11.38):
+    """
+     Generate an interactive map of the Nordic power grid showing nodal prices, zonal prices, and line utilization.
+    
+        This function creates a folium-based map that visualizes:
+        - Average nodal electricity prices using a color-coded scale.
+        - Average zonal prices representing regional electricity markets.
+        - National average prices (area prices) for each country.
+        - Transmission line utilization for both AC and DC branches, along with flow data.
+    
+        The map offers a spatial and intuitive overview of price levels and network loading
+        over a specified time period. It is saved as an HTML file for interactive exploration.
+    
+        Parameters:
+            data (Scenario):
+                The scenario data including node locations and network topology.
+            res (ResultHandler):
+                Object providing access to simulation results such as prices, utilization, and flows.
+            time_max_min (list):
+                A list indicating the time range to average over.
+            OUTPUT_PATH (str or Path):
+                Directory where the HTML file will be stored.
+            version (str):
+                Identifier to distinguish map output versions.
+            exchange_rate_NOK_EUR (float, optional):
+                Exchange rate for converting EUR to NOK when displaying prices. Default is 11.38.
+    
+        Returns:
+            None: The HTML map is saved to `OUTPUT_PATH`.
+    """
+
+    avg_nodal_prices = list(map(float, res.getAverageNodalPrices(time_max_min)))
+    avg_zonal_prices = res.getAverageZonalPrices(time_max_min)
+    avg_area_price = {key: float(value) for key, value in res.getAreaPricesAverage(timeMaxMin=time_max_min).items()}
+    ac_utilisation = list(map(float, res.getAverageUtilisation(time_max_min, branchtype="ac")))
+    ac_flows = convert_to_float(res.getAverageBranchFlows(time_max_min, branchtype="ac"))
+    dc_utilisation = list(map(float, res.getAverageUtilisation(time_max_min, branchtype="dc")))
+    dc_flows = convert_to_float(res.getAverageBranchFlows(time_max_min, branchtype="dc"))
+
+    f = folium.Figure(width=700, height=800)
+    m = folium.Map(location=[data.node["lat"].mean(), data.node["lon"].mean()], zoom_start=4.4)
+    m.add_to(f)
+
+    colormap = cm.LinearColormap(['green', 'yellow', 'red'], vmin=min(avg_nodal_prices), vmax=max(avg_nodal_prices))
+    colormap.caption = 'Nodal Prices'
+    colormap.add_to(m)
+
+    for i, price in enumerate(avg_nodal_prices):
+        add_node_marker(data, i, price, avg_area_price, avg_zonal_prices, m, colormap, exchange_rate_NOK_EUR)
+
+
+    line_colormap = cm.LinearColormap(['green', 'yellow', 'red'], vmin=0, vmax=1)
+    line_colormap.caption = 'Branch Utilisation'
+    line_colormap.add_to(m)
+
+    add_branch_lines(data, ac_utilisation, ac_flows, 'AC', m, line_colormap)
+    add_branch_lines(data, dc_utilisation, dc_flows, 'DC', m, line_colormap, dashed=True)
+
+    output_path = OUTPUT_PATH / f'nordic_grid_map_{version}.html'
+    m.save(output_path)
+
+
 
 """Flow Based Functions"""
 def create_price_and_utilization_map(data, res, time_max_min, output_path, dc=None):
     """
-    Generate a folium map displaying nodal prices and branch utilization.
+        Generate a folium map displaying nodal prices and branch utilization.
 
-    This function creates a map with nodes representing average prices and branches representing
-    line utilization for the given time range. The map is saved as an HTML file.
+        This function creates a map with nodes representing average prices and branches representing
+        line utilization for the given time range. The map is saved as an HTML file.
 
-    Parameters:
-        data (Scenario):        Simulation data containing nodes and branches.
-        res (Result):           Result object with nodal prices, utilization, and flows.
-        time_max_min (list):    List specifying the start and end time steps for the simulation.
-        output_path (str):      Path where the HTML map file will be saved.
+        Parameters:
+            data (Scenario):        Simulation data containing nodes and branches.
+            res (Result):           Result object with nodal prices, utilization, and flows.
+            time_max_min (list):    List specifying the start and end time steps for the simulation.
+            output_path (str):      Path where the HTML map file will be saved.
 
-    Returns:
-        None
+        Returns:
+            None
     """
 
     nodal_prices = list(map(float, res.getAverageNodalPrices(time_max_min)))
@@ -393,7 +455,7 @@ def create_price_and_utilization_map_FromDB(data: GridData, db: Database, time_m
     display(m)
 
 
-def add_node_marker(data, index, price, avg_national_prices, avg_zone_price, m, colormap, exchange_rate_NOK_EUR):
+def add_node_marker(data, index, price, avg_national_prices, avg_zonal_price, m, colormap, exchange_rate_NOK_EUR):
     """
     Add a marker to the map for a specific node, displaying its price and zone information.
 
@@ -415,7 +477,7 @@ def add_node_marker(data, index, price, avg_national_prices, avg_zone_price, m, 
     node_id = data.node.loc[index, 'id']
     node_zone = data.node.loc[index, 'zone']
     area = data.node.loc[index, 'area']
-    zonal_price = avg_zone_price.get(node_zone, 'N/A')
+    zonal_price = avg_zonal_price.get(node_zone, 'N/A')
     area_price = avg_national_prices.get(area, 'N/A')
     nodal_price_nok = (price * exchange_rate_NOK_EUR) / 10
     zonal_price_nok = (zonal_price * exchange_rate_NOK_EUR) / 10

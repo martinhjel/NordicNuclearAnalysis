@@ -61,8 +61,8 @@ database = Database(SQL_FILE)
 # %% Nordic Grid Map
 
 # === INITIALIZATIONS ===
-START = {"year": 2019, "month": 1, "day": 1, "hour": 0}
-END = {"year": 2019, "month": 12, "day": 31, "hour": 23}
+START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
+END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
 nordic_grid_map_fromDB(data, database, time_range = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END),
                        OUTPUT_PATH = OUTPUT_PATH, version = version, START = START, END = END, exchange_rate_NOK_EUR = 11.38)
 

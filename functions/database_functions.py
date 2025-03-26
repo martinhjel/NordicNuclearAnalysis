@@ -43,6 +43,34 @@ def getSystemCostFromDB(data: GridData, db: Database, timeMaxMin):
     return generationcost
 
 
+def getZonePricesAverageFromDB(data: GridData, database: Database, time_range):
+    """
+    Calculate average zonal prices based on nodal prices.
+
+    This function retrieves nodal prices from the database, associates them with their respective zones,
+    and calculates the average price for each zone. The results are returned as a dictionary.
+
+    Parameters:
+        data (GridData):
+            Simulation data containing node information, including zones.
+        database (Database):
+            Database object used to retrieve nodal prices.
+        time_range (list):
+            List specifying the time range for which data should be retrieved.
+
+    Returns:
+        dict: A dictionary where keys are zone names and values are their corresponding average prices.
+    """
+    avg_nodal_prices = list(map(float, getAverageNodalPricesFromDB(database, time_range)))
+    zones = data.node['zone']
+    combined = pd.concat([zones, pd.Series(avg_nodal_prices)], axis=1)
+    combined.columns = ['zone', 'price']
+    avg_zonal_prices = combined.groupby('zone')['price'].mean().to_dict()
+
+    return avg_zonal_prices
+
+
+
 
 def getAverageNodalPricesFromDB(db: Database, timeMaxMin):
     """
@@ -60,6 +88,7 @@ def getAverageNodalPricesFromDB(db: Database, timeMaxMin):
     avg_prices : list
         The average prices.
     """
+
     avg_prices = db.getResultNodalPricesMean(timeMaxMin)
     # use asarray to convert None to nan
     avg_prices = np.asarray(avg_prices, dtype=float)

@@ -72,10 +72,9 @@ nordic_grid_map_fromDB(data, database, time_range = get_hour_range(SIM_YEAR_STAR
 zones = ['NO1', 'NO2', 'NO3', 'NO4', 'NO5', 'SE1', 'SE2', 'SE3', 'SE4',
          'DK1', 'DK2', 'FI', 'DE', 'GB', 'NL', 'LT', 'PL', 'EE']
 year_range = list(range(SIM_YEAR_START, SIM_YEAR_END + 1))
-price_matrix = createZonePriceMatrix(zones, year_range, TIMEZONE)
+price_matrix = createZonePriceMatrix(data, database, zones, year_range, TIMEZONE, SIM_YEAR_START, SIM_YEAR_END)
 plotZonePriceMatrix(price_matrix, save_fig=False, OUTPUT_PATH_PLOTS=OUTPUT_PATH_PLOTS)
 
-# %%
 
 
 # %% Collect the system cost and mean area price for the system for a given period

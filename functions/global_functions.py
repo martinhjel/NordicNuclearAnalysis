@@ -163,7 +163,7 @@ def solve_lp(data,
 
 ########################################### DATA COLLECTION ######################################################
 
-def createZonePriceMatrix(zones, year_range, TIMEZONE):
+def createZonePriceMatrix(data: GridData, database: Database, zones, year_range, TIMEZONE, SIM_YEAR_START, SIM_YEAR_END):
     zonal_price_map = pd.DataFrame(index=zones)
 
     for year in year_range:
@@ -178,7 +178,7 @@ def createZonePriceMatrix(zones, year_range, TIMEZONE):
             start_datetime = datetime(START["year"], START["month"], START["day"], START["hour"], 0, tzinfo=TIMEZONE)
             end_datetime = datetime(END["year"], END["month"], END["day"], END["hour"], 0, tzinfo=TIMEZONE)
 
-            time_range = get_hour_range(YEAR_START, YEAR_END, TIMEZONE, START, END)
+            time_range = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
             date_index = pd.date_range(start=start_datetime, end=end_datetime, freq='h', inclusive='left')
 
         except Exception as e:

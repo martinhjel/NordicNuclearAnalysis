@@ -23,8 +23,7 @@ from openpyxl.utils import get_column_letter
 from datetime import datetime, timedelta
 
 
-def read_grid_data(year,
-                   version,
+def read_grid_data(version,
                    date_start,
                    date_end,
                    data_path,
@@ -45,16 +44,16 @@ def read_grid_data(year,
     """
     # Calculate and print the number of simulation hours and years
     datapath_GridData = data_path / "system"
-    file_storval_filling = data_path / f"storage/profiles_storval_filling_{case}.csv"
+    file_storval_filling = data_path / f"storage/profiles_storval_filling_{case}_{version}.csv"
     file_30y_profiles = data_path / "timeseries_profiles.csv"
 
     # Initialize GridData object
     data = powergama.GridData()
-    data.readGridData(nodes=datapath_GridData / f"node.csv",
-                      ac_branches=datapath_GridData / f"branch.csv",
-                      dc_branches=datapath_GridData / f"dcbranch.csv",
-                      generators=datapath_GridData / f"generator.csv",
-                      consumers=datapath_GridData / f"consumer.csv")
+    data.readGridData(nodes=datapath_GridData / f"node_{case}_{version}.csv",
+                      ac_branches=datapath_GridData / f"branch_{case}_{version}.csv",
+                      dc_branches=datapath_GridData / f"dcbranch_{case}_{version}.csv",
+                      generators=datapath_GridData / f"generator_{case}_{version}.csv",
+                      consumers=datapath_GridData / f"consumer_{case}_{version}.csv")
 
     # Read and process 30-year profiles
     profiles_30y = pd.read_csv(file_30y_profiles, index_col=0, parse_dates=True)
@@ -77,7 +76,7 @@ def read_grid_data(year,
     print(f'Simulation years: {np.round(num_years, 3)}')
 
     # Filter offshore wind farms by year:
-    data.generator = data.generator[~(data.generator["year"] > year)].reset_index(drop=True)
+    # data.generator = data.generator[~(data.generator["year"] > year)].reset_index(drop=True)
 
     # remove zero capacity generators:
     m_gen_hascap = data.generator["pmax"] > 0
@@ -87,13 +86,10 @@ def read_grid_data(year,
 
 
 # Read and configure grid
-def setup_grid(year,
-               version,
+def setup_grid(version,
                date_start,
                date_end,
                data_path,
-               new_scenario,
-               save_scenario,
                case,
                ):
     """
@@ -113,15 +109,8 @@ def setup_grid(year,
         time_max_min (list): List containing the start and end indices for the simulation timeframe.
     """
     print(f"Using version: {version}")
-    data = read_grid_data(year, version, date_start, date_end, data_path, case)
+    data = read_grid_data(version, date_start, date_end, data_path, case)
     time_max_min = [0, len(data.timerange)]
-    scenario_file = pathlib.Path(data_path / f"scenario_{year}.csv")
-    if new_scenario:
-        data = pgs.newScenario(base_grid_data=data, scenario_file=scenario_file)
-
-    save_scenario_file = pathlib.Path(data_path / f"current_scenario_{year}.csv")
-    if save_scenario:
-        pgs.saveScenario(base_grid_data=data, scenario_file=save_scenario_file)
     return data, time_max_min
 
 

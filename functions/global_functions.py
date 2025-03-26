@@ -291,33 +291,33 @@ def nordic_grid_map_fromDB(data, db: Database, time_range, OUTPUT_PATH, version,
 
 def nordic_grid_map(data, res, time_max_min, OUTPUT_PATH, version, exchange_rate_NOK_EUR=11.38):
     """
-     Generate an interactive map of the Nordic power grid showing nodal prices, zonal prices, and line utilization.
-    
-        This function creates a folium-based map that visualizes:
-        - Average nodal electricity prices using a color-coded scale.
-        - Average zonal prices representing regional electricity markets.
-        - National average prices (area prices) for each country.
-        - Transmission line utilization for both AC and DC branches, along with flow data.
-    
-        The map offers a spatial and intuitive overview of price levels and network loading
-        over a specified time period. It is saved as an HTML file for interactive exploration.
-    
-        Parameters:
-            data (Scenario):
-                The scenario data including node locations and network topology.
-            res (ResultHandler):
-                Object providing access to simulation results such as prices, utilization, and flows.
-            time_max_min (list):
-                A list indicating the time range to average over.
-            OUTPUT_PATH (str or Path):
-                Directory where the HTML file will be stored.
-            version (str):
-                Identifier to distinguish map output versions.
-            exchange_rate_NOK_EUR (float, optional):
-                Exchange rate for converting EUR to NOK when displaying prices. Default is 11.38.
-    
-        Returns:
-            None: The HTML map is saved to `OUTPUT_PATH`.
+    Generate an interactive map of the Nordic power grid showing nodal prices, zonal prices, and line utilization.
+
+    This function creates a folium-based map that visualizes:
+    - Average nodal electricity prices using a color-coded scale.
+    - Average zonal prices representing regional electricity markets.
+    - National average prices (area prices) for each country.
+    - Transmission line utilization for both AC and DC branches, along with flow data.
+
+    The map offers a spatial and intuitive overview of price levels and network loading
+    over a specified time period. It is saved as an HTML file for interactive exploration.
+
+    Parameters:
+        data (Scenario):
+            The scenario data including node locations and network topology.
+        res (ResultHandler):
+            Object providing access to simulation results such as prices, utilization, and flows.
+        time_max_min (list):
+            A list indicating the time range to average over.
+        OUTPUT_PATH (str or Path):
+            Directory where the HTML file will be stored.
+        version (str):
+            Identifier to distinguish map output versions.
+        exchange_rate_NOK_EUR (float, optional):
+            Exchange rate for converting EUR to NOK when displaying prices. Default is 11.38.
+
+    Returns:
+        None: The HTML map is saved to `OUTPUT_PATH`.
     """
 
     avg_nodal_prices = list(map(float, res.getAverageNodalPrices(time_max_min)))

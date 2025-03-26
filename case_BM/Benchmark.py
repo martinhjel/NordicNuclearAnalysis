@@ -7,12 +7,12 @@ from scripts.case_doc import *
 # Define global variables
 YEAR_SCENARIO = 2025
 case = 'BM'
-version = 'v80'
+version = 'v_test'
 
 YEAR_START = 1991
-YEAR_END = 2020
+YEAR_END = 1991
 DATE_START = pd.Timestamp(f'{YEAR_START}-01-01 00:00:00', tz='UTC')
-DATE_END = pd.Timestamp(f'{YEAR_END}-12-31 23:00:00', tz='UTC')
+DATE_END = pd.Timestamp(f'{YEAR_END}-01-01 23:00:00', tz='UTC')
 
 
 loss_method = 0
@@ -59,17 +59,19 @@ week_MSO = {'FI_10':16,
 data, time_max_min = setup_grid(YEAR_SCENARIO, version, DATE_START, DATE_END, DATA_PATH, new_scenario, save_scenario, case)
 res = solve_lp(data, SQL_FILE, loss_method, replace=True, nuclear_availability=0.7, week_MSO=week_MSO)
 
+
+# %% Create Nordic Grid Map
+nordic_grid_map(data, res, time_max_min, OUTPUT_PATH, version, exchange_rate_NOK_EUR=11.38)
+
+
+
+
 # res.getEnergyBalanceInArea(area='NO', spillageGen='wind_on')
 
 # %% Print results
 # print(f"System cost {sum(res.getSystemCost().values()):.2f} EUR, or {sum(res.getSystemCost().values())/1e9:.2f} Billion EUR")
 # print(f"Mean area price {sum(res.getAreaPricesAverage().values()) / len(res.getAreaPricesAverage()):.2f} EUR/MWh")
 
-
-# %%
-
-output_path = OUTPUT_PATH / f'prices_and_branch_utilization_map_{version}.html'
-create_price_and_utilization_map(data, res, time_max_min=time_max_min, output_path=output_path, dc=1)
 
 
 

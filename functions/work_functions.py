@@ -100,7 +100,7 @@ def plot_SF_Areas_FromDB(data: GridData, database: Database, time_SF, OUTPUT_PAT
     storfilling.index = pd.date_range(correct_date_start_SF, periods=time_SF[-1] - time_SF[0], freq='h')
     storfilling['year'] = storfilling.index.year  # Add year column to DataFrame
 
-    title_storage_filling = f"Reservoir Filling in {plot_config['areas']} for period {correct_date_start_SF.year}-{correct_date_end_SF.year}"
+    title_storage_filling = f"Reservoir Filling in {'Area: ' + ', '.join(plot_config['areas'])} for period {correct_date_start_SF.year}-{correct_date_end_SF.year}"
     plot_storage_filling_area(storfilling=storfilling,
                               DATE_START=correct_date_start_SF,
                               DATE_END=correct_date_end_SF,

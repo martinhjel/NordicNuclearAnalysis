@@ -157,7 +157,7 @@ def createZonePriceMatrix(data: GridData, database: Database, zones, year_range,
 
     for year in year_range:
         START = {"year": year, "month": 1, "day": 1, "hour": 0}
-        if year >= 2020:
+        if year >= year_range[-1]:
             END = {"year": year, "month": 12, "day": 31, "hour": 23}
         else:
             END = {"year": year + 1, "month": 1, "day": 1, "hour": 0}
@@ -913,7 +913,7 @@ def GetProductionAtSpecificNodes(Nodes, data: GridData, database: Database, star
     production_per_node = {node: {} for node in Nodes}
     for node, gen_list, type_list in zip(Nodes, gen_idx, gen_type):
         for gen, typ in zip(gen_list, type_list):
-            production_per_node[node].setdefault(typ, []).append(power_output.get(gen, [0]))  # Setter 0 hvis data mangler
+            production_per_node[node].setdefault(typ, []).append(power_output.get(gen, [1]))  # Setter 0 hvis data mangler
 
     return production_per_node, gen_idx, gen_type
 
@@ -1005,7 +1005,7 @@ def ExportToExcel(Nodes, production_per_node, consumption_per_node, nodal_prices
     start_datetime = datetime(START["year"], START["month"], START["day"], START["hour"])
     end_datetime = datetime(END["year"], END["month"], END["day"], END["hour"])
 
-    all_types = ["nuclear", "hydro", "biomass", "ror", "wind_on", "wind_off", "solar", "fossile_other", "fossile_gas"]
+    all_types = ["nuclear", "hydro", "biomass", "ror", "wind_on", "wind_off", "solar", "fossil_other", "fossil_gas"]
 
     # === GENERER TIDSSTEG BASERT PÅ get_hour_range() ===
     # time_stamps = [start_datetime + timedelta(hours=i) for i in range(int((end_datetime - start_datetime).total_seconds() // 3600) + 1)]

@@ -558,7 +558,7 @@ def add_branch_lines(data, utilisation, flows, branch_type, m, line_colormap, da
         ).add_to(m)
 
 
-def get_interconnections(datapath_GridData):
+def get_interconnections(data: GridData):
     """
     Retrieve and filter cross-country AC and DC branch data from CSV files.
 
@@ -572,7 +572,7 @@ def get_interconnections(datapath_GridData):
         tuple: Two dictionaries (AC_dict, DC_dict), where each dictionary has branch indices as keys
                and tuples of (node_from, node_to) as values for AC and DC branches, respectively.
     """
-    AC_cross_country_connections, DC_cross_country_connections = filter_cross_country_connections(datapath_GridData)
+    AC_cross_country_connections, DC_cross_country_connections = filter_cross_country_connections(data)
 
     # Create dictionaries with index as key and tuple (node_from, node_to) as value for each
     AC_cross_country_dict = {
@@ -642,34 +642,30 @@ def calculate_interconnections_flow(db, datapath_GridData, time_max_min):
     return flow_df
 
 
-def filter_cross_country_connections(grid_data_path):
+def filter_cross_country_connections(data: GridData):
     """
     Filter cross-country connections between AC and DC branches.
     """
-    AC_branch_path = grid_data_path / "branch.csv"
-    DC_branch_path = grid_data_path / "dcbranch.csv"
-    AC_branch_df = pd.read_csv(AC_branch_path)
-    DC_branch_df = pd.read_csv(DC_branch_path)
+    AC_branch_df = data.branch
+    DC_branch_df = data.dcbranch
     AC_cross_country_connections = AC_branch_df[AC_branch_df['node_from'].str[:2] != AC_branch_df['node_to'].str[:2]]
     DC_cross_country_connections = DC_branch_df[DC_branch_df['node_from'].str[:2] != DC_branch_df['node_to'].str[:2]]
     return AC_cross_country_connections, DC_cross_country_connections
 
 
-def filter_cross_border_connections(grid_data_path):
+def filter_cross_border_connections(data: GridData):
     """
     Filter cross-border connections between zones and countries, exclude connections within same zone.
     """
-    AC_branch_path = grid_data_path / "branch.csv"
-    DC_branch_path = grid_data_path / "dcbranch.csv"
-    AC_branch_df = pd.read_csv(AC_branch_path)
-    DC_branch_df = pd.read_csv(DC_branch_path)
+    AC_branch_df = data.branch
+    DC_branch_df = data.dcbranch
     AC_cross_border_connections = AC_branch_df[AC_branch_df['node_from'].str[:3] != AC_branch_df['node_to'].str[:3]]
     DC_cross_border_connections = DC_branch_df[DC_branch_df['node_from'].str[:3] != DC_branch_df['node_to'].str[:3]]
     return AC_cross_border_connections, DC_cross_border_connections
 
 
 
-def get_connections(datapath_GridData, chosen_connections):
+def get_connections(data: GridData, chosen_connections):
     """
     Retrieve and filter AC and DC branch data from CSV files.
 
@@ -683,7 +679,7 @@ def get_connections(datapath_GridData, chosen_connections):
         tuple: Two dictionaries (AC_dict, DC_dict), where each dictionary has branch indices as keys
                and tuples of (node_from, node_to) as values for AC and DC branches, respectively.
     """
-    AC_connections, DC_connections = filter_connections_by_list(datapath_GridData, chosen_connections)
+    AC_connections, DC_connections = filter_connections_by_list(data, chosen_connections)
 
     # Create dictionaries with index as key and tuple (node_from, node_to) as value for each
     AC_dict = {
@@ -698,11 +694,9 @@ def get_connections(datapath_GridData, chosen_connections):
 
 
 
-def filter_connections_by_list(grid_data_path, chosen_connections=None):
-    AC_branch_path = grid_data_path / "branch.csv"
-    DC_branch_path = grid_data_path / "dcbranch.csv"
-    AC_branch_df = pd.read_csv(AC_branch_path)
-    DC_branch_df = pd.read_csv(DC_branch_path)
+def filter_connections_by_list(data: GridData, chosen_connections=None):
+    AC_branch_df = data.branch
+    DC_branch_df = data.dcbranch
 
     if chosen_connections:
         # Filter AC branches where the pair [node_from, node_to] matches any in chosen_connections
@@ -724,8 +718,8 @@ def filter_connections_by_list(grid_data_path, chosen_connections=None):
 
 
 
-def plot_LDC_interconnections(db, grid_data_path, time_max_min, OUTPUT_PATH_PLOTS, tex_font):
-    AC_interconnections, DC_interconnections = filter_cross_country_connections(grid_data_path)
+def plot_LDC_interconnections(data, db, grid_data_path, time_max_min, OUTPUT_PATH_PLOTS, tex_font):
+    AC_interconnections, DC_interconnections = filter_cross_country_connections(data)
 
     AC_interconnections_capacity = AC_interconnections['capacity']
     DC_interconnections_capacity = DC_interconnections['capacity']
@@ -1185,7 +1179,7 @@ def GetReservoirFillingAtSpecificNodes(Nodes, data: GridData, database: Database
 
 # === FLOW TO EXCEL ===
 
-def getFlowDataOnBranches(db: Database, time_max_min, grid_data_path, chosen_connections):
+def getFlowDataOnBranches(data: GridData, db: Database, time_max_min, chosen_connections):
     """
     Collect flow on chosen connections.
     :param db:
@@ -1197,12 +1191,12 @@ def getFlowDataOnBranches(db: Database, time_max_min, grid_data_path, chosen_con
     print(f'Collecting Flow Data at Lines {", ".join([f"{f} → {t}" for f, t in chosen_connections])}')
 
 
-    AC_interconnections, DC_interconnections = filter_connections_by_list(grid_data_path, chosen_connections)
+    AC_interconnections, DC_interconnections = filter_connections_by_list(data, chosen_connections)
     AC_interconnections_capacity = AC_interconnections['capacity']
     DC_interconnections_capacity = DC_interconnections['capacity']
 
     # Get connections
-    AC_dict, DC_dict = get_connections(grid_data_path, chosen_connections)
+    AC_dict, DC_dict = get_connections(data, chosen_connections)
 
     # Collect AC and DC flow data
     flow_data_AC = collect_flow_data(db, time_max_min, AC_dict, AC_interconnections_capacity, ac=True)

@@ -498,6 +498,7 @@ def add_node_marker(data, index, price, avg_national_prices, avg_zonal_price, m,
     ).add_to(m)
 
 
+
 def add_branch_lines(data, utilisation, flows, branch_type, m, line_colormap, dashed=False):
     """
     Add lines representing AC or DC branches on the map, showing flow and utilization.
@@ -541,32 +542,49 @@ def add_branch_lines(data, utilisation, flows, branch_type, m, line_colormap, da
         zoneB = row['node_to'][:3]
 
         if zoneA != zoneB:
-            mid_lat = nodeA['lat'] + 0.5 * (nodeB['lat'] - nodeA['lat'])
-            mid_lon = nodeA['lon'] + 0.5 * (nodeB['lon'] - nodeA['lon'])
+            # Convert endpoints to Mercator
+            Ax, Ay = to_web_mercator(nodeA['lat'], nodeA['lon'])
+            Bx, By = to_web_mercator(nodeB['lat'], nodeB['lon'])
 
+            # Always compute the midpoint as the average
+            Mx = (Ax + Bx) / 2
+            My = (Ay + By) / 2
+
+            # Determine the direction based on flows
             if flows[0][idx] >= flows[1][idx]:
-                dy = nodeB['lat'] - nodeA['lat']
-                dx = nodeB['lon'] - nodeA['lon']
+                dx = Bx - Ax
+                dy = By - Ay
             else:
-                dy = nodeA['lat'] - nodeB['lat']
-                dx = nodeA['lon'] - nodeB['lon']
+                dx = Ax - Bx
+                dy = Ay - By
 
-            angle = math.degrees(math.atan2(dy, dx)) % 360
-
+            angle = math.degrees(math.atan2(dx, dy)) % 360
             print(f"From: {row['node_from']} → {row['node_to']}, dx={dx:.1f}, dy={dy:.1f}, angle={angle:.1f}, rotation={angle:.1f}")
+            mid_lat, mid_lon = from_web_mercator(Mx, My)
 
             folium.Marker(
                 location=[mid_lat, mid_lon],
-                icon=folium.DivIcon(html=svg_arrow_icon(angle)),
+                icon=folium.DivIcon(
+                    html=svg_arrow_icon(angle),
+                    icon_size=(24,24),
+                    icon_anchor=(12,12)
+                ),
                 popup="Flow direction"
             ).add_to(m)
 
 
-def mercator_projection(lat, lon):
-    R = 6378137  # jordradius i meter
+def to_web_mercator(lat, lon):
+    R = 6378137.0  # Earth radius
     x = R * math.radians(lon)
-    y = R * math.log(math.tan(math.pi / 4 + math.radians(lat) / 2))
+    y = R * math.log(math.tan(math.pi/4 + math.radians(lat)/2))
     return x, y
+
+def from_web_mercator(x, y):
+    R = 6378137.0
+    lon = math.degrees(x / R)
+    lat = math.degrees(2 * math.atan(math.exp(y / R)) - math.pi/2)
+    return lat, lon
+
 
 def svg_arrow_icon(angle: float, color="black") -> str:
     return f"""
@@ -579,8 +597,7 @@ def svg_arrow_icon(angle: float, color="black") -> str:
     </div>
     """
 
-
-
+  
 
 def get_interconnections(data: GridData):
     """

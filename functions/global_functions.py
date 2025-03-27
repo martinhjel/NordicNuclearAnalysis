@@ -496,6 +496,69 @@ def add_node_marker(data, index, price, avg_national_prices, avg_zonal_price, m,
     ).add_to(m)
 
 
+# def add_branch_lines(data, utilisation, flows, branch_type, m, line_colormap, dashed=False):
+#     """
+#     Add lines representing AC or DC branches on the map, showing flow and utilization.
+#
+#     Parameters:
+#         data (Scenario):                Simulation data containing branch information.
+#         utilisation (list):             List of average utilization values for each branch.
+#         flows (list):                   List of average flow values for each branch.
+#         branch_type (str):              Type of branch ("AC" or "DC").
+#         m (folium.Map):                 Folium map object to which the lines will be added.
+#         line_colormap (LinearColormap): Colormap for representing utilization.
+#         dashed (bool):                  If True, displays lines as dashed; used for DC branches.
+#
+#     Returns:
+#         None
+#     """
+#     branches = data.branch if branch_type == 'AC' else data.dcbranch
+#     for idx, row in branches.iterrows():
+#         utilisation_percent = utilisation[idx] * 100
+#         nodeA = data.node.loc[data.node['id'] == row['node_from']].iloc[0]
+#         nodeB = data.node.loc[data.node['id'] == row['node_to']].iloc[0]
+#         line_color = line_colormap(utilisation[idx])
+#
+#         popup_content = folium.Popup(
+#             f"<b>{branch_type} Line</b><br>"
+#             f"<b>Power Flow:</b> {flows[2][idx]:.2f} MW<br>"
+#             f"<b>Utilisation:</b> {utilisation_percent:.2f}%",
+#             max_width=150
+#         )
+#
+#         folium.PolyLine(
+#             locations=[(nodeA['lat'], nodeA['lon']), (nodeB['lat'], nodeB['lon'])],
+#             color=line_color,
+#             weight=5,
+#             dash_array="5, 10" if dashed else None,
+#             opacity=0.7,
+#             popup=popup_content
+#         ).add_to(m)
+#
+#         mid_lat, mid_lon = _pointBetween((nodeA['lat'], nodeA['lon']), (nodeB['lat'], nodeB['lon']), weight=0.5)
+#
+#         flow_A_to_B = flows[0][idx]  # Flyt fra A til B
+#         flow_B_to_A = flows[1][idx]  # Flyt fra B til A
+#
+#         if flow_A_to_B >= flow_B_to_A:
+#             angle = math.degrees(math.atan2(nodeB['lon'] - nodeA['lon'], nodeB['lat'] - nodeA['lat']))
+#         else:
+#             angle = math.degrees(math.atan2(nodeA['lon'] - nodeB['lon'], nodeA['lat'] - nodeB['lat']))
+#
+#         folium.RegularPolygonMarker(
+#             location=[mid_lat, mid_lon],
+#             fill_color=line_color,
+#             number_of_sides=3,
+#             radius=12,
+#             rotation=angle,
+#             fill_opacity=0.9,
+#             color=line_color,
+#             weight=2,
+#             popup="Flow direction"
+#         ).add_to(m)
+#
+
+
 def add_branch_lines(data, utilisation, flows, branch_type, m, line_colormap, dashed=False):
     """
     Add lines representing AC or DC branches on the map, showing flow and utilization.
@@ -535,27 +598,64 @@ def add_branch_lines(data, utilisation, flows, branch_type, m, line_colormap, da
             popup=popup_content
         ).add_to(m)
 
-        mid_lat, mid_lon = _pointBetween((nodeA['lat'], nodeA['lon']), (nodeB['lat'], nodeB['lon']), weight=0.5)
+        zoneA = row['node_from'][:3]
+        zoneB = row['node_to'][:3]
 
-        flow_A_to_B = flows[0][idx]  # Flyt fra A til B
-        flow_B_to_A = flows[1][idx]  # Flyt fra B til A
+        if zoneA != zoneB:
+            # Convert endpoints to Mercator
+            Ax, Ay = to_web_mercator(nodeA['lat'], nodeA['lon'])
+            Bx, By = to_web_mercator(nodeB['lat'], nodeB['lon'])
 
-        if flow_A_to_B >= flow_B_to_A:
-            angle = math.degrees(math.atan2(nodeB['lon'] - nodeA['lon'], nodeB['lat'] - nodeA['lat']))
-        else:
-            angle = math.degrees(math.atan2(nodeA['lon'] - nodeB['lon'], nodeA['lat'] - nodeB['lat']))
+            # Always compute the midpoint as the average
+            Mx = (Ax + Bx) / 2
+            My = (Ay + By) / 2
 
-        folium.RegularPolygonMarker(
-            location=[mid_lat, mid_lon],
-            fill_color=line_color,
-            number_of_sides=3,
-            radius=12,
-            rotation=angle,
-            fill_opacity=0.9,
-            color=line_color,
-            weight=2,
-            popup="Flow direction"
-        ).add_to(m)
+            # Determine the direction based on flows
+            if flows[0][idx] >= flows[1][idx]:
+                dx = Bx - Ax
+                dy = By - Ay
+            else:
+                dx = Ax - Bx
+                dy = Ay - By
+
+            angle = math.degrees(math.atan2(dx, dy)) % 360
+            print(f"From: {row['node_from']} → {row['node_to']}, dx={dx:.1f}, dy={dy:.1f}, angle={angle:.1f}, rotation={angle:.1f}")
+            mid_lat, mid_lon = from_web_mercator(Mx, My)
+
+            folium.Marker(
+                location=[mid_lat, mid_lon],
+                icon=folium.DivIcon(
+                    html=svg_arrow_icon(angle),
+                    icon_size=(24,24),
+                    icon_anchor=(12,12)
+                ),
+                popup="Flow direction"
+            ).add_to(m)
+
+
+def to_web_mercator(lat, lon):
+    R = 6378137.0  # Earth radius
+    x = R * math.radians(lon)
+    y = R * math.log(math.tan(math.pi/4 + math.radians(lat)/2))
+    return x, y
+
+def from_web_mercator(x, y):
+    R = 6378137.0
+    lon = math.degrees(x / R)
+    lat = math.degrees(2 * math.atan(math.exp(y / R)) - math.pi/2)
+    return lat, lon
+
+
+def svg_arrow_icon(angle: float, color="black") -> str:
+    return f"""
+    <div style="transform: rotate({angle}deg); width: 24px; height: 24px;">
+        <svg width="24" height="24" viewBox="0 0 24 24" 
+             xmlns="http://www.w3.org/2000/svg" 
+             style="transform: rotate(0deg);">
+            <polygon points="12,0 4,20 12,16 20,20" fill="{color}" />
+        </svg>
+    </div>
+    """
 
 
 def get_interconnections(data: GridData):

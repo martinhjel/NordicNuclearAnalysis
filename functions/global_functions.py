@@ -5,7 +5,9 @@ import numpy as np
 import pandas as pd
 import time
 import folium
+from folium.features import DivIcon
 import math
+from math import radians, degrees, atan2, cos, sin
 
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
@@ -535,27 +537,49 @@ def add_branch_lines(data, utilisation, flows, branch_type, m, line_colormap, da
             popup=popup_content
         ).add_to(m)
 
-        mid_lat, mid_lon = _pointBetween((nodeA['lat'], nodeA['lon']), (nodeB['lat'], nodeB['lon']), weight=0.5)
+        zoneA = row['node_from'][:3]
+        zoneB = row['node_to'][:3]
 
-        flow_A_to_B = flows[0][idx]  # Flyt fra A til B
-        flow_B_to_A = flows[1][idx]  # Flyt fra B til A
+        if zoneA != zoneB:
+            mid_lat = nodeA['lat'] + 0.5 * (nodeB['lat'] - nodeA['lat'])
+            mid_lon = nodeA['lon'] + 0.5 * (nodeB['lon'] - nodeA['lon'])
 
-        if flow_A_to_B >= flow_B_to_A:
-            angle = math.degrees(math.atan2(nodeB['lon'] - nodeA['lon'], nodeB['lat'] - nodeA['lat']))
-        else:
-            angle = math.degrees(math.atan2(nodeA['lon'] - nodeB['lon'], nodeA['lat'] - nodeB['lat']))
+            if flows[0][idx] >= flows[1][idx]:
+                dy = nodeB['lat'] - nodeA['lat']
+                dx = nodeB['lon'] - nodeA['lon']
+            else:
+                dy = nodeA['lat'] - nodeB['lat']
+                dx = nodeA['lon'] - nodeB['lon']
 
-        folium.RegularPolygonMarker(
-            location=[mid_lat, mid_lon],
-            fill_color=line_color,
-            number_of_sides=3,
-            radius=12,
-            rotation=angle,
-            fill_opacity=0.9,
-            color=line_color,
-            weight=2,
-            popup="Flow direction"
-        ).add_to(m)
+            angle = math.degrees(math.atan2(dy, dx)) % 360
+
+            print(f"From: {row['node_from']} → {row['node_to']}, dx={dx:.1f}, dy={dy:.1f}, angle={angle:.1f}, rotation={angle:.1f}")
+
+            folium.Marker(
+                location=[mid_lat, mid_lon],
+                icon=folium.DivIcon(html=svg_arrow_icon(angle)),
+                popup="Flow direction"
+            ).add_to(m)
+
+
+def mercator_projection(lat, lon):
+    R = 6378137  # jordradius i meter
+    x = R * math.radians(lon)
+    y = R * math.log(math.tan(math.pi / 4 + math.radians(lat) / 2))
+    return x, y
+
+def svg_arrow_icon(angle: float, color="black") -> str:
+    return f"""
+    <div style="transform: rotate({angle}deg); width: 24px; height: 24px;">
+        <svg width="24" height="24" viewBox="0 0 24 24" 
+             xmlns="http://www.w3.org/2000/svg" 
+             style="transform: rotate(0deg);">
+            <polygon points="12,0 4,20 12,16 20,20" fill="{color}" />
+        </svg>
+    </div>
+    """
+
+
 
 
 def get_interconnections(data: GridData):

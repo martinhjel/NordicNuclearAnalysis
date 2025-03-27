@@ -46,7 +46,7 @@ database = Database(SQL_FILE)
 
 # === INITIALIZATIONS ===
 START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1994, "month": 12, "day": 31, "hour": 23}
+END = {"year": 1992, "month": 12, "day": 31, "hour": 23}
 nordic_grid_map_fromDB(data, database, time_range = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END),
                        OUTPUT_PATH = OUTPUT_PATH, version = version, START = START, END = END, exchange_rate_NOK_EUR = 11.38)
 
@@ -160,14 +160,14 @@ plot_SF_Areas_FromDB(data, database, time_SF, OUTPUT_PATH_PLOTS, DATE_START, plo
 # Todo: Må OGSÅ ha mulighet til å plotte storage filling ned på node nivå.
 
 # === INITIALIZATIONS ===
-START = {"year": 1992, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1993, "month": 1, "day": 1, "hour": 0}
+START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
+END = {"year": 2020, "month": 1, "day": 1, "hour": 0}
 
 # === PLOT CONFIGURATIONS ===
 plot_config = {
-    'zones': ['NO2', 'NO3'],                     # When plotting multiple years in one year, recommend to only use one zone
+    'zones': ['NO4'],                     # When plotting multiple years in one year, recommend to only use one zone
     'relative': True,                            # Relative storage filling, True gives percentage
-    "plot_by_year": 1,                           # (1) Each year in individual plot, (2) Entire Timeline, (3) Each year show over 1 year timeline.
+    "plot_by_year": 3,                           # (1) Each year in individual plot, (2) Entire Timeline, (3) Each year show over 1 year timeline.
     "duration_curve": False,                     # True: Plot duration curve, or False: Plot storage filling over time
     "save_fig": False,                           # True: Save plot as pdf
     "interval": 1                                # Number of months on x-axis. 1 = Step is one month, 12 = Step is 12 months

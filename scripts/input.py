@@ -7,15 +7,18 @@ from pygments.styles.dracula import DraculaStyle
 # from networkx.classes import nodes
 # from pandas.io.formats.style import color
 
+case = 'BM'
+version = 'v87'
+
 
 def read_data(case):
     base_path = pathlib.Path(f"../case_{case}/data/system/")
     system_data = powergama.GridData()
-    system_data.readGridData(nodes=base_path/"node.csv",
-                        ac_branches=base_path/"branch.csv",
-                        dc_branches=base_path/"dcbranch.csv",
-                        generators=base_path/"generator.csv",
-                        consumers=base_path/"consumer.csv")
+    system_data.readGridData(nodes=base_path/f"node_{case}_{version}.csv",
+                        ac_branches=base_path/f"branch_{case}_{version}.csv",
+                        dc_branches=base_path/f"dcbranch_{case}_{version}.csv",
+                        generators=base_path/f"generator_{case}_{version}.csv",
+                        consumers=base_path/f"consumer_{case}_{version}.csv")
 
     return system_data
 

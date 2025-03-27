@@ -30,7 +30,7 @@ except NameError:
     BASE_DIR = BASE_DIR / f'case_{case}'
 
 
-SQL_FILE = BASE_DIR / f"powergama_{case}_{version}_{SIM_YEAR_START}_{SIM_YEAR_END}_HYDRO.sqlite"
+SQL_FILE = BASE_DIR / f"powergama_{case}_{version}_{SIM_YEAR_START}_{SIM_YEAR_END}.sqlite"
 
 
 # File paths

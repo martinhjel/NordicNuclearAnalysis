@@ -47,6 +47,7 @@ database = Database(SQL_FILE)
 # === INITIALIZATIONS ===
 START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
 END = {"year": 1991, "month": 12, "day": 31, "hour": 23}
+
 nordic_grid_map_fromDB(data, database, time_range = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END),
                        OUTPUT_PATH = OUTPUT_PATH, version = version, START = START, END = END, exchange_rate_NOK_EUR = 11.38)
 
@@ -166,6 +167,7 @@ END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
 # === PLOT CONFIGURATIONS ===
 plot_config = {
     'zones': ['NO3'],                     # When plotting multiple years in one year, recommend to only use one zone
+
     'relative': True,                            # Relative storage filling, True gives percentage
     "plot_by_year": 3,                           # (1) Each year in individual plot, (2) Entire Timeline, (3) Each year show over 1 year timeline.
     "duration_curve": False,                     # True: Plot duration curve, or False: Plot storage filling over time

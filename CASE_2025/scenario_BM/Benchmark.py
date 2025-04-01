@@ -27,7 +27,7 @@ try:
 except NameError:
     # For notebooks or interactive shells
     BASE_DIR = pathlib.Path().cwd()
-    BASE_DIR = BASE_DIR / f'case_{CASE_YEAR}' / f'case_{SCENARIO}'
+    BASE_DIR = BASE_DIR / f'case_{CASE_YEAR}' / f'scenario_{SCENARIO}'
 
 
 SQL_FILE = BASE_DIR / f"powergama_{SCENARIO}_{VERSION}_{SIM_YEAR_START}_{SIM_YEAR_END}.sqlite"

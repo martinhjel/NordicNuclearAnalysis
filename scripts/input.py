@@ -7,6 +7,9 @@ from pygments.styles.dracula import DraculaStyle
 # from networkx.classes import nodes
 # from pandas.io.formats.style import color
 
+case = 'BM'
+version = 'v87'
+
 
 def read_data(case, version):
     base_path = pathlib.Path(f"../case_{case}/data/system/")

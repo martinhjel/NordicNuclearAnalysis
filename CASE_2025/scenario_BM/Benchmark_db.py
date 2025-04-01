@@ -9,8 +9,9 @@ import pandas as pd
 # === General Configurations ===
 SIM_YEAR_START = 1991           # Start year for the main simulation  (SQL-file)
 SIM_YEAR_END = 2020             # End year for the main simulation  (SQL-file)
-case = 'BM'
-version = 'v86'
+CASE_YEAR = 2025
+SCENARIO = 'BM'
+VERSION = 'v96'
 TIMEZONE = ZoneInfo("UTC")  # Definerer UTC tidssone
 
 ####  PASS PÅ HARD KODING I SQL FIL
@@ -27,17 +28,17 @@ try:
 except NameError:
     # For notebooks or interactive shells
     BASE_DIR = pathlib.Path().cwd()
-    BASE_DIR = BASE_DIR / f'case_{case}'
+    BASE_DIR = BASE_DIR / f'case_{CASE_YEAR}' / f'case_{SCENARIO}'
 
 # === File Paths ===
-SQL_FILE = BASE_DIR / f"powergama_{case}_{version}_{SIM_YEAR_START}_{SIM_YEAR_END}.sqlite"
+SQL_FILE = BASE_DIR / f"powergama_{SCENARIO}_{VERSION}_{SIM_YEAR_START}_{SIM_YEAR_END}.sqlite"
 DATA_PATH = BASE_DIR / 'data'
 GRID_DATA_PATH = DATA_PATH / 'system'
 OUTPUT_PATH = BASE_DIR / 'results'
 OUTPUT_PATH_PLOTS = BASE_DIR / 'results' / 'plots'
 
 # === Initialize Database and Grid Data ===
-data, time_max_min = setup_grid(version, DATE_START, DATE_END, DATA_PATH, case)
+data, time_max_min = setup_grid(VERSION, DATE_START, DATE_END, DATA_PATH, SCENARIO)
 database = Database(SQL_FILE)
 
 
@@ -46,10 +47,9 @@ database = Database(SQL_FILE)
 
 # === INITIALIZATIONS ===
 START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1991, "month": 12, "day": 31, "hour": 23}
-
+END = {"year": 1993, "month": 12, "day": 31, "hour": 23}
 nordic_grid_map_fromDB(data, database, time_range = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END),
-                       OUTPUT_PATH = OUTPUT_PATH, version = version, START = START, END = END, exchange_rate_NOK_EUR = 11.38)
+                       OUTPUT_PATH = OUTPUT_PATH, version = VERSION, START = START, END = END, exchange_rate_NOK_EUR = 11.38)
 
 
 # %% === ZONAL PRICE MAP ===
@@ -140,11 +140,11 @@ plot_Flow_fromDB(data, database, DATE_START, time_Lines, OUTPUT_PATH_PLOTS, plot
 
 # === INITIALIZATIONS ===
 START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
+END = {"year": 1993, "month": 12, "day": 31, "hour": 23}
 
 # === PLOT CONFIGURATIONS ===
 plot_config = {
-    'areas': ['NO'],            # When plotting multiple years in one year, recommend to only use one area
+    'areas': ['FI'],            # When plotting multiple years in one year, recommend to only use one area
     'relative': True,           # Relative storage filling, True gives percentage
     "plot_by_year": True,       # True: One curve for each year in same plot, or False:all years collected in one plot over the whole simulation period
     "duration_curve": False,    # True: Plot duration curve, or False: Plot storage filling over time
@@ -162,12 +162,11 @@ plot_SF_Areas_FromDB(data, database, time_SF, OUTPUT_PATH_PLOTS, DATE_START, plo
 
 # === INITIALIZATIONS ===
 START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
+END = {"year": 1993, "month": 12, "day": 31, "hour": 23}
 
 # === PLOT CONFIGURATIONS ===
 plot_config = {
-    'zones': ['NO3'],                     # When plotting multiple years in one year, recommend to only use one zone
-
+    'zones': ['SE4'],                     # When plotting multiple years in one year, recommend to only use one zone
     'relative': True,                            # Relative storage filling, True gives percentage
     "plot_by_year": 3,                           # (1) Each year in individual plot, (2) Entire Timeline, (3) Each year show over 1 year timeline.
     "duration_curve": False,                     # True: Plot duration curve, or False: Plot storage filling over time
@@ -335,9 +334,9 @@ Main Features:
 """
 
 # === INITIALIZATIONS ===
-START = {"year": 1992, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1993, "month": 1, "day": 1, "hour": 0}
-Nodes = ['PL']
+START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
+END = {"year": 1991, "month": 12, "day": 31, "hour": 23}
+Nodes = ['SE2_4', 'FI_3']
 SELECTED_BRANCHES  = [['NO3_1','SE2_4']] # See branch CSV files for correct connections
 # ======================================================================================================================
 
@@ -346,8 +345,8 @@ production_per_node, gen_idx, gen_type = GetProductionAtSpecificNodes(Nodes, dat
 consumption_per_node = GetConsumptionAtSpecificNodes(Nodes, data, database, start_hour, end_hour)
 nodal_prices_per_node = GetPriceAtSpecificNodes(Nodes, data, database, start_hour, end_hour)
 reservoir_filling_per_node, storage_cap = GetReservoirFillingAtSpecificNodes(Nodes, data, database, start_hour, end_hour)
-flow_data = getFlowDataOnBranches(database, [start_hour, end_hour], GRID_DATA_PATH, SELECTED_BRANCHES)
-excel_filename = ExportToExcel(Nodes, production_per_node, consumption_per_node, nodal_prices_per_node, reservoir_filling_per_node, storage_cap, flow_data, START, END, case, version, OUTPUT_PATH)
+flow_data = getFlowDataOnBranches(data, database, [start_hour, end_hour], SELECTED_BRANCHES)
+excel_filename = ExportToExcel(Nodes, production_per_node, consumption_per_node, nodal_prices_per_node, reservoir_filling_per_node, storage_cap, flow_data, START, END, SCENARIO, VERSION, OUTPUT_PATH)
 
 
 # %% === Write Flow Data to Excel ===
@@ -361,7 +360,7 @@ SELECTED_BRANCHES  = [['NO3_1','SE2_4'],['NO3_1','NO4_3'], ['NO3_4','NO5_1'], ['
 
 time_Flow = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
 flow_data = getFlowDataOnBranches(database, time_Flow, GRID_DATA_PATH, SELECTED_BRANCHES)
-flow_path = writeFlowToExcel(flow_data, START, END, TIMEZONE, OUTPUT_PATH, case, version)
+flow_path = writeFlowToExcel(flow_data, START, END, TIMEZONE, OUTPUT_PATH, SCENARIO, VERSION)
 
 
 

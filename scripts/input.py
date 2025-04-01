@@ -11,7 +11,7 @@ case = 'BM'
 version = 'v87'
 
 
-def read_data(case):
+def read_data(case, version):
     base_path = pathlib.Path(f"../case_{case}/data/system/")
     system_data = powergama.GridData()
     system_data.readGridData(nodes=base_path/f"node_{case}_{version}.csv",
@@ -33,7 +33,7 @@ def node_plot(scenario_data):
         generator_summary = (
             generator_df.groupby('node', group_keys=False)
             .apply(lambda x: '<br>'.join([
-                f"{row['type']}: {row['pmax']:.2f} MW"
+                f"{' '.join(row['desc'].split()[1:]) if pd.notna(row['desc']) and row['desc'].strip() != '' else row['type']}: {row['pmax']:.2f} MW"
                 for _, row in x.iterrows()
             ]))
             .reset_index(name='generator_info')  # Use reset_index with name for compatibility
@@ -75,7 +75,7 @@ def node_plot(scenario_data):
         <b>Installed Capacity:</b><br>{generator_info}<br><br>
         <b>Average Demand:</b><br>{consumer_info}
         """
-        marker_color = "orange" if "SMR" in row['id'] else "purple" if "data_centre" in row['id'] else "blue"
+        marker_color = "orange" if "SMR" in generator_info else "purple" if "data_centre" in row['id'] else "blue"
 
 
         folium.Marker(
@@ -135,9 +135,9 @@ def grid_plot(scenario_data):
     return map
 
 def main():
-    case = 'BM'
-    # year = 2025
-    scenario_data = read_data(case)
+    case = 'BMNP'
+    version = 'v1'
+    scenario_data = read_data(case, version)
     grid_map = grid_plot(scenario_data)
 
     output_dir = os.path.join("..", f"case_{case}", "results", "input")

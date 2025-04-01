@@ -5,12 +5,12 @@ from scripts.case_doc import *
 
 
 # Define global variables
-YEAR_SCENARIO = 2025
-case = 'BM'
-version = 'v86'
+CASE_YEAR = 2025
+SCENARIO = 'BM'
+VERSION = 'v91'
 
 SIM_YEAR_START = 1991
-SIM_YEAR_END = 2020
+SIM_YEAR_END = 1991
 DATE_START = pd.Timestamp(f'{SIM_YEAR_START}-01-01 00:00:00', tz='UTC')
 DATE_END = pd.Timestamp(f'{SIM_YEAR_END}-12-31 23:00:00', tz='UTC')
 
@@ -27,10 +27,10 @@ try:
 except NameError:
     # For notebooks or interactive shells
     BASE_DIR = pathlib.Path().cwd()
-    BASE_DIR = BASE_DIR / f'case_{case}'
+    BASE_DIR = BASE_DIR / f'case_{CASE_YEAR}' / f'scenario_{SCENARIO}'
 
 
-SQL_FILE = BASE_DIR / f"powergama_{case}_{version}_{SIM_YEAR_START}_{SIM_YEAR_END}.sqlite"
+SQL_FILE = BASE_DIR / f"powergama_{SCENARIO}_{VERSION}_{SIM_YEAR_START}_{SIM_YEAR_END}.sqlite"
 
 
 # File paths
@@ -56,12 +56,12 @@ week_MSO = {'FI_10':16,
 # %%
 # Configure grid and run simulation
 # create_case_doc('BM') # Create case documentation
-data, time_max_min = setup_grid(version, DATE_START, DATE_END, DATA_PATH, case)
+data, time_max_min = setup_grid(VERSION, DATE_START, DATE_END, DATA_PATH, SCENARIO)
 res = solve_lp(data, SQL_FILE, loss_method, replace=True, nuclear_availability=0.7, week_MSO=week_MSO)
 
 
 # %% Create Nordic Grid Map
-nordic_grid_map(data, res, time_max_min, OUTPUT_PATH, version, exchange_rate_NOK_EUR=11.38)
+nordic_grid_map(data, res, time_max_min, OUTPUT_PATH, VERSION, exchange_rate_NOK_EUR=11.38)
 
 
 

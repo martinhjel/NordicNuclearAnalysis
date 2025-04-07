@@ -131,7 +131,9 @@ def plot_storage_filling_area(storfilling, DATE_START, DATE_END, areas, interval
 
     # Show and/or save the plot
     if save_plot:
-        plt.savefig(OUTPUT_PATH_PLOTS / 'storage_level.pdf')
+        plot_path = f'reservoir_filling_{"_".join(areas)}_{DATE_START.year}_to_{DATE_END.year}.svg'
+        plt.savefig(OUTPUT_PATH_PLOTS / plot_path)
+        return plot_path
     plt.show()
 
 
@@ -392,7 +394,9 @@ def plotZonePriceMatrix(price_matrix, save_fig, OUTPUT_PATH_PLOTS):
     plt.ylabel("Zone")
     plt.tight_layout()
     if save_fig:
-        plt.savefig(OUTPUT_PATH_PLOTS / f"ZonePriceMap.pdf")
+        filename = f"ZonePriceMatrix_{price_matrix.index[0]}_{price_matrix.index[-1]}.pdf"
+        plt.savefig(OUTPUT_PATH_PLOTS / filename)
+        return filename
     plt.show()
 
 

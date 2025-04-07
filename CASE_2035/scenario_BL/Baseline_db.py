@@ -54,6 +54,37 @@ nordic_grid_map_fromDB(data, database, time_range = get_hour_range(SIM_YEAR_STAR
 
 
 
+# %% === GET FLOW FACTOR MATRIX ===
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Compute matrices
+Bbus, DAmatrix = data.compute_power_flow_matrices()
+
+# Compute PTDF explicitly (correct formula)
+Bbus_inv = np.linalg.pinv(Bbus.todense())
+PTDF = DAmatrix @ Bbus_inv
+
+# Convert to array
+PTDF_array = PTDF if isinstance(PTDF, np.ndarray) else PTDF.toarray()
+PTDF_df = pd.DataFrame(PTDF_array, columns=data.node.index, index=data.branch.index)
+
+# Display basic info
+print("Matrix shape:", PTDF_df.shape)
+print(PTDF_df.describe(percentiles=[.25, .5, .75, .95]))
+
+# Visualize with heatmap
+plt.figure(figsize=(20, 20))
+sns.heatmap(PTDF_array, cmap='RdBu', center=0,
+            cbar_kws={'label': 'PTDF Sensitivity'})
+
+plt.xlabel('Nodes')
+plt.ylabel('Lines')
+plt.title('PTDF Matrix Visualization')
+plt.tight_layout()
+plt.show()
+
 # %% === ZONAL PRICE MAP ===
 # TODO: legg til mulighet for å ha øre/kwh
 zones = ['NO1', 'NO2', 'NO3', 'NO4', 'NO5', 'SE1', 'SE2', 'SE3', 'SE4',

@@ -6,9 +6,9 @@ SCENARIO = 'NPNO2'
 VERSION = 'v1'
 
 SIM_YEAR_START = 1991
-SIM_YEAR_END = 1995
+SIM_YEAR_END = 1991
 DATE_START = pd.Timestamp(f'{SIM_YEAR_START}-01-01 00:00:00', tz='UTC')
-DATE_END = pd.Timestamp(f'{SIM_YEAR_END}-12-31 23:00:00', tz='UTC')
+DATE_END = pd.Timestamp(f'{SIM_YEAR_END}-01-10 23:00:00', tz='UTC')
 
 loss_method = 0
 new_scenario = False
@@ -40,7 +40,6 @@ week_MSO = {'FI_10':16,
             'SE3_6':24,
             'GB':32,
             'NL':28,
-            'PL':22,
             }
 
 

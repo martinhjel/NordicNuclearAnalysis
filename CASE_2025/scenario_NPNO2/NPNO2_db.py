@@ -8,7 +8,7 @@ import pandas as pd
 
 # === General Configurations ===
 SIM_YEAR_START = 1991           # Start year for the main simulation  (SQL-file)
-SIM_YEAR_END = 2020             # End year for the main simulation  (SQL-file)
+SIM_YEAR_END = 1995             # End year for the main simulation  (SQL-file)
 CASE_YEAR = 2025
 SCENARIO = 'NPNO2'          # Scenario name
 VERSION = 'v1'
@@ -41,7 +41,12 @@ OUTPUT_PATH_PLOTS = BASE_DIR / 'results' / 'plots'
 data, time_max_min = setup_grid(VERSION, DATE_START, DATE_END, DATA_PATH, SCENARIO)
 database = Database(SQL_FILE)
 
+# %%
+res = powergama.Results(data, SQL_FILE, replace=False)
 
+
+# %%
+test = database.getResultNuclearSens(time_max_min)
 
 # %% Nordic Grid Map
 
@@ -53,13 +58,51 @@ nordic_grid_map_fromDB(data, database, time_range = get_hour_range(SIM_YEAR_STAR
 
 
 
+# %% === GET FLOW FACTOR MATRIX ===
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Compute matrices
+Bbus, DAmatrix = data.compute_power_flow_matrices()
+
+# Compute PTDF explicitly (correct formula)
+Bbus_inv = np.linalg.pinv(Bbus.todense())
+PTDF = DAmatrix @ Bbus_inv
+
+# Convert to array
+PTDF_array = PTDF if isinstance(PTDF, np.ndarray) else PTDF.toarray()
+PTDF_df = pd.DataFrame(PTDF_array, columns=data.node.index, index=data.branch.index)
+
+# Display basic info
+print("Matrix shape:", PTDF_df.shape)
+print(PTDF_df.describe(percentiles=[.25, .5, .75, .95]))
+
+# Visualize with heatmap
+plt.figure(figsize=(20, 20))
+sns.heatmap(PTDF_array, cmap='RdBu', center=0,
+            cbar_kws={'label': 'PTDF Sensitivity'})
+
+plt.xlabel('Nodes')
+plt.ylabel('Lines')
+plt.title('PTDF Matrix Visualization')
+plt.tight_layout()
+plt.show()
+
+
+# %% === BRANCH DUAL VALUES ===
+
+resBranch = []
+for i in data.branch.index:
+    resBranch.append(database.getResultBranchSens(i, time_max_min))
+
 
 # %% === ZONAL PRICE MAP ===
 # TODO: legg til mulighet for å ha øre/kwh
 zones = ['NO1', 'NO2', 'NO3', 'NO4', 'NO5', 'SE1', 'SE2', 'SE3', 'SE4',
          'DK1', 'DK2', 'FI', 'DE', 'GB', 'NL', 'LT', 'PL', 'EE']
 year_range = list(range(SIM_YEAR_START, SIM_YEAR_END + 1))
-price_matrix = createZonePriceMatrix(data, database, zones, year_range, TIMEZONE, SIM_YEAR_START, SIM_YEAR_END)
+price_matrix, log = createZonePriceMatrix(data, database, zones, year_range, TIMEZONE, SIM_YEAR_START, SIM_YEAR_END)
 
 # %% Plot Zonal Price Matrix
 plotZonePriceMatrix(price_matrix, save_fig=True, OUTPUT_PATH_PLOTS=OUTPUT_PATH_PLOTS)
@@ -69,8 +112,8 @@ plotZonePriceMatrix(price_matrix, save_fig=True, OUTPUT_PATH_PLOTS=OUTPUT_PATH_P
 # %% Check Total Consumption for a given period.
 # Demand Response
 # === INITIALIZATIONS ===
-START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1992, "month": 1, "day": 1, "hour": 0}
+START = {"year": 1993, "month": 1, "day": 1, "hour": 0}
+END = {"year": 1994, "month": 1, "day": 1, "hour": 0}
 
 time_Demand = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
 demandTotal = getDemandPerAreaFromDB(data, database, area='NO', timeMaxMin=time_Demand)
@@ -97,7 +140,7 @@ END = {"year": 1995, "month": 12, "day": 31, "hour": 23}
 
 # === PLOT CONFIGURATIONS ===
 plot_config = {
-    'areas': ['FI'],            # When plotting multiple years in one year, recommend to only use one area
+    'areas': ['NO'],            # When plotting multiple years in one year, recommend to only use one area
     'relative': True,           # Relative storage filling, True gives percentage
     "plot_by_year": True,       # True: One curve for each year in same plot, or False:all years collected in one plot over the whole simulation period
     "duration_curve": False,    # True: Plot duration curve, or False: Plot storage filling over time
@@ -139,8 +182,8 @@ plot_SF_Zones_FromDB(data, database, time_SF, OUTPUT_PATH_PLOTS, DATE_START, plo
 # %% GET FLOW ON CHOSEN BRANCHES
 
 # === INITIALIZATIONS ===
-START = {"year": 1994, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1995, "month": 1, "day": 1, "hour": 0}
+START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
+END = {"year": 1995, "month": 12, "day": 31, "hour": 23}
 
 # === PLOT CONFIGURATIONS ===
 
@@ -148,7 +191,7 @@ plot_config = {
     'areas': ['NO'],            # When plotting multiple years in one year, recommend to only use one area
     "plot_by_year": False,      # Each year in individual plot or all years collected in one plot
     "duration_curve": True,     # True: Plot duration curve, or False: Plot storage filling over time
-    "duration_relative": False, # Hours(False) or Percentage(True)
+    "duration_relative": True, # Hours(False) or Percentage(True)
     "save_fig": False,          # True: Save plot as pdf
     "interval": 1,              # Number of months on x-axis. 1 = Step is one month, 12 = Step is 12 months
     "check": False,

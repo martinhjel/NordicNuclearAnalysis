@@ -147,6 +147,7 @@ def solve_lp(data,
         end_time = time.time()
         print("\nSimulation time = {:.2f} seconds".format(end_time - start_time))
         print("\nSimulation time = {:.2f} minutes".format((end_time - start_time)/60))
+
     return res
 
 
@@ -154,7 +155,8 @@ def solve_lp(data,
 
 ########################################### DATA COLLECTION ######################################################
 
-def createZonePriceMatrix(data: GridData, database: Database, zones, year_range, TIMEZONE, SIM_YEAR_START, SIM_YEAR_END):
+def createZonePriceMatrix(data, database, zones, year_range, TIMEZONE, SIM_YEAR_START, SIM_YEAR_END):
+    log_messages = []
     zonal_price_map = pd.DataFrame(index=zones)
 
     for year in year_range:
@@ -162,40 +164,37 @@ def createZonePriceMatrix(data: GridData, database: Database, zones, year_range,
         if year >= year_range[-1]:
             END = {"year": year, "month": 12, "day": 31, "hour": 23}
         else:
-            END = {"year": year + 1, "month": 1, "day": 1, "hour": 0}
+            END = {"year": year, "month": 1, "day": 1, "hour": 0}
 
         # Time setup
         try:
             start_datetime = datetime(START["year"], START["month"], START["day"], START["hour"], 0, tzinfo=TIMEZONE)
             end_datetime = datetime(END["year"], END["month"], END["day"], END["hour"], 0, tzinfo=TIMEZONE)
-
             time_range = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
             date_index = pd.date_range(start=start_datetime, end=end_datetime, freq='h', inclusive='left')
-
         except Exception as e:
-            print(f"❌ Failed to generate time range for year {year}: {e}")
+            log_messages.append(f"❌ Failed to generate time range for year {year}: {e}")
             continue
 
         for zone in zones:
             try:
                 nodes_in_zone = data.node[data.node['zone'] == zone].index.tolist()
                 if not nodes_in_zone:
-                    print(f"⚠️ No nodes found for zone {zone} — skipping.")
+                    log_messages.append(f"⚠️ No nodes found for zone {zone} — skipping.")
                     continue
 
-                print(f"📡 Fetching nodal prices for zone {zone} in year {year}...")
+                log_messages.append(f"📡 Fetching nodal prices for zone {zone} in year {year}...")
 
-                # Fetch nodal prices for each node
                 node_prices = {}
                 for node in nodes_in_zone:
                     try:
                         node_prices[node] = getNodalPricesFromDB(database, node, time_range)
                     except Exception as e:
-                        print(f"❌ Failed to fetch prices for node {node} in zone {zone}: {e}")
+                        log_messages.append(f"❌ Failed to fetch prices for node {node} in zone {zone}: {e}")
                         continue
 
                 if not node_prices:
-                    print(f"⚠️ No prices available for zone {zone} in year {year}. Skipping.")
+                    log_messages.append(f"⚠️ No prices available for zone {zone} in year {year}. Skipping.")
                     continue
 
                 df = pd.DataFrame(node_prices)
@@ -203,12 +202,14 @@ def createZonePriceMatrix(data: GridData, database: Database, zones, year_range,
 
                 avg_price = df.mean(axis=1).mean()
                 zonal_price_map.loc[zone, str(year)] = round(avg_price, 2)
-
             except Exception as e:
-                print(f"❌ Failed processing zone {zone} in year {year}: {e}")
+                log_messages.append(f"❌ Failed processing zone {zone} in year {year}: {e}")
                 continue
 
-    return zonal_price_map
+    # Join all messages into one string, preserving line breaks
+    log_text = "\n".join(log_messages)
+    return zonal_price_map, log_text
+
 
 
 
@@ -559,7 +560,7 @@ def add_branch_lines(data, utilisation, flows, branch_type, m, line_colormap, da
                 dy = Ay - By
 
             angle = math.degrees(math.atan2(dx, dy)) % 360
-            print(f"From: {row['node_from']} → {row['node_to']}, dx={dx:.1f}, dy={dy:.1f}, angle={angle:.1f}, rotation={angle:.1f}")
+            # print(f"From: {row['node_from']} → {row['node_to']}, dx={dx:.1f}, dy={dy:.1f}, angle={angle:.1f}, rotation={angle:.1f}")
             mid_lat, mid_lon = from_web_mercator(Mx, My)
 
             folium.Marker(

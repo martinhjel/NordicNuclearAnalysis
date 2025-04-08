@@ -8,16 +8,16 @@ import pandas as pd
 
 # === General Configurations ===
 SIM_YEAR_START = 1991           # Start year for the main simulation  (SQL-file)
-SIM_YEAR_END = 2020             # End year for the main simulation  (SQL-file)
+SIM_YEAR_END = 1991             # End year for the main simulation  (SQL-file)
 CASE_YEAR = 2025
 SCENARIO = 'BM'
-VERSION = 'v96'
+VERSION = 'vtest'
 TIMEZONE = ZoneInfo("UTC")  # Definerer UTC tidssone
 
 ####  PASS PÅ HARD KODING I SQL FIL
 
 DATE_START = pd.Timestamp(f'{SIM_YEAR_START}-01-01 00:00:00', tz='UTC')
-DATE_END = pd.Timestamp(f'{SIM_YEAR_END}-12-31 23:00:00', tz='UTC')
+DATE_END = pd.Timestamp(f'{SIM_YEAR_END}-01-01 23:00:00', tz='UTC')
 
 loss_method = 0
 
@@ -47,7 +47,7 @@ database = Database(SQL_FILE)
 
 # === INITIALIZATIONS ===
 START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1993, "month": 12, "day": 31, "hour": 23}
+END = {"year": 1991, "month": 1, "day": 1, "hour": 23}
 nordic_grid_map_fromDB(data, database, time_range = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END),
                        OUTPUT_PATH = OUTPUT_PATH, version = VERSION, START = START, END = END, exchange_rate_NOK_EUR = 11.38)
 
@@ -322,8 +322,38 @@ if zone is not None:
     nodes_in_zone_prod = getProductionNodesInZone(data, database, zone, time_Prod, correct_date_start_Prod, week=True)
 
 
+# %% Sensitivities Nuclear production
 
-#%% EINAR ###
+# === INITIALIZATIONS ===
+START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
+END = {"year": 1991, "month": 1, "day": 1, "hour": 23}
+
+
+# Sensitivity [€]
+df_NuclearSens_raw = database.getResultNuclearSens(get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END))
+df_long = df_NuclearSens_raw.reset_index().melt(id_vars="timestep", var_name="generator_idx", value_name="sensitivity [€]")
+df_long["node"] = df_long["generator_idx"].apply(lambda i: data.generator["node"][i])
+df_sens_per_node = df_long.groupby("node")["sensitivity [€]"].sum().reset_index()
+df_NuclearSens_per_node = df_sens_per_node.sort_values("sensitivity [€]", ascending=True)
+
+
+# Sensitivity avg. [€/h]
+n_timesteps = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)[1]-get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)[0]
+df_NuclearSens_per_node["sensitivity avg. [€/h]"] = df_sens_per_node["sensitivity [€]"] / n_timesteps
+
+
+# Price avg. [€/MWh]
+avg_prices_all = database.getResultNodalPricesMean(get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END))
+avg_prices = {
+    name: avg_prices_all[i]
+    for i, name in enumerate(data.node["id"])
+    if i < len(avg_prices_all)
+}
+df_NuclearSens_per_node["price avg. [€/MWh]"] = df_NuclearSens_per_node["node"].map(avg_prices)
+
+
+
+#%% Excel ###
 """
 Production, consumption, and price data for specific nodes within a given time period.
 

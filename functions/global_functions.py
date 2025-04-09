@@ -164,7 +164,7 @@ def createZonePriceMatrix(data, database, zones, year_range, TIMEZONE, SIM_YEAR_
         if year >= year_range[-1]:
             END = {"year": year, "month": 12, "day": 31, "hour": 23}
         else:
-            END = {"year": year, "month": 1, "day": 1, "hour": 0}
+            END = {"year": year + 1, "month": 1, "day": 1, "hour": 0}
 
         # Time setup
         try:
@@ -174,6 +174,7 @@ def createZonePriceMatrix(data, database, zones, year_range, TIMEZONE, SIM_YEAR_
             date_index = pd.date_range(start=start_datetime, end=end_datetime, freq='h', inclusive='left')
         except Exception as e:
             log_messages.append(f"❌ Failed to generate time range for year {year}: {e}")
+            print(f"❌ Failed to generate time range for year {year}: {e}")
             continue
 
         for zone in zones:
@@ -181,9 +182,11 @@ def createZonePriceMatrix(data, database, zones, year_range, TIMEZONE, SIM_YEAR_
                 nodes_in_zone = data.node[data.node['zone'] == zone].index.tolist()
                 if not nodes_in_zone:
                     log_messages.append(f"⚠️ No nodes found for zone {zone} — skipping.")
+                    print(f"⚠️ No nodes found for zone {zone} — skipping.")
                     continue
 
                 log_messages.append(f"📡 Fetching nodal prices for zone {zone} in year {year}...")
+                print(f"📡 Fetching nodal prices for zone {zone} in year {year}...")
 
                 node_prices = {}
                 for node in nodes_in_zone:
@@ -191,10 +194,12 @@ def createZonePriceMatrix(data, database, zones, year_range, TIMEZONE, SIM_YEAR_
                         node_prices[node] = getNodalPricesFromDB(database, node, time_range)
                     except Exception as e:
                         log_messages.append(f"❌ Failed to fetch prices for node {node} in zone {zone}: {e}")
+                        print(f"❌ Failed to fetch prices for node {node} in zone {zone}: {e}")
                         continue
 
                 if not node_prices:
                     log_messages.append(f"⚠️ No prices available for zone {zone} in year {year}. Skipping.")
+                    print(f"⚠️ No prices available for zone {zone} in year {year}. Skipping.")
                     continue
 
                 df = pd.DataFrame(node_prices)
@@ -204,6 +209,7 @@ def createZonePriceMatrix(data, database, zones, year_range, TIMEZONE, SIM_YEAR_
                 zonal_price_map.loc[zone, str(year)] = round(avg_price, 2)
             except Exception as e:
                 log_messages.append(f"❌ Failed processing zone {zone} in year {year}: {e}")
+                print(f"❌ Failed processing zone {zone} in year {year}: {e}")
                 continue
 
     # Join all messages into one string, preserving line breaks

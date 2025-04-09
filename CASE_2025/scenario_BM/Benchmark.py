@@ -47,8 +47,3 @@ week_MSO = {'FI_10':16,
 data, time_max_min = setup_grid(VERSION, DATE_START, DATE_END, DATA_PATH, SCENARIO)
 res = solve_lp(data, SQL_FILE, loss_method, replace=True, nuclear_availability=0.7, week_MSO=week_MSO)
 
-
-
-
-
-

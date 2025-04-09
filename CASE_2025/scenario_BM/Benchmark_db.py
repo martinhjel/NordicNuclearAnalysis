@@ -11,13 +11,13 @@ SIM_YEAR_START = 1991           # Start year for the main simulation  (SQL-file)
 SIM_YEAR_END = 1991             # End year for the main simulation  (SQL-file)
 CASE_YEAR = 2025
 SCENARIO = 'BM'
-VERSION = 'vtest'
+VERSION = 'nuclear_v3'
 TIMEZONE = ZoneInfo("UTC")  # Definerer UTC tidssone
 
 ####  PASS PÅ HARD KODING I SQL FIL
 
 DATE_START = pd.Timestamp(f'{SIM_YEAR_START}-01-01 00:00:00', tz='UTC')
-DATE_END = pd.Timestamp(f'{SIM_YEAR_END}-01-01 23:00:00', tz='UTC')
+DATE_END = pd.Timestamp(f'{SIM_YEAR_END}-12-31 23:00:00', tz='UTC')
 
 loss_method = 0
 
@@ -57,7 +57,7 @@ nordic_grid_map_fromDB(data, database, time_range = get_hour_range(SIM_YEAR_STAR
 zones = ['NO1', 'NO2', 'NO3', 'NO4', 'NO5', 'SE1', 'SE2', 'SE3', 'SE4',
          'DK1', 'DK2', 'FI', 'DE', 'GB', 'NL', 'LT', 'PL', 'EE']
 year_range = list(range(SIM_YEAR_START, SIM_YEAR_END + 1))
-price_matrix = createZonePriceMatrix(data, database, zones, year_range, TIMEZONE, SIM_YEAR_START, SIM_YEAR_END)
+price_matrix, log = createZonePriceMatrix(data, database, zones, year_range, TIMEZONE, SIM_YEAR_START, SIM_YEAR_END)
 
 # %% Plot Zonal Price Matrix
 plotZonePriceMatrix(price_matrix, save_fig=True, OUTPUT_PATH_PLOTS=OUTPUT_PATH_PLOTS)
@@ -326,7 +326,7 @@ if zone is not None:
 
 # === INITIALIZATIONS ===
 START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1991, "month": 1, "day": 1, "hour": 23}
+END = {"year": 1991, "month": 12, "day": 31, "hour": 23}
 
 
 # Sensitivity [€]
@@ -349,7 +349,10 @@ avg_prices = {
     for i, name in enumerate(data.node["id"])
     if i < len(avg_prices_all)
 }
-df_NuclearSens_per_node["price avg. [€/MWh]"] = df_NuclearSens_per_node["node"].map(avg_prices)
+df_NuclearSens_per_node["nodal price avg. [€/MWh]"] = df_NuclearSens_per_node["node"].map(avg_prices)
+
+# Nodal price avg. sensitivity diff [€/MWh]
+df_NuclearSens_per_node["sensitivity diff [€/MWh]"] = df_NuclearSens_per_node["nodal price avg. [€/MWh]"] + df_NuclearSens_per_node["sensitivity avg. [€/h]"]
 
 
 

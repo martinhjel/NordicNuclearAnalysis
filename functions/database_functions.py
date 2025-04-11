@@ -4,6 +4,7 @@ This file contains functions that are used to interact with the database.
 import csv
 import numpy as np
 import pandas as pd
+from collections import defaultdict
 from powergama.database import Database  # Import Database-Class specifically
 from powergama.GridData import GridData
 
@@ -419,6 +420,7 @@ def getDemandPerNodeFromDB(data: GridData, db: Database, area, node, timeMaxMin)
 
 
 def get_production_by_type_FromDB(data: GridData, db: Database, area_OP, time_max_min, DATE_START):
+    # Todo: Denne bruker gammel løsning for å håndtere tid. Må fikses.
     """
     Get production by type from the database.
 
@@ -493,6 +495,60 @@ def get_production_by_type_FromDB(data: GridData, db: Database, area_OP, time_ma
     total_production = df_gen.sum().sum()
 
     return df_gen_resampled, df_prices_resampled, total_production
+
+
+# NEW Einar
+
+def get_total_production_by_type_per_node(data: GridData, db: Database, nodes, time_max_min):
+    """
+    Get total production per generation type for each specified node.
+
+    Parameters
+    ----------
+    data : GridData
+        PowerGAMA GridData object with generator and node mapping.
+    db : Database
+        Database object providing access to result data.
+    nodes : list of str
+        List of node names to include in the aggregation.
+    time_max_min : list of int
+        Time range [start, end) for the query.
+
+    Returns
+    -------
+    pd.DataFrame
+        A DataFrame with one row per node and columns for each generation type,
+        representing total production in MWh.
+    """
+    result = []
+
+    try:
+        generators_df = data.generator.copy()
+        generators_df['node'] = generators_df['node'].astype(str)
+
+        # Iterate over each node
+        for node in nodes:
+            node_data = defaultdict(float)
+            node_generators = generators_df[generators_df['node'] == node]
+
+            # Iterate over types for this node
+            for gen_type in node_generators['type'].unique():
+                gen_subset = node_generators[node_generators['type'] == gen_type]
+                generator_indices = gen_subset.index.tolist()
+
+                if generator_indices:
+                    power_series = db.getResultGeneratorPower(generator_indices, time_max_min)
+                    total_production = sum(power_series)
+                    node_data[gen_type.capitalize()] = total_production
+
+            # Add node info
+            node_data['Node'] = node
+            result.append(node_data)
+
+    except Exception as e:
+        print(f"Error fetching production data: {e}")
+
+    return pd.DataFrame(result).set_index('Node')
 
 
 

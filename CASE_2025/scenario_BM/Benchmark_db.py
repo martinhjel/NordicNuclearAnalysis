@@ -319,6 +319,51 @@ if zone is not None:
     nodes_in_zone_prod = getProductionNodesInZone(data, database, zone, time_Prod, correct_date_start_Prod, week=True)
 
 
+
+
+# === EINAR ===
+# %% National-level electricity production and consumption
+"""
+Retrieves and aggregates electricity production and demand data at the national level.
+
+Overview:
+- Extracts simulated weekly production and consumption data for a specified country and time period.
+- Organizes the output into two levels of temporal resolution:
+    - A weekly-level DataFrame indexed by datetime.
+    - An annual-level DataFrame obtained by summing values across calendar years.
+"""
+
+# === INITIALIZATIONS ===
+START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
+END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
+
+df_gen_dem, df_prices, total = get_production_by_type_FromDB(data, database, "NO", get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END), "1991-01-01")
+df_gen_dem.index = pd.to_datetime(df_gen_dem.index)
+df_gen_dem['Year'] = df_gen_dem.index.year
+df_gen_yearly = df_gen_dem.groupby('Year').sum()
+
+# %% Node-level production by type
+"""
+Retrieval and aggregation of electricity production by technology type at the node level 
+for a specified time period.
+
+Overview:
+- Calculates the total electricity production (in MWh) by each production type for selected nodes.
+- Accepts a list of nodes and a time interval as input.
+- Queries simulation results from a structured SQL database.
+- Returns a structured DataFrame where rows represent nodes and columns represent production types.
+
+"""
+
+# === INITIALIZATIONS ===
+START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
+END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
+nodes = ["FI_10", "FI_12", "SE3_3", "SE3_6", "GB", "NL"]
+
+time_range = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
+dispatch_df = get_total_production_by_type_per_node(data, database, nodes, time_range)
+
+
 # %% Sensitivities Nuclear production
 
 # === INITIALIZATIONS ===
@@ -364,9 +409,9 @@ Main Features:
 
 # === INITIALIZATIONS ===
 START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1991, "month": 12, "day": 31, "hour": 23}
-Nodes = ['SE2_4', 'FI_3']
-SELECTED_BRANCHES  = [['NO3_1','SE2_4']] # See branch CSV files for correct connections
+END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
+Nodes = ['FI_10','FI_12','SE3_3','SE3_6','GB','NL']
+SELECTED_BRANCHES  = [['NO2_1','GB']]
 # ======================================================================================================================
 
 start_hour, end_hour = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
@@ -376,6 +421,7 @@ nodal_prices_per_node = GetPriceAtSpecificNodes(Nodes, data, database, start_hou
 reservoir_filling_per_node, storage_cap = GetReservoirFillingAtSpecificNodes(Nodes, data, database, start_hour, end_hour)
 flow_data = getFlowDataOnBranches(data, database, [start_hour, end_hour], SELECTED_BRANCHES)
 excel_filename = ExportToExcel(Nodes, production_per_node, consumption_per_node, nodal_prices_per_node, reservoir_filling_per_node, storage_cap, flow_data, START, END, SCENARIO, VERSION, OUTPUT_PATH)
+
 
 
 # %% === Write Flow Data to Excel ===

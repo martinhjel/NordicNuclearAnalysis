@@ -8,7 +8,7 @@ from pygments.styles.dracula import DraculaStyle
 # from pandas.io.formats.style import color
 
 case = 'BM'
-version = 'v93'
+version = 'v100'
 
 
 def read_data(case, version):
@@ -135,8 +135,8 @@ def grid_plot(scenario_data):
     return map
 
 def main():
-    case = 'BMNP'
-    version = 'v1'
+    case = 'BM'
+    version = 'v100'
     scenario_data = read_data(case, version)
     grid_map = grid_plot(scenario_data)
 

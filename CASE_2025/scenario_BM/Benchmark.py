@@ -41,6 +41,7 @@ week_MSO = {'FI_10':16,
             'NL':28
             }
 
+
 # %%
 # Configure grid and run simulation
 # create_case_doc('BM') # Create case documentation

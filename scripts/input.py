@@ -8,7 +8,7 @@ from pygments.styles.dracula import DraculaStyle
 # from pandas.io.formats.style import color
 
 case = 'BM'
-version = 'v87'
+version = 'v93'
 
 
 def read_data(case, version):

@@ -8,13 +8,11 @@ import pandas as pd
 
 # === General Configurations ===
 SIM_YEAR_START = 1991           # Start year for the main simulation  (SQL-file)
-SIM_YEAR_END = 1991             # End year for the main simulation  (SQL-file)
+SIM_YEAR_END = 2020             # End year for the main simulation  (SQL-file)
 CASE_YEAR = 2025
 SCENARIO = 'BM'
-VERSION = 'nuclear_v4'
+VERSION = 'v100'
 TIMEZONE = ZoneInfo("UTC")  # Definerer UTC tidssone
-
-####  PASS PÅ HARD KODING I SQL FIL
 
 DATE_START = pd.Timestamp(f'{SIM_YEAR_START}-01-01 00:00:00', tz='UTC')
 DATE_END = pd.Timestamp(f'{SIM_YEAR_END}-12-31 23:00:00', tz='UTC')
@@ -47,7 +45,7 @@ database = Database(SQL_FILE)
 
 # === INITIALIZATIONS ===
 START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1991, "month": 1, "day": 1, "hour": 23}
+END = {"year": 1991, "month": 12, "day": 31, "hour": 23}
 nordic_grid_map_fromDB(data, database, time_range = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END),
                        OUTPUT_PATH = OUTPUT_PATH, version = VERSION, START = START, END = END, exchange_rate_NOK_EUR = 11.38)
 
@@ -63,13 +61,11 @@ price_matrix, log = createZonePriceMatrix(data, database, zones, year_range, TIM
 plotZonePriceMatrix(price_matrix, save_fig=True, OUTPUT_PATH_PLOTS=OUTPUT_PATH_PLOTS)
 
 
-
-
 # %% Check Total Consumption for a given period.
 # Demand Response
 # === INITIALIZATIONS ===
-START = {"year": 2010, "month": 1, "day": 1, "hour": 0}
-END = {"year": 2011, "month": 1, "day": 1, "hour": 0}
+START = {"year": 2002, "month": 1, "day": 1, "hour": 0}
+END = {"year": 2002, "month": 12, "day": 31, "hour": 23}
 
 time_Demand = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
 demandTotal = getDemandPerAreaFromDB(data, database, area='NO', timeMaxMin=time_Demand)
@@ -78,8 +74,8 @@ print(sum(demandTotal['sum']))
 
 # %% === Get Production Data ===
 # === INITIALIZATIONS ===
-START = {"year": 1999, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1999, "month": 1, "day": 2, "hour": 0}
+START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
+END = {"year": 1991, "month": 12, "day": 31, "hour": 23}
 area = 'NO'
 
 time_Prod = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
@@ -91,8 +87,8 @@ print(total_Production)
 # %% Collect the system cost and mean area price for the system for a given period
 
 # === INITIALIZATIONS ===
-START = {"year": 1992, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1993, "month": 1, "day": 1, "hour": 0}
+START = {"year": 1999, "month": 1, "day": 1, "hour": 0}
+END = {"year": 1999, "month": 12, "day": 31, "hour": 23}
 
 time_SC_MP = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
 calcSystemCostAndMeanPriceFromDB(data, database, time_SC_MP, time_SC_MP)
@@ -140,15 +136,16 @@ plot_Flow_fromDB(data, database, DATE_START, time_Lines, OUTPUT_PATH_PLOTS, plot
 
 # === INITIALIZATIONS ===
 START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1993, "month": 12, "day": 31, "hour": 23}
+END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
 
 # === PLOT CONFIGURATIONS ===
+#  TODO: NÅR SAVE_FIG = TRUE --> DENNE BLIR SVG, IKKE PDF
 plot_config = {
-    'areas': ['FI'],            # When plotting multiple years in one year, recommend to only use one area
+    'areas': ['SE'],            # When plotting multiple years in one year, recommend to only use one area
     'relative': True,           # Relative storage filling, True gives percentage
     "plot_by_year": True,       # True: One curve for each year in same plot, or False:all years collected in one plot over the whole simulation period
     "duration_curve": False,    # True: Plot duration curve, or False: Plot storage filling over time
-    "save_fig": False,          # True: Save plot as pdf
+    "save_fig": True,          # True: Save plot as pdf
     "interval": 1               # Number of months on x-axis. 1 = Step is one month, 12 = Step is 12 months
 }
 
@@ -326,34 +323,33 @@ if zone is not None:
 
 # === INITIALIZATIONS ===
 START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1991, "month": 12, "day": 31, "hour": 23}
+END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
 
-
-# Sensitivity [€]
+# Sum sensitivity [€] over all time steps
 df_NuclearSens_raw = database.getResultNuclearSens(get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END))
-df_long = df_NuclearSens_raw.reset_index().melt(id_vars="timestep", var_name="generator_idx", value_name="sensitivity [€]")
-df_long["node"] = df_long["generator_idx"].apply(lambda i: data.generator["node"][i])
-df_sens_per_node = df_long.groupby("node")["sensitivity [€]"].sum().reset_index()
-df_NuclearSens_per_node = df_sens_per_node.sort_values("sensitivity [€]", ascending=True)
-
+df_sens_nuclear_gen = df_NuclearSens_raw.sum().reset_index()
+df_sens_nuclear_gen.columns = ["generator_idx", "sensitivity [€]"]
+df_sens_nuclear_gen["node"] = df_sens_nuclear_gen["generator_idx"].apply(lambda i: data.generator["node"][i])
+df_sens_nuclear_gen = df_sens_nuclear_gen[["generator_idx", "node", "sensitivity [€]"]]
 
 # Sensitivity avg. [€/h]
 n_timesteps = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)[1]-get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)[0]
-df_NuclearSens_per_node["sensitivity avg. [€/h]"] = df_sens_per_node["sensitivity [€]"] / n_timesteps
-
+df_sens_nuclear_gen["sensitivity avg. [€/h]"] = df_sens_nuclear_gen["sensitivity [€]"] / n_timesteps
 
 # Price avg. [€/MWh]
+node_ids = list(data.node["id"])
 avg_prices_all = database.getResultNodalPricesMean(get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END))
-avg_prices = {
-    name: avg_prices_all[i]
-    for i, name in enumerate(data.node["id"])
-    if i < len(avg_prices_all)
-}
-df_NuclearSens_per_node["nodal price avg. [€/MWh]"] = df_NuclearSens_per_node["node"].map(avg_prices)
+if len(avg_prices_all) != len(node_ids):
+    print(f"⚠️ Number of prices ({len(avg_prices_all)}) does not match number of nodes ({len(node_ids)}). Mapping only the first {min(len(node_ids), len(avg_prices_all))}.")
+min_len = min(len(node_ids), len(avg_prices_all))
+avg_prices = dict(zip(node_ids[:min_len], avg_prices_all[:min_len]))
+df_sens_nuclear_gen["nodal price avg. [€/MWh]"] = df_sens_nuclear_gen["node"].map(avg_prices)
 
 # Nodal price avg. sensitivity diff [€/MWh]
-df_NuclearSens_per_node["sensitivity diff [€/MWh]"] = df_NuclearSens_per_node["nodal price avg. [€/MWh]"] + df_NuclearSens_per_node["sensitivity avg. [€/h]"]
+df_sens_nuclear_gen["sensitivity diff [€/MWh]"] = df_sens_nuclear_gen["nodal price avg. [€/MWh]"] + df_sens_nuclear_gen["sensitivity avg. [€/h]"]
 
+# Sort the dataframe by sensitivity
+df_sens_nuclear_gen = df_sens_nuclear_gen.sort_values("sensitivity [€]", ascending=True)
 
 
 #%% Excel ###

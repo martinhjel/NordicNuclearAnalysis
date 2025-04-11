@@ -7,12 +7,12 @@ from scripts.case_doc import *
 # Define global variables
 CASE_YEAR = 2025
 SCENARIO = 'BM'
-VERSION = 'vtest'
+VERSION = 'nuclear_v4'
 
 SIM_YEAR_START = 1991
-SIM_YEAR_END = 1991
+SIM_YEAR_END = 2020
 DATE_START = pd.Timestamp(f'{SIM_YEAR_START}-01-01 00:00:00', tz='UTC')
-DATE_END = pd.Timestamp(f'{SIM_YEAR_END}-01-01 23:00:00', tz='UTC')
+DATE_END = pd.Timestamp(f'{SIM_YEAR_END}-12-31 23:00:00', tz='UTC')
 
 loss_method = 0
 

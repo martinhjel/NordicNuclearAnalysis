@@ -394,4 +394,3 @@ def getProductionNodesInZone(data: GridData, db: Database, zone=None, time_max_m
 
 
 
-

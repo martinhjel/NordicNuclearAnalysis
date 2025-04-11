@@ -1,3 +1,5 @@
+from networkx.generators.classic import balanced_tree
+
 from functions.work_functions import *
 from functions.global_functions import *  # Functions like 'read_grid_data', 'solve_lp' m.m.
 from functions.database_functions import  * # Functions like 'getSystemCostFromDB' m.m.
@@ -11,7 +13,7 @@ SIM_YEAR_START = 1991           # Start year for the main simulation  (SQL-file)
 SIM_YEAR_END = 2020             # End year for the main simulation  (SQL-file)
 CASE_YEAR = 2025
 SCENARIO = 'BM'
-VERSION = 'v100'
+VERSION = 'nuclear_DK1_3_v1'
 TIMEZONE = ZoneInfo("UTC")  # Definerer UTC tidssone
 
 DATE_START = pd.Timestamp(f'{SIM_YEAR_START}-01-01 00:00:00', tz='UTC')
@@ -335,12 +337,15 @@ Overview:
 
 # === INITIALIZATIONS ===
 START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
+END = {"year": 1991, "month": 1, "day": 1, "hour": 23}
 
 df_gen_dem, df_prices, total = get_production_by_type_FromDB(data, database, "NO", get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END), "1991-01-01")
 df_gen_dem.index = pd.to_datetime(df_gen_dem.index)
+df_gen_dem['Balance'] = df_gen_dem.drop(columns=['Load']).sum(axis=1) - df_gen_dem['Load']
 df_gen_dem['Year'] = df_gen_dem.index.year
 df_gen_yearly = df_gen_dem.groupby('Year').sum()
+
+
 
 # %% Node-level production by type
 """
@@ -351,7 +356,8 @@ Overview:
 - Calculates the total electricity production (in MWh) by each production type for selected nodes.
 - Accepts a list of nodes and a time interval as input.
 - Queries simulation results from a structured SQL database.
-- Returns a structured DataFrame where rows represent nodes and columns represent production types.
+- Creates one dataframe for each type consisting of the following columns: 
+  node, installed capacity, total dispatch, and capacity factor.
 
 """
 
@@ -361,7 +367,23 @@ END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
 nodes = ["FI_10", "FI_12", "SE3_3", "SE3_6", "GB", "NL"]
 
 time_range = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
-dispatch_df = get_total_production_by_type_per_node(data, database, nodes, time_range)
+df_dispatch = get_total_production_by_type_per_node(data, database, nodes, time_range)
+df_capacity = data.generator.pivot(index='node', columns='type', values='pmax').loc[nodes]
+
+df_capacity.columns = df_capacity.columns.str.lower()
+df_dispatch.columns = df_dispatch.columns.str.lower()
+common_types = set(df_capacity.columns).intersection(df_dispatch.columns)
+print(common_types)
+dfs_by_type = {}
+
+for prod_type in common_types:
+    df = pd.DataFrame({
+        'node': df_capacity.index,
+        'Installed capacity [MW]': df_capacity[prod_type],
+        'Dispatch [MWh]': df_dispatch[prod_type]
+    })
+    df['Capacity factor [-]'] = df['Dispatch [MWh]'] / (df['Installed capacity [MW]'] * (time_range[1] - time_range[0]))
+    dfs_by_type[prod_type] = df
 
 
 # %% Sensitivities Nuclear production

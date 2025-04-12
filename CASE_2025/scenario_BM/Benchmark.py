@@ -7,7 +7,7 @@ from scripts.case_doc import *
 # Define global variables
 CASE_YEAR = 2025
 SCENARIO = 'BM'
-VERSION = 'v100'
+VERSION = 'nuclear_DK1_3_v4'
 
 SIM_YEAR_START = 1991
 SIM_YEAR_END = 2020

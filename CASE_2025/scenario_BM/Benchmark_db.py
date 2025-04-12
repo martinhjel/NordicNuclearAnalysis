@@ -13,7 +13,7 @@ SIM_YEAR_START = 1991           # Start year for the main simulation  (SQL-file)
 SIM_YEAR_END = 2020             # End year for the main simulation  (SQL-file)
 CASE_YEAR = 2025
 SCENARIO = 'BM'
-VERSION = 'nuclear_DK1_3_v1'
+VERSION = 'nuclear_DK1_3_v4'
 TIMEZONE = ZoneInfo("UTC")  # Definerer UTC tidssone
 
 DATE_START = pd.Timestamp(f'{SIM_YEAR_START}-01-01 00:00:00', tz='UTC')
@@ -143,7 +143,7 @@ END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
 # === PLOT CONFIGURATIONS ===
 #  TODO: NÅR SAVE_FIG = TRUE --> DENNE BLIR SVG, IKKE PDF
 plot_config = {
-    'areas': ['SE'],            # When plotting multiple years in one year, recommend to only use one area
+    'areas': ['NO'],            # When plotting multiple years in one year, recommend to only use one area
     'relative': True,           # Relative storage filling, True gives percentage
     "plot_by_year": True,       # True: One curve for each year in same plot, or False:all years collected in one plot over the whole simulation period
     "duration_curve": False,    # True: Plot duration curve, or False: Plot storage filling over time
@@ -337,7 +337,7 @@ Overview:
 
 # === INITIALIZATIONS ===
 START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1991, "month": 1, "day": 1, "hour": 23}
+END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
 
 df_gen_dem, df_prices, total = get_production_by_type_FromDB(data, database, "NO", get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END), "1991-01-01")
 df_gen_dem.index = pd.to_datetime(df_gen_dem.index)
@@ -392,6 +392,7 @@ for prod_type in common_types:
 START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
 END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
 
+
 # Sum sensitivity [€] over all time steps
 df_NuclearSens_raw = database.getResultNuclearSens(get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END))
 df_sens_nuclear_gen = df_NuclearSens_raw.sum().reset_index()
@@ -399,9 +400,11 @@ df_sens_nuclear_gen.columns = ["generator_idx", "sensitivity [€]"]
 df_sens_nuclear_gen["node"] = df_sens_nuclear_gen["generator_idx"].apply(lambda i: data.generator["node"][i])
 df_sens_nuclear_gen = df_sens_nuclear_gen[["generator_idx", "node", "sensitivity [€]"]]
 
-# Sensitivity avg. [€/h]
+# Sensitivity avg. [€/MWh]
 n_timesteps = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)[1]-get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)[0]
-df_sens_nuclear_gen["sensitivity avg. [€/h]"] = df_sens_nuclear_gen["sensitivity [€]"] / n_timesteps
+df_sens_nuclear_gen["Hourly avg. sensitivity [€/MWh]"] = df_sens_nuclear_gen["sensitivity [€]"] / n_timesteps
+df_sens_nuclear_gen["Yearly avg. sensitivity [€/MWh]"] = df_sens_nuclear_gen["Hourly avg. sensitivity [€/MWh]"] * 8760
+
 
 # Price avg. [€/MWh]
 node_ids = list(data.node["id"])
@@ -413,10 +416,11 @@ avg_prices = dict(zip(node_ids[:min_len], avg_prices_all[:min_len]))
 df_sens_nuclear_gen["nodal price avg. [€/MWh]"] = df_sens_nuclear_gen["node"].map(avg_prices)
 
 # Nodal price avg. sensitivity diff [€/MWh]
-df_sens_nuclear_gen["sensitivity diff [€/MWh]"] = df_sens_nuclear_gen["nodal price avg. [€/MWh]"] + df_sens_nuclear_gen["sensitivity avg. [€/h]"]
+df_sens_nuclear_gen["sensitivity diff [€/MWh]"] = df_sens_nuclear_gen["nodal price avg. [€/MWh]"] + df_sens_nuclear_gen["Hourly avg. sensitivity [€/MWh]"]
+
 
 # Sort the dataframe by sensitivity
-df_sens_nuclear_gen = df_sens_nuclear_gen.sort_values("sensitivity [€]", ascending=True)
+df_sens_nuclear_gen = df_sens_nuclear_gen.sort_values("Yearly avg. sensitivity [€/MWh]", ascending=True)
 
 
 #%% Excel ###

@@ -4,6 +4,7 @@ from functions.database_functions import  * # Functions like 'getSystemCostFromD
 from zoneinfo import ZoneInfo
 from powergama.database import Database  # Import Database-Class specifically
 import pandas as pd
+import numpy as np
 
 
 # === General Configurations ===
@@ -321,6 +322,13 @@ if zone is not None:
 
 
 
+
+
+
+
+
+
+
 # === EINAR ===
 # %% National-level electricity production and consumption
 """
@@ -341,6 +349,34 @@ df_gen_dem, df_prices, total = get_production_by_type_FromDB(data, database, "NO
 df_gen_dem.index = pd.to_datetime(df_gen_dem.index)
 df_gen_dem['Year'] = df_gen_dem.index.year
 df_gen_yearly = df_gen_dem.groupby('Year').sum()
+
+
+# %% TETS - NY APPROACH BASERT PÅ TIDSSTEG OG IKKE DATO! National-level electricity production and consumption
+"""
+Retrieves and aggregates electricity production and demand data at the national level.
+
+Based on idealyears over the 30-year climate periode so that each year has same number of hours so it can be comparable to each other.
+
+
+Overview:
+
+"""
+
+
+# === INITIALIZATIONS ===
+country = "NO"  # Country code
+
+n_ideal_years = 30
+n_timesteps = int(8766.4 * n_ideal_years)
+
+df_gen, df_prices, total_production, df_gen_per_year = get_production_by_type_ideal_timestep(
+    data=data,
+    db=database,
+    area_OP=country,
+    n_timesteps=n_timesteps
+)
+
+
 
 # %% Node-level production by type
 """

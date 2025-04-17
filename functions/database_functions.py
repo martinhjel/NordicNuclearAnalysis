@@ -4,6 +4,7 @@ This file contains functions that are used to interact with the database.
 import csv
 import numpy as np
 import pandas as pd
+from collections import defaultdict
 from powergama.database import Database  # Import Database-Class specifically
 from powergama.GridData import GridData
 
@@ -419,6 +420,7 @@ def getDemandPerNodeFromDB(data: GridData, db: Database, area, node, timeMaxMin)
 
 
 def get_production_by_type_FromDB(data: GridData, db: Database, area_OP, time_max_min, DATE_START):
+    # Todo: Denne bruker gammel løsning for å håndtere tid. Må fikses.
     """
     Get production by type from the database.
 
@@ -493,6 +495,161 @@ def get_production_by_type_FromDB(data: GridData, db: Database, area_OP, time_ma
     total_production = df_gen_resampled.drop('Load', axis=1).sum(axis=1).sum()
 
     return df_gen_resampled, df_prices_resampled, total_production
+
+
+# NEW Einar
+
+def get_production_by_type_ideal_timestep(data: GridData, db: Database, area_OP, n_timesteps: int):
+    """
+    Hent produksjon og prisdata basert på ideelle tidssteg (ikke reelle datoer).
+
+    Parametre
+    ---------
+    data : GridData
+        Datastruktur fra modellen.
+    db : Database
+        Databasen.
+    area_OP : str
+        Områdekode.
+    n_timesteps : int
+        Antall tidssteg (f.eks. 8766.4 * 30 = 262992 for 30 "ideelle" år).
+
+    Returnerer
+    ---------
+    df_gen : pd.DataFrame
+        Produksjon per type + last, indeksert på timesteps.
+    df_prices : pd.DataFrame
+        Gjennomsnittspris, indeksert på timesteps.
+    total_production : float
+        Sum av all produksjon.
+    """
+    # Fast ideal tidsakse (0 til n_timesteps-1)
+    time_index = pd.timedelta_range(start="0h", periods=n_timesteps, freq="h")
+
+    generation_types = ['hydro', 'ror', 'nuclear', 'wind_on', 'wind_off', 'solar', 'fossil_gas', 'fossil_other', 'biomass']
+    generation_data = {}
+
+    for gen_type in generation_types:
+        try:
+            gen_idx = data.getGeneratorsPerAreaAndType()[area_OP].get(gen_type, None)
+            if gen_idx:
+                production = pd.DataFrame(db.getResultGeneratorPower(gen_idx, list(range(n_timesteps)))).sum(axis=1)
+                if production.sum() > 0:
+                    generation_data[f"{gen_type.capitalize()}"] = production
+        except Exception as e:
+            print(f"Warning: Could not fetch data for {gen_type} in {area_OP}. Error: {e}")
+
+    # Last
+    load_demand = getDemandPerAreaFromDB(data, db, area=area_OP, timeMaxMin=list(range(n_timesteps)))
+
+    # Pris
+    nodes_in_area = data.node[data.node['area'] == area_OP].index.tolist()
+    node_prices = pd.DataFrame({
+        node: getNodalPricesFromDB(db, node=node, timeMaxMin=list(range(n_timesteps))) for node in nodes_in_area
+    })
+    avg_area_prices = node_prices.sum(axis=1) / len(nodes_in_area)
+
+    # DataFrames
+    df_gen = pd.DataFrame(generation_data)
+    df_gen['Load'] = load_demand['sum']
+
+    df_prices = pd.DataFrame({'Price': avg_area_prices})
+
+    # === FIX: Trim alle datakilder til samme lengde ===
+    min_len = min(len(df_gen), len(df_prices), len(time_index))
+    df_gen = df_gen.iloc[:min_len]
+    df_prices = df_prices.iloc[:min_len]
+    time_index = time_index[:min_len]
+
+    # Sett felles indeks
+    df_gen.index = time_index
+    df_prices.index = time_index
+
+    total_production = df_gen.sum().sum()
+
+    # === AGGREGER PER IDEALT ÅR ===
+    timesteps_per_year = 8766.36667
+    n_years = min_len // timesteps_per_year
+    base_year = 1991
+    year_list = [base_year + i // timesteps_per_year for i in range(min_len)]
+
+    df_gen_yearly = df_gen.copy()
+    df_gen_yearly["Year"] = year_list
+    df_gen_per_year = df_gen_yearly.groupby("Year").sum()
+
+    return df_gen, df_prices, total_production, df_gen_per_year
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def get_total_production_by_type_per_node(data: GridData, db: Database, nodes, time_max_min):
+    """
+    Get total production per generation type for each specified node.
+
+    Parameters
+    ----------
+    data : GridData
+        PowerGAMA GridData object with generator and node mapping.
+    db : Database
+        Database object providing access to result data.
+    nodes : list of str
+        List of node names to include in the aggregation.
+    time_max_min : list of int
+        Time range [start, end) for the query.
+
+    Returns
+    -------
+    pd.DataFrame
+        A DataFrame with one row per node and columns for each generation type,
+        representing total production in MWh.
+    """
+    result = []
+
+    try:
+        generators_df = data.generator.copy()
+        generators_df['node'] = generators_df['node'].astype(str)
+
+        # Iterate over each node
+        for node in nodes:
+            node_data = defaultdict(float)
+            node_generators = generators_df[generators_df['node'] == node]
+
+            # Iterate over types for this node
+            for gen_type in node_generators['type'].unique():
+                gen_subset = node_generators[node_generators['type'] == gen_type]
+                generator_indices = gen_subset.index.tolist()
+
+                if generator_indices:
+                    power_series = db.getResultGeneratorPower(generator_indices, time_max_min)
+                    total_production = sum(power_series)
+                    node_data[gen_type.capitalize()] = total_production
+
+            # Add node info
+            node_data['Node'] = node
+            result.append(node_data)
+
+    except Exception as e:
+        print(f"Error fetching production data: {e}")
+
+    return pd.DataFrame(result).set_index('Node')
 
 
 

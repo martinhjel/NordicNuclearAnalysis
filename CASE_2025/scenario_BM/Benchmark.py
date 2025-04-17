@@ -45,19 +45,12 @@ OUTPUT_PATH_PLOTS = BASE_DIR / 'results' / 'plots'
 # This means finland gets first go.
 # week_start = [16, 36, 20, 24, 32, 28]
 # week Maintenance Start Order
-week_MSO = {'FI_10':16,
-            'FI_12':36,
-            'SE3_3':20,
-            'SE3_6':24,
-            'GB':32,
-            'NL':28
-            }
 
 # %%
 # Configure grid and run simulation
 # create_case_doc('BM') # Create case documentation
 data, time_max_min = setup_grid(VERSION, DATE_START, DATE_END, DATA_PATH, SCENARIO)
-res = solve_lp(data, SQL_FILE, loss_method, replace=True, nuclear_availability=0.7, week_MSO=week_MSO)
+res = solve_lp(data, SQL_FILE, loss_method, replace=True, solver='gurobi')
 
 
 # %% Create Nordic Grid Map

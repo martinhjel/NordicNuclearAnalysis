@@ -490,7 +490,7 @@ def get_production_by_type_FromDB(data: GridData, db: Database, area_OP, time_ma
     df_prices.index = pd.date_range(DATE_START, periods=time_period, freq='h')
     df_prices_resampled = df_prices.resample('1D').agg({'Price': 'mean'})
 
-    total_production = df_gen.sum().sum()
+    total_production = df_gen_resampled.drop('Load', axis=1).sum(axis=1).sum()
 
     return df_gen_resampled, df_prices_resampled, total_production
 
@@ -611,8 +611,7 @@ def get_production_by_type_FromDB_NodesInZone(data: GridData, db: Database, zone
 
                 except Exception as e:
                     print(f"Warning: Could not fetch data for {gt} in {node}. Error: {e}")
-                else:
-                    print(f"Skipping {gt} in {node}, gen_idx is empty")
+
 
         # Get Load Demand (ensure this data is fetched for each zone)
         try:

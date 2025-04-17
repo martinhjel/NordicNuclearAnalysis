@@ -1,8 +1,9 @@
 import pandas as pd
 import pathlib
 
-case = 'x_2035'
-version = 'BL_v1'
+CASE_YEAR = '2035'
+SCENARIO = 'BL'
+VERSION = 'v2'
 
 # Get the base directory
 try:
@@ -12,31 +13,124 @@ except NameError:
     # For notebooks or interactive shells
     BASE_DIR = pathlib.Path().cwd()
 
-DATA_PATH = BASE_DIR / f'case_{case}' / 'data' / 'system' / f'consumer_{version}_NOT_SCALED.csv'
+DATA_PATH = BASE_DIR / f'CASE_{CASE_YEAR}' / f'scenario_{SCENARIO}' / 'data' / 'system' / 'OLD' / f'consumer_{SCENARIO}_v0.csv'
 
 # Henter ut consumer data fra Benchmark data
 consumer_data = pd.read_csv(DATA_PATH)
+# %%
+profilePATH = BASE_DIR / f'CASE_{CASE_YEAR}' / f'scenario_{SCENARIO}' / 'data' / f'timeseries_profiles.csv'
+profile = pd.read_csv(profilePATH)
+
+
+# %%
+print("SE1: ", profile['load_SE1'].max())
+print("SE2: ", profile['load_SE2'].max())
+print("SE3: ", profile['load_SE3'].max())
+print("SE4: ", profile['load_SE4'].max())
+print("NO1: ", profile['load_NO1'].max())
+print("NO2: ", profile['load_NO2'].max())
+print("NO3: ", profile['load_NO3'].max())
+print("NO4: ", profile['load_NO4'].max())
+print("NO5: ", profile['load_NO5'].max())
+print("DK1: ", profile['load_DK1'].max())
+print("DK2: ", profile['load_DK2'].max(), "DK2 MAX ID: ", profile['load_DK2'].idxmax())
+print("FI: ", profile['load_FI'].max())
+
+print(profile.head())
+
+profiles_sorted = profile['load_DK2'].sort_values(ascending=False)
+percentile_97_5_DK2 = profile['load_DK2'].quantile(0.9997)
+percentile_97_5_SE2 = profile['load_SE2'].quantile(0.9997)
+
+# %%
+zones = consumer_data['node'].str.split('_').str[0].unique()
+demand_zones = {}
+for zone in zones:
+    print(consumer_data.loc[consumer_data['node'].str.split('_').str[0] == zone, 'demand_avg'])
+    demand_zones[zone] = {'Before': sum(consumer_data.loc[consumer_data['node'].str.split('_').str[0] == zone, 'demand_avg'])}
+
+for zone in zones:
+    demand_zones[zone]['After'] = demand_zones[zone]['Before'] * profile[f'load_{zone}'].quantile(0.9997)
+
+for zone in zones:
+    demand_zones[zone]['Factor'] = demand_zones[zone]['Before'] / demand_zones[zone]['After']
+
+
+newDemand = {'DK1' : 3000,
+             'DK2' : 2000,
+             'FI'  : 8000,
+             'NO1' : 500,
+             'NO2' : 3300,
+             'NO3' : 900,
+             'NO4' : 2300,
+             'NO5' : 580,
+             'SE1' : 11700,
+             'SE2' : 3000,
+             'SE3' : 3100,
+             'SE4' : 0,
+             'GB'  : 0,
+             'DE'  : 0,
+             'NL'  : 0,
+             'EE'  : 0,
+             'LT'  : 0,
+             'PL'  : 0,
+             }
+
+
+for zone in zones:
+    demand_zones[zone]['NewMax'] = demand_zones[zone]['After'] + newDemand[zone]
+
+for zone in zones:
+    demand_zones[zone]['NewDemandAvg'] = demand_zones[zone]['NewMax'] * demand_zones[zone]['Factor']
+
+# %%
+
+# Get percentage of demand in node within the zone
+
+# Calculate demand percentage per node within its zone
+demand_nodes = {}
+for node in consumer_data['node'].unique():
+    zone = node.split('_')[0]
+    zone_demand = demand_zones[zone]['Before']
+    node_demand = consumer_data.loc[consumer_data['node'] == node, 'demand_avg'].iloc[0]
+    demand_nodes[node] = (node_demand / zone_demand)
+
+
+# Calculate new demand for each node
+# Update demand in node, for zone scaling factor
+consumer_data_updated = consumer_data.copy()
+
+for node in consumer_data_updated['node'].unique():
+    zone = node.split('_')[0]
+    demand_percentage = demand_nodes[node]
+    new_demand_avg = demand_zones[zone]['NewDemandAvg'] * demand_percentage
+    consumer_data_updated.loc[consumer_data_updated['node'] == node, 'demand_avg'] = new_demand_avg
+
+# %%
+# Lagrer ny consumer skalert til case mappen
+SAVE_PATH = BASE_DIR / f'CASE_{CASE_YEAR}' / f'scenario_{SCENARIO}' / 'data' / 'system' / f'consumer_{SCENARIO}_{VERSION}_SCALED.csv'
+consumer_data_updated.to_csv(SAVE_PATH, index=False)
 
 # %% Scale demand_avg for all nodes
 
 scaling_factor = {'DK1' : 1.474,
                   'DK2' : 1.474,
                   'FI'  : 1.405,
-                  'NO1' : 1.295,
-                  'NO2' : 1.295,
-                  'NO3' : 1.295,
-                  'NO4' : 1.295,
-                  'NO5' : 1.295,
-                  'SE1' : 1.386,
-                  'SE2' : 1.386,
-                  'SE3' : 1.386,
-                  'SE4' : 1.386,
-                  'GB'  : 1.219,
-                  'DE'  : 1.2998,
-                  'NL'  : 1.459,
-                  'EE'  : 1.88,
-                  'LT'  : 1.636,
-                  'PL'  : 1.455,
+                  'NO1' : 1.1253,
+                  'NO2' : 1.804,
+                  'NO3' : 1.2783,
+                  'NO4' : 2.002,
+                  'NO5' : 1.2984,
+                  'SE1' : 10.5,
+                  'SE2' : 2.742,
+                  'SE3' : 1.325,
+                  'SE4' : 1.0,
+                  'GB'  : 1.0,
+                  'DE'  : 1.0,
+                  'NL'  : 1.0,
+                  'EE'  : 1.0,
+                  'LT'  : 1.0,
+                  'PL'  : 1.0,
                   }
 
 # scaling_factor_2025 = {'DK1' : 0.81928,
@@ -74,7 +168,7 @@ for zone in zones:
 
 
 # Lagrer ny consumer skalert til case mappen
-SAVE_PATH = BASE_DIR / f'case_{case}' / 'data' / 'system' / f'consumer_{version}_Scaled.csv'
+SAVE_PATH = BASE_DIR / f'CASE_{CASE_YEAR}' / f'scenario_{SCENARIO}' / 'data' / 'system' / f'consumer_{SCENARIO}_{VERSION}_SCALED.csv'
 consumer_data_updated.to_csv(SAVE_PATH, index=False)
 
 # %%

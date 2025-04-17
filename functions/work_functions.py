@@ -77,50 +77,6 @@ def plot_Flow_fromDB(data, db, DATE_START, time_max_min, OUTPUT_PATH_PLOTS, plot
             plot_time_series(row, DATE_START, OUTPUT_PATH_PLOTS, plot_config['save_fig'], plot_config['interval'], plot_config['tex_font'])
 
 
-
-
-# For website
-def app_plot_SF_Areas_FromDB(data: GridData, database: Database, time_SF, OUTPUT_PATH_PLOTS, DATE_START, plot_config):
-    """
-    Plot the storage filling for given areas
-    """
-    storfilling = pd.DataFrame()
-    for area in plot_config['areas']:
-        storfilling[area] = getStorageFillingInAreasFromDB(data=data,
-                                                           db=database,
-                                                           areas=[area],
-                                                           generator_type="hydro",
-                                                           relative_storage=plot_config['relative'],
-                                                           timeMaxMin=time_SF)
-        if plot_config['relative']:
-            storfilling[area] = storfilling[area] * 100
-    # Compute the correct DATE_START for this year
-    correct_date_start_SF = DATE_START + pd.Timedelta(hours=time_SF[0])
-    correct_date_end_SF = DATE_START + pd.Timedelta(hours=time_SF[-1])
-    storfilling.index = pd.date_range(correct_date_start_SF, periods=time_SF[-1] - time_SF[0], freq='h')
-    storfilling['year'] = storfilling.index.year  # Add year column to DataFrame
-
-    title_storage_filling = f"Reservoir Filling in {'Area: ' + ', '.join(plot_config['areas'])} for period {correct_date_start_SF.year}-{correct_date_end_SF.year}"
-    plot_path = plot_storage_filling_area(storfilling=storfilling,
-                                          DATE_START=correct_date_start_SF,
-                                          DATE_END=correct_date_end_SF,
-                                          areas=plot_config['areas'],
-                                          interval=plot_config['interval'],
-                                          title=title_storage_filling,
-                                          OUTPUT_PATH_PLOTS=OUTPUT_PATH_PLOTS,
-                                          relative=plot_config['relative'],
-                                          plot_by_year=plot_config['plot_by_year'],
-                                          save_plot=plot_config['save_fig'],
-                                          duration_curve=plot_config['duration_curve'],
-                                          tex_font=False)
-    return plot_path
-
-
-
-
-
-
-
 # Regular Plotting
 def plot_SF_Areas_FromDB(data: GridData, database: Database, time_SF, OUTPUT_PATH_PLOTS, DATE_START, plot_config):
     """

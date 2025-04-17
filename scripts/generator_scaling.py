@@ -1,8 +1,9 @@
 import pandas as pd
 import pathlib
 
-case = 'x_2035'
-version = 'BL_v1'
+case = '2035'
+scenario = 'BL'
+version = 'v10'
 
 # Get the base directory
 try:
@@ -12,7 +13,7 @@ except NameError:
     # For notebooks or interactive shells
     BASE_DIR = pathlib.Path().cwd()
 
-DATA_PATH = BASE_DIR / f'case_{case}' / 'data' / 'system' / f'generator_{version}_NOT_SCALED.csv'
+DATA_PATH = BASE_DIR / f'CASE_{case}' / f'scenario_{scenario}' / 'data' / 'system' / f'generator_{scenario}_{version}.csv'
 
 # Henter ut consumer data fra Benchmark data
 generator_data = pd.read_csv(DATA_PATH)
@@ -22,10 +23,10 @@ generator_data_updated = generator_data.copy()
 # %%
 
 solar_scaling = {
-    'DK' : 19.43,
-    'FI' : 282.0,
-    'NO' : 72.0,
-    'SE' : 1.51,
+    'DK' : 1.0,
+    'FI' : 127.0,
+    'NO' : 1.0,
+    'SE' : 1.43,
 }
 
 
@@ -37,10 +38,10 @@ for area in solar_scaling.keys():
 
 # %%
 onshoreWind_scaling = {
-    'DK' : 1.4496,
-    'FI' : 1.581,
-    'NO' : 1.1,
-    'SE' : 1.467,
+    'DK' : 1.0,
+    'FI' : 1.0,
+    'NO' : 1.0,
+    'SE' : 1.43535,
 }
 
 
@@ -78,5 +79,5 @@ fossilOther_scaling = {
 
 # %%
 # Lagrer ny consumer skalert til case mappen
-SAVE_PATH = BASE_DIR / f'case_{case}' / 'data' / 'system' / f'generator_{version}_Scaled.csv'
+SAVE_PATH = BASE_DIR / f'CASE_{case}' / f'scenario_{scenario}' / 'data' / 'system' / f'generator_{scenario}_{version}_SCALED.csv'
 generator_data_updated.to_csv(SAVE_PATH, index=False)

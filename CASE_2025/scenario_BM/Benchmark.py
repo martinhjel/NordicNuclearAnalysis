@@ -32,18 +32,9 @@ DATA_PATH = BASE_DIR / 'data'
 OUTPUT_PATH = BASE_DIR / 'results'
 OUTPUT_PATH_PLOTS = BASE_DIR / 'results' / 'plots'
 
-# TODO: week_MSO bør legges inn i generatorfilen og leses inn som en del av GridData.
-week_MSO = {'FI_10':16,
-            'FI_12':36,
-            'SE3_3':20,
-            'SE3_6':24,
-            'GB':32,
-            'NL':28
-            }
-
 # %%
 # Configure grid and run simulation
 # create_case_doc('BM') # Create case documentation
 data, time_max_min = setup_grid(VERSION, DATE_START, DATE_END, DATA_PATH, SCENARIO)
-res = solve_lp(data, SQL_FILE, loss_method, replace=True, nuclear_availability=0.7, week_MSO=week_MSO)
+res = solve_lp(data, SQL_FILE, loss_method, replace=True, solver='gurobi')
 

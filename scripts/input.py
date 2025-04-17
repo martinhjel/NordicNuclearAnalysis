@@ -7,18 +7,16 @@ from pygments.styles.dracula import DraculaStyle
 # from networkx.classes import nodes
 # from pandas.io.formats.style import color
 
-case = 'BM'
-version = 'v87'
 
 
-def read_data(case, version):
-    base_path = pathlib.Path(f"../case_{case}/data/system/")
+def read_data(case, scenario, version):
+    base_path = pathlib.Path(f"../CASE_{case}/scenario_{scenario}/data/system/")
     system_data = powergama.GridData()
-    system_data.readGridData(nodes=base_path/f"node_{case}_{version}.csv",
-                        ac_branches=base_path/f"branch_{case}_{version}.csv",
-                        dc_branches=base_path/f"dcbranch_{case}_{version}.csv",
-                        generators=base_path/f"generator_{case}_{version}.csv",
-                        consumers=base_path/f"consumer_{case}_{version}.csv")
+    system_data.readGridData(nodes=base_path/f"node_{scenario}_{version}.csv",
+                        ac_branches=base_path/f"branch_{scenario}_{version}.csv",
+                        dc_branches=base_path/f"dcbranch_{scenario}_{version}.csv",
+                        generators=base_path/f"generator_{scenario}_{version}.csv",
+                        consumers=base_path/f"consumer_{scenario}_{version}.csv")
 
     return system_data
 
@@ -135,13 +133,14 @@ def grid_plot(scenario_data):
     return map
 
 def main():
-    case = 'BMNP'
-    version = 'v1'
-    scenario_data = read_data(case, version)
+    case_year = 2035
+    scenario = 'BL'
+    version = 'v8'
+    scenario_data = read_data(case_year, scenario, version)
     grid_map = grid_plot(scenario_data)
 
-    output_dir = os.path.join("..", f"case_{case}", "results", "input")
-    output_file = os.path.join(output_dir, f"grid_plot_case_{case}.html")
+    output_dir = os.path.join("..", f"CASE_{case_year}", f"scenario_{scenario}", "results", "input")
+    output_file = os.path.join(output_dir, f"grid_plot_case_{case_year}_{version}.html")
     grid_map.save(output_file)
     print(f"Grid plot saved to {output_file}")
 

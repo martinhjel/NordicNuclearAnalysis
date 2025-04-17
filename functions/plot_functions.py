@@ -27,7 +27,7 @@ def configure_axes(ax, relative, x_label):
 
 
 def plot_storage_filling_area(storfilling, DATE_START, DATE_END, areas, interval, title, OUTPUT_PATH_PLOTS,
-                              relative, plot_by_year, save_plot, duration_curve, tex_font):
+                              relative, plot_by_year, save_plot, duration_curve, plot_type=None, tex_font=False):
     """
     Plots the storage filling levels for specified areas over a given date range.
 
@@ -89,7 +89,7 @@ def plot_storage_filling_area(storfilling, DATE_START, DATE_END, areas, interval
                     else:
                         # Standard plot with day of year
                         if area[-1].isdigit():
-                            ax.plot(group.index.dayofyear, group[area], label=f"{area}-\n{year}")
+                            ax.plot(group.index.dayofyear, group[area], label=f"{year}")
                         else:
                             ax.plot(group.index.dayofyear, group[area], label=f"{year}")
                 else:
@@ -123,7 +123,7 @@ def plot_storage_filling_area(storfilling, DATE_START, DATE_END, areas, interval
     plt.grid(True)
     plt.tight_layout()
     plt.subplots_adjust(bottom=0.3)  # Reserve space for legend
-    if tex_font:
+    if tex_font is not False:
         plt.rcParams.update({
             "text.usetex": True,
             "font.family": "serif",
@@ -131,7 +131,10 @@ def plot_storage_filling_area(storfilling, DATE_START, DATE_END, areas, interval
 
     # Show and/or save the plot
     if save_plot:
-        plot_path = f'reservoir_filling_{"_".join(areas)}_{DATE_START.year}_to_{DATE_END.year}.svg'
+        if plot_type is None:
+            plot_path = f'reservoir_filling_{DATE_START.year}_{DATE_START.month}_{DATE_START.day}_{DATE_START.hour}_to_{DATE_END.year}_{DATE_END.month}_{DATE_END.day}_{DATE_END.hour}_{"_".join(areas)}.pdf'
+        else:
+            plot_path = f'reservoir_filling_{DATE_START.year}_{DATE_START.month}_{DATE_START.day}_{DATE_START.hour}_to_{DATE_END.year}_{DATE_END.month}_{DATE_END.day}_{DATE_END.hour}_{"_".join(areas)}_type{plot_type}.svg'
         plt.savefig(OUTPUT_PATH_PLOTS / plot_path)
         return plot_path
     plt.show()
@@ -386,7 +389,7 @@ def plot_zonal_prices_FromDB(data: GridData, zone_prices, zones, DATE_START, DAT
 
 
 
-def plotZonePriceMatrix(price_matrix, save_fig, OUTPUT_PATH_PLOTS):
+def plotZonePriceMatrix(price_matrix, save_fig, OUTPUT_PATH_PLOTS, start, end, version):
     plt.figure(figsize=(12, 6))
     sns.heatmap(price_matrix.astype(float), annot=True,fmt='.0f', cmap="YlOrRd", linewidths=0.5)
     plt.title("Zonal Average Prices per Year")
@@ -394,7 +397,7 @@ def plotZonePriceMatrix(price_matrix, save_fig, OUTPUT_PATH_PLOTS):
     plt.ylabel("Zone")
     plt.tight_layout()
     if save_fig:
-        filename = f"ZonePriceMatrix_{price_matrix.index[0]}_{price_matrix.index[-1]}.pdf"
+        filename = f"ZonePriceMatrix_{version}_{start['year']}_{end['year']}.pdf"
         plt.savefig(OUTPUT_PATH_PLOTS / filename)
         return filename
     plt.show()

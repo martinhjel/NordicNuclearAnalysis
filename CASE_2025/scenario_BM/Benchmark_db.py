@@ -8,10 +8,10 @@ import pandas as pd
 
 # === General Configurations ===
 SIM_YEAR_START = 1991           # Start year for the main simulation  (SQL-file)
-SIM_YEAR_END = 1991             # End year for the main simulation  (SQL-file)
+SIM_YEAR_END = 2020             # End year for the main simulation  (SQL-file)
 CASE_YEAR = 2025
 SCENARIO = 'BM'
-VERSION = 'vtest'
+VERSION = 'v96'
 TIMEZONE = ZoneInfo("UTC")  # Definerer UTC tidssone
 
 ####  PASS PÅ HARD KODING I SQL FIL
@@ -40,6 +40,7 @@ OUTPUT_PATH_PLOTS = BASE_DIR / 'results' / 'plots'
 # === Initialize Database and Grid Data ===
 data, time_max_min = setup_grid(VERSION, DATE_START, DATE_END, DATA_PATH, SCENARIO)
 database = Database(SQL_FILE)
+
 
 
 

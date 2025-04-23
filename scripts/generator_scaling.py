@@ -3,7 +3,7 @@ import pathlib
 
 case = '2035'
 scenario = 'BL'
-version = 'v10'
+version = 'v12'
 
 # Get the base directory
 try:
@@ -24,9 +24,9 @@ generator_data_updated = generator_data.copy()
 
 solar_scaling = {
     'DK' : 1.0,
-    'FI' : 127.0,
-    'NO' : 1.0,
-    'SE' : 1.43,
+    'FI' : 1.0,
+    'NO' : 53.398,
+    'SE' : 1.0,
 }
 
 
@@ -75,6 +75,23 @@ fossilOther_scaling = {
     'SE' : 0.8,
     'PL' : 0.8,
 }
+
+# %%
+hydro_scaling = {
+    'FI' : 1.0,
+    'NO' : 1.068571429,
+    'SE' : 1.0,
+}
+
+
+# Create a mask for all solar generators
+for area in hydro_scaling.keys():
+    mask_hydro = (generator_data_updated['type'] == 'hydro') & (generator_data_updated['node'].str.startswith(area))
+    generator_data_updated.loc[mask_hydro, 'pmax'] *= hydro_scaling[area]
+    mask_ror = (generator_data_updated['type'] == 'ror') & (generator_data_updated['node'].str.startswith(area))
+    generator_data_updated.loc[mask_ror, 'pmax'] *= hydro_scaling[area]
+
+
 
 
 # %%

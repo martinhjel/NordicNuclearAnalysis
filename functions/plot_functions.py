@@ -3,7 +3,109 @@ import seaborn as sns
 
 
 
+
+
+# === Energy Mix ===
+def getEnergyMix(data, database, timeMaxMin=None, relative=False, showTitle=True, variable="energy"):
+    """
+    Get energy, generation capacity or spilled energy per area per type
+
+    Parameters
+    ----------
+    timeMaxMin : list of two integers
+        Time range, [min,max]
+    relative : boolean
+        Whether to plot absolute (false) or relative (true) values
+    variable : string ("energy","capacity","spilled")
+        Which variable to plot (default is energy production)
+    """
+
+    if variable == "energy":
+        print("Getting energy output from all generators...")
+        gen_output = database.getResultGeneratorPowerSum(timeMaxMin)
+    elif variable == "capacity":
+        gen_output = data.generator.pmax
+    elif variable == "spilled":
+        gen_output = database.getResultGeneratorSpilledSums(timeMaxMin)
+    else:
+        print("Variable not valid")
+        return
+
+    df = data.generator[["node", "type", "pmax"]].merge(
+        data.node[["id", "area"]], how="left", left_on="node", right_on="id"
+    )
+    df["VALUE"] = gen_output
+    dfplot = df[["area", "type", "VALUE"]].groupby(["area", "type"]).sum()["VALUE"].unstack()
+
+    if relative:
+        dfplot = dfplot.mul(1 / dfplot.sum(axis=1), axis=0)
+
+    return dfplot
+
+
+
+def plotEnergyMix(
+        data, database, areas=None, timeMaxMin=None, relative=False, showTitle=True, variable="energy", gentypes=None
+):
+    """
+    Plot energy, generation capacity or spilled energy as stacked bars
+
+    Parameters
+    ----------
+    areas : list of strings
+        Which areas to include, default=None means include all
+    timeMaxMin : list of two integers
+        Time range, [min,max]
+    relative : boolean
+        Whether to plot absolute (false) or relative (true) values
+    variable : string ("energy","capacity","spilled")
+        Which variable to plot (default is energy production)
+    gentypes : list
+        List of generator types to include. None gives all.
+    """
+
+
+    dfplot = getEnergyMix(data, database, timeMaxMin=timeMaxMin, relative=relative, variable=variable)
+
+    titles = {"energy": "Energy mix", "capacity": "Capacity mix", "spilled": "Energy spilled"}
+    color_map = {
+        "biomass": "#8c564b",
+        "fossil_gas": "#d62728",
+        "fossil_other": "#333333",
+        "hydro": "#1f77b4",
+        "nuclear": "#9467bd",
+        "ror": "#17becf",
+        "solar": "#ffbb78",
+        "wind_off": "#aec7e8",
+        "wind_on": "#2ca02c"
+    }
+
+    title = ""
+    if variable in titles:
+        title = titles[variable]
+    if areas is None:
+        areas = dfplot.index
+    if gentypes is None:
+        gentypes = dfplot.columns
+
+    colors = [color_map.get(gt, "#333333") for gt in gentypes]  # fallback color if not found
+    dfplot.loc[areas, gentypes].plot(kind="bar", stacked=True, color=colors)
+    plt.legend()
+    handles, labels = plt.gca().get_legend_handles_labels()
+    handles.reverse()
+    labels.reverse()
+    plt.legend(handles, labels, loc=2, bbox_to_anchor=(1.05, 1), borderaxespad=0.0)
+
+    if showTitle:
+        plt.title(title)
+    plt.tight_layout()
+    plt.show()
+    return dfplot
+
+
+
 """Plot Functions"""
+
 def configure_axes(ax, relative, x_label):
     """
     Configures the y-axes for a plot based on the given parameters.

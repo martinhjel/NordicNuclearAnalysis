@@ -8,6 +8,7 @@ from functions.database_functions import *
 
 
 
+
 ##### THE FOLLOWING FUNCTIONS ARE USED AS INTERMEDIATE LINKS BETWEEN CASE_DB.PY FILES
 
 def calcSystemCostAndMeanPriceFromDB(data: GridData, database: Database, time_SC, time_MP):
@@ -327,23 +328,23 @@ def calcPlot_LG_FromDB(data: GridData, database: Database, time_LGT, OUTPUT_PATH
 
 
 
-def getProductionZonesInArea(data: GridData, db: Database, area=None, time_max_min=None, DATE_START=None, week=None):
+def getProductionZonesInArea(data: GridData, db: Database, area=None, time_max_min=None, OUTPUT_PATH=None, DATE_START=None, week=None):
     """
     Fetches the production by type for all zones within a specified area and exports the result to a CSV file.
     """
     zones_in_area_prod = get_production_by_type_FromDB_ZoneLevel(data, db, area=area, time_max_min=time_max_min,
                                                                  DATE_START=DATE_START, week=week)
-    zones_in_area_prod.to_csv(f'production_zone_level_{area}_{DATE_START.year}.csv')
+    zones_in_area_prod.to_csv(OUTPUT_PATH / 'data_files' / f'production_zone_level_{area}_{DATE_START.year}.csv')
     return zones_in_area_prod
 
 
-def getProductionNodesInZone(data: GridData, db: Database, zone=None, time_max_min=None, DATE_START=None, week=None):
+def getProductionNodesInZone(data: GridData, db: Database, zone=None, time_max_min=None, OUTPUT_PATH=None,  DATE_START=None, week=None):
     """
     Retrieves the production by types for all nodes in a specified zone and exports the result to a CSV file.
     """
     nodes_in_zone_prod = get_production_by_type_FromDB_NodesInZone(data, db, zone=zone, time_max_min=time_max_min,
                                                                    DATE_START=DATE_START, week=week)
-    nodes_in_zone_prod.to_csv(f'production_nodes_in_zone_{zone}_{DATE_START.year}.csv')
+    nodes_in_zone_prod.to_csv(OUTPUT_PATH / 'data_files' / f'production_nodes_in_zone_{zone}_{DATE_START.year}.csv')
     return nodes_in_zone_prod
 
 

@@ -73,8 +73,8 @@ def node_plot(scenario_data):
         <b>Installed Capacity:</b><br>{generator_info}<br><br>
         <b>Average Demand:</b><br>{consumer_info}
         """
-        marker_color = "orange" if "SMR" in generator_info else "purple" if "data_centre" in row['id'] else "blue"
-
+        # marker_color = "orange" if "SMR" in generator_info else "purple" if "data_centre" in row['id'] else "blue"
+        marker_color = "orange" if "NEW" in generator_info else "purple" if "data_centre" in row['id'] else "blue"
 
         folium.Marker(
             location=[row['lat'], row['lon']],
@@ -135,7 +135,7 @@ def grid_plot(scenario_data):
 def main():
     case_year = 2035
     scenario = 'BL'
-    version = 'v8'
+    version = 'v10'
     scenario_data = read_data(case_year, scenario, version)
     grid_map = grid_plot(scenario_data)
 

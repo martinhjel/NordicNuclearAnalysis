@@ -88,8 +88,8 @@ print(total_Production)
 # %% Collect the system cost and mean area price for the system for a given period
 
 # === INITIALIZATIONS ===
-START = {"year": 1999, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1999, "month": 12, "day": 31, "hour": 23}
+START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
+END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
 
 time_SC_MP = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
 calcSystemCostAndMeanPriceFromDB(data, database, time_SC_MP, time_SC_MP)
@@ -392,9 +392,9 @@ Overview:
 """
 
 # === INITIALIZATIONS ===
-START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
+START = {"year": 2020, "month": 1, "day": 1, "hour": 0}
 END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
-nodes = ["FI_10", "FI_12", "SE3_3", "SE3_6", "GB", "NL"]
+nodes = ["DK1_2", "DK1_3", "DK2_2"]
 
 time_range = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
 dispatch_df = get_total_production_by_type_per_node(data, database, nodes, time_range)
@@ -444,9 +444,9 @@ Main Features:
 """
 
 # === INITIALIZATIONS ===
-START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
+START = {"year": 2020, "month": 1, "day": 1, "hour": 0}
 END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
-Nodes = ['FI_10','FI_12','SE3_3','SE3_6','GB','NL']
+Nodes = ["DK1_2", "DK1_3", "DK2_2"]
 SELECTED_BRANCHES  = [['NO2_1','GB']]
 # ======================================================================================================================
 

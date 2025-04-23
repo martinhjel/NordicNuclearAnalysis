@@ -422,7 +422,7 @@ class LpProblem(pyo.ConcreteModel):
 
     # TODO: Update to allow persistent model solving
     # (remove+add constraint instead of mutable parameters)
-    def _updateLpProblem(self, timestep, nuclear_availability: float = None, week_MSO=None):
+    def _updateLpProblem(self, timestep):
         """
         Function that updates LP problem for a given timestep, due to changed
         power demand, power inflow and marginal generator costs
@@ -453,15 +453,13 @@ class LpProblem(pyo.ConcreteModel):
             inflow_profile = self._grid.generator.loc[i, "inflow_ref"]
             P_inflow = capacity * inflow_factor * self._grid.profiles.loc[timestep, inflow_profile]
 
-            # Apply availability reduction for nuclear power plants in July
-            if nuclear_availability is not None:
-                start_week = week_MSO.get(self._grid.generator.loc[i, 'node'])
 
+            if 'MSO_week_num' in self._grid.generator.columns:
+                start_week = self._grid.generator.loc[i, 'MSO_week_num']  # week_MSO.get(self._grid.generator.loc[i, 'node'])
                 if (self._grid.generator.loc[i, 'type'] == 'nuclear' and
-                    start_week is not None and
+                    start_week != 0 and
                     start_week <= profile_week < start_week + 3):
-
-                    P_inflow *= nuclear_availability  # Scale inflow based on availability
+                    P_inflow *= self._grid.generator.loc[i, "availability_fac"]  # Scale inflow based on availability
 
 
             if i not in self._idx_generatorsWithStorage:
@@ -825,8 +823,6 @@ class LpProblem(pyo.ConcreteModel):
         aclossmultiplier=1,
         dclossmultiplier=1,
         solve_args=None,
-        nuclear_availability=None,
-        week_MSO=None,
     ):
         """
         Solve LP problem for each time step in the time range
@@ -915,7 +911,7 @@ class LpProblem(pyo.ConcreteModel):
         start = time.time()
         for timestep in self._get_timesteps_to_solve():
             # update LP problem (inflow, storage, profiles)
-            self._updateLpProblem(timestep, nuclear_availability, week_MSO)
+            self._updateLpProblem(timestep)
             self._updatePowerLosses(aclossmultiplier, dclossmultiplier)
             if self._solver_persistent:
                 self._update_persistent_model(opt=opt)

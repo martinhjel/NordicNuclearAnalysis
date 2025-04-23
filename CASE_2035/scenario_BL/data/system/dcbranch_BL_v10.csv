@@ -16,3 +16,12 @@
 14,HVDC SwePol,SE4_1,PL,600,0
 15,COBRA cable,DK1_3,NL,700,0
 16,Viking Link,DK1_3,GB,1400,0
+17,SE1_hub_HVDC,SE1_hub,SE1_3,1000,0
+18,SE2_hub_HVDC,SE2_hub,SE2_7,1000,0
+19,SE3_hub_east_HVDC,SE3_hub_east,SE3_3,1000,0
+20,SE3_hub_west_HVDC,SE3_hub_west,SE3_7,1000,0
+21,SE4_hub_HVDC,SE4_hub,SE4_1,1000,0
+22,DK2_hub_Bornholm_DK,DK2_hub,DK2_2,1000,0
+23,DK2_hub_Bornholm_DE,DK2_hub,DE,1000,0
+24,NO2_hub_SN2,NO2_hub,NO2_4,1000,0
+25,FI_hub_HVDC,FI_hub,FI_10,1000,0

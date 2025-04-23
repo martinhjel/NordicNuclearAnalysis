@@ -10,46 +10,31 @@ import pathlib
 
 import pytz
 
-zone_NO1 = "10YNO-1--------2"
-zone_NO2 = "10YNO-2--------T"
-zone_NO3 = "10YNO-3--------J"
-zone_NO4 = "10YNO-4--------9"
-zone_NO5 = "10Y1001A1001A48H"
-zone_DK1 = "10YDK-1--------W"
-zone_DK2 = "10YDK-2--------M"
-zone_SE1 = "10Y1001A1001A44P"
-zone_SE2 = "10Y1001A1001A45N"
-zone_SE3 = "10Y1001A1001A46L"
-zone_SE4 = "10Y1001A1001A47J"
-zone_FI  = "10YFI-1--------U"
-zone_DE  = "10Y1001A1001A82H"  # 10Y1001A1001A83F
-zone_NL  = "10YNL----------L"
-zone_GB  = "10YGB----------A"
 
 zones = {
-    "NO1": zone_NO1,
-    "NO2": zone_NO2,
-    "NO3": zone_NO3,
-    "NO4": zone_NO4,
-    "NO5": zone_NO5,
-    "DK1": zone_DK1,
-    "DK2": zone_DK2,
-    "SE1": zone_SE1,
-    "SE2": zone_SE2,
-    "SE3": zone_SE3,
-    "SE4": zone_SE4,
-    "FI": zone_FI,
-    "DE": zone_DE,
-    "NL": zone_NL,
-    "GB": zone_GB
+    "NO1": "10YNO-1--------2",
+    "NO2": "10YNO-2--------T",
+    "NO3": "10YNO-3--------J",
+    "NO4": "10YNO-4--------9",
+    "NO5": "10Y1001A1001A48H",
+    "DK1": "10YDK-1--------W",
+    "DK2": "10YDK-2--------M",
+    "SE1": "10Y1001A1001A44P",
+    "SE2": "10Y1001A1001A45N",
+    "SE3": "10Y1001A1001A46L",
+    "SE4": "10Y1001A1001A47J",
+    "FI":  "10YFI-1--------U",
+    "DE":  "10Y1001A1001A82H", # 10Y1001A1001A83F
+    "NL":  "10YNL----------L",
+    "GB":  "10YGB----------A"
 }
 
 def main():
     API_KEY = "e278781c-c721-4675-8109-13caf4994141"
-
-    zone = zones["NO2"]
-    start_date = datetime(2019,1,1, 1)# "202001012300"
-    end_date = datetime(2020, 12, 31, 23) # "202012312300"
+    zone_key = "NO5"
+    zone = zones[zone_key]
+    start_date = datetime(2019,1,1, 0)# "202001012300"
+    end_date = datetime(2019, 12, 31, 23) # "202012312300"
     data = {}
 
     current_date = start_date
@@ -65,7 +50,7 @@ def main():
         # Move to the next month
         current_date = next_month
 
-    plotPrice(data)
+    plotPrice(data, start_date, end_date, zone_key)
     df = pd.DataFrame(data.items(), columns=["time", "price"])
     x = 1
 
@@ -141,7 +126,7 @@ def getPrice(API_KEY, zone, date_from, date_to):
         print(f"Failed to retrieve data: {response.status_code}")
         return None
 
-def plotPrice(data):
+def plotPrice(data, start_date, end_date, zone):
     # Convert the data into a DataFrame
     df = pd.DataFrame(list(data.items()), columns=["time", "price"])
 
@@ -158,18 +143,18 @@ def plotPrice(data):
     ax.set_ylabel("Price (EUR/MWh)")
 
     # Rotate x-axis labels for better readability
-    ax.xaxis.set_major_locator(mdates.MonthLocator(interval=2))
+    ax.xaxis.set_major_locator(mdates.MonthLocator(interval=1))
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%b %Y'))
     plt.setp(ax.xaxis.get_majorticklabels(), rotation=45)
 
-    ax.set_xlim(pd.to_datetime('2019-01-01'), pd.to_datetime('2020-12-31'))
+    ax.set_xlim(start_date, end_date)
 
 
     # Additional plot settings
-    plt.title(f"Price (NO2)")
+    plt.title(f"Price in {zone}")
     plt.grid(True)
     plt.tight_layout()
-    plt.savefig(pathlib.Path('../plots/base_case/price_NO2.pdf'))
+    # plt.savefig(pathlib.Path('../plots/base_case/price_NO2.pdf'))
     plt.show()
 
 

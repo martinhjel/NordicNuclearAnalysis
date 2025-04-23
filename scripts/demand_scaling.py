@@ -23,6 +23,7 @@ profile = pd.read_csv(profilePATH)
 
 
 # %%
+# Print max normaliserte load for each zone
 print("SE1: ", profile['load_SE1'].max())
 print("SE2: ", profile['load_SE2'].max())
 print("SE3: ", profile['load_SE3'].max())
@@ -43,19 +44,23 @@ percentile_97_5_DK2 = profile['load_DK2'].quantile(0.9997)
 percentile_97_5_SE2 = profile['load_SE2'].quantile(0.9997)
 
 # %%
+# Get all zones
 zones = consumer_data['node'].str.split('_').str[0].unique()
 demand_zones = {}
+# Collect sum demand average before change for each zone
 for zone in zones:
     print(consumer_data.loc[consumer_data['node'].str.split('_').str[0] == zone, 'demand_avg'])
-    demand_zones[zone] = {'Before': sum(consumer_data.loc[consumer_data['node'].str.split('_').str[0] == zone, 'demand_avg'])}
+    demand_zones[zone] = {'OldDemandAvg': sum(consumer_data.loc[consumer_data['node'].str.split('_').str[0] == zone, 'demand_avg'])}
 
+# Max load before
 for zone in zones:
-    demand_zones[zone]['After'] = demand_zones[zone]['Before'] * profile[f'load_{zone}'].quantile(0.9997)
+    demand_zones[zone]['OldMax'] = demand_zones[zone]['OldDemandAvg'] * profile[f'load_{zone}'].quantile(0.9997)
 
+# D/L
 for zone in zones:
-    demand_zones[zone]['Factor'] = demand_zones[zone]['Before'] / demand_zones[zone]['After']
+    demand_zones[zone]['Factor'] = demand_zones[zone]['OldDemandAvg'] / demand_zones[zone]['OldMax']
 
-
+# New demand added to the max demand of each zone
 newDemand = {'DK1' : 3000,
              'DK2' : 2000,
              'FI'  : 8000,
@@ -76,10 +81,11 @@ newDemand = {'DK1' : 3000,
              'PL'  : 0,
              }
 
-
+# calculate new max load for each zone
 for zone in zones:
-    demand_zones[zone]['NewMax'] = demand_zones[zone]['After'] + newDemand[zone]
+    demand_zones[zone]['NewMax'] = demand_zones[zone]['OldMax'] + newDemand[zone]
 
+# Calculate new demand average for each zone based on the new max load, using the factor calculated earlier
 for zone in zones:
     demand_zones[zone]['NewDemandAvg'] = demand_zones[zone]['NewMax'] * demand_zones[zone]['Factor']
 
@@ -91,7 +97,7 @@ for zone in zones:
 demand_nodes = {}
 for node in consumer_data['node'].unique():
     zone = node.split('_')[0]
-    zone_demand = demand_zones[zone]['Before']
+    zone_demand = demand_zones[zone]['OldMax']
     node_demand = consumer_data.loc[consumer_data['node'] == node, 'demand_avg'].iloc[0]
     demand_nodes[node] = (node_demand / zone_demand)
 

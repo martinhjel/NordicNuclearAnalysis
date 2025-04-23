@@ -295,6 +295,43 @@ def getProductionPerAreaFromDB(data: GridData, database, time_Prod, area):
 
     return totalProd
 
+
+
+def getProductionForAllNodesFromDB(data: GridData, database: Database, time_Prod):
+    """
+    Returns total production per node over the given time range.
+
+    Parameters
+    ----------
+    data : GridData
+        Contains node list & generator‑to‑node mapping.
+    database : Database
+        Has getResultGeneratorPower(gen_ids, time_range) → List[List[float]]
+    time_Prod : list
+        [min, max] time window for which to fetch generation.
+
+    Returns
+    -------
+    prod_per_node : dict[int, float]
+        Maps each node ID → total produced energy in that window.
+    """
+    prod_per_node = {}
+    # 1) Loop over every node ID
+    for node_idx in data.node.index.tolist():
+        # 2) Get all generators at that node
+        node = data.node.loc[node_idx, 'id']
+        print("Fetching production for node:", node)
+        gens = data.getGeneratorsAtNode(node_idx)
+        if not gens:
+            # no gens → zero production
+            prod_per_node[node] = 0.0
+            continue
+        # 3) Fetch each generator’s time‑series (all at once)
+        series = database.getResultGeneratorPower(gens, time_Prod)
+        prod_per_node[node] = sum(series) if series else 0.0
+    return prod_per_node
+
+
 def getDemandPerAreaFromDB(data: GridData, db: Database, area, timeMaxMin):
     """
     Returns demand timeseries for given area, as dictionary fields "fixed", "flex", and "sum"
@@ -416,6 +453,64 @@ def getDemandPerNodeFromDB(data: GridData, db: Database, area, node, timeMaxMin)
     sum_demand = [sum(x) for x in zip(dem, flex_demand)]
     demand_per_node = {"fixed": dem, "flex": flex_demand, "sum": sum_demand}
     return demand_per_node
+
+
+
+def getDemandForAllNodesFromDB(data: GridData, db: Database, timeMaxMin):
+    """
+    Returns demand timeseries for given zone, as dictionary fields "fixed", "flex", and "sum"
+
+    Parameters
+    ----------
+    timeMaxMin : list (default = None)
+        [min, max] - lower and upper time interval
+
+    Returns
+    -------
+    total_per_node : dict
+        The total demand per node, linked to node id
+    """
+    timerange = range(timeMaxMin[0], timeMaxMin[-1])
+    consumer = data.consumer
+    demands_per_node = {}
+    node = data.consumer.node
+
+    # assume getConsumersPerArea() returns { area_code: [id, id, ...], ... }
+    for area, id_list in data.getConsumersPerArea().items():
+        for i in id_list:
+            # --- 1) fixed demand profile for node i ---
+            ref_profile = consumer.demand_ref[i]
+            fixed_i = [
+                consumer.demand_avg[i]
+                * (1 - consumer.flex_fraction[i])
+                * data.profiles[ref_profile][t - timeMaxMin[0]]
+                for t in timerange
+            ]
+
+            # --- 2) flex demand profile for node i (or zeros if none) ---
+            flex_i = db.getResultFlexloadPower(i, timeMaxMin)
+            if not flex_i:
+                flex_i = [0] * len(timerange)
+
+            # --- 3) sum them up ---
+            sum_i = [f + x for f, x in zip(fixed_i, flex_i)]
+
+            # --- 4) store in our master dict ---
+            demands_per_node[i] = {
+                "node": node[i],
+                "fixed": fixed_i,
+                "flex": flex_i,
+                "sum": sum_i
+            }
+
+    # 2) now compute the total (scalar) of the "sum" series for each node
+    total_per_node = {
+        info["node"]: sum(info["sum"])
+        for info in demands_per_node.values()
+    }
+
+    return total_per_node
+
 
 
 
@@ -812,6 +907,7 @@ def collect_flow_data(db, time_max_min, cross_country_dict, interconnections_cap
     flow_data = []
     branch_type = "AC" if ac else "DC"
     for branch_index, (node_from, node_to) in cross_country_dict.items():
+        print(f"Fetching flow data for {branch_type} branch {branch_index} from {node_from} to {node_to}")
         branch_flows = db.getResultBranchFlow(branch_index, time_max_min, ac=ac)
         max_capacity = interconnections_capacity[branch_index]
         flow_data.append({
@@ -825,7 +921,97 @@ def collect_flow_data(db, time_max_min, cross_country_dict, interconnections_cap
     return flow_data
 
 
+def getFlowDataOnALLBranches(data: GridData, db: Database, time_max_min):
+    """
+    Collect flow on ALL connections.
+    :param data: GridData
+    :param db: Database
+    :param time_max_min:
+    :return: flow_df
+    """
+    # print(f'Collecting Flow Data at ALL AC Lines {", ".join([f"{f} → {t}" for f, t in all_AC_branches])}')
+    # print(f'Collecting Flow Data at ALL DC Lines {", ".join([f"{f} → {t}" for f, t in all_DC_branches])}')
 
+
+    # AC_interconnections, DC_interconnections = filter_connections_by_list(data, chosen_connections)
+    AC_interconnections = data.branch
+    DC_interconnections = data.dcbranch
+    AC_interconnections_capacity = AC_interconnections['capacity']
+    DC_interconnections_capacity = DC_interconnections['capacity']
+
+    AC_dict = {
+        i: (row['node_from'], row['node_to'])
+        for i, row in AC_interconnections.iterrows()
+    }
+    DC_dict = {
+        i: (row['node_from'], row['node_to'])
+        for i, row in DC_interconnections.iterrows()
+    }
+
+    # Collect AC and DC flow data
+    flow_data_AC = collect_flow_data(db, time_max_min, AC_dict, AC_interconnections_capacity, ac=True)
+    flow_data_DC = collect_flow_data(db, time_max_min, DC_dict, DC_interconnections_capacity, ac=False)
+
+    # Combine data into a single DataFrame
+    flow_df = pd.concat([
+        pd.DataFrame(flow_data_AC),
+        pd.DataFrame(flow_data_DC)
+    ], ignore_index=True)
+
+    return flow_df
+
+
+def getImportExportFromDB(data: GridData, database: Database, areas=None, timeMaxMin=None, acdc=["ac", "dc"]):
+    """Return time series for import and export for a specified area"""
+    if areas is None:
+        areas = data.getAllAreas()
+
+    df_importexport = pd.DataFrame(index=areas, columns=["import", "export"])
+    for area in areas:
+        print(area, end=",")
+        # find the associated branches (pos = into area)
+        # br = self.grid.getInterAreaBranches(area_to=area,acdc='ac')
+        # br_p = br['branches_pos']
+        # br_n = br['branches_neg']
+        # dcbr = self.grid.getInterAreaBranches(area_to=area,acdc='dc')
+        # dcbr_p = dcbr['branches_pos']
+        # dcbr_n = dcbr['branches_neg']
+        flow_in = 0
+        flow_out = 0
+        for acdc_type in acdc:
+            br = data.getInterAreaBranches(area_to=area, acdc=acdc_type)
+            br_pos = database.getResultBranches(timeMaxMin, br_indx=br["branches_pos"], acdc=acdc_type)
+            br_neg = database.getResultBranches(timeMaxMin, br_indx=br["branches_neg"], acdc=acdc_type)
+            if br_pos.shape[0] > 0:
+                flow_in += br_pos[br_pos["flow"] > 0]["flow"].sum()
+                flow_out -= br_pos[br_pos["flow"] < 0]["flow"].sum()
+            if br_neg.shape[0] > 0:
+                flow_in -= br_neg[br_neg["flow"] < 0]["flow"].sum()
+                flow_out += br_neg[br_neg["flow"] > 0]["flow"].sum()
+
+        # ie =  self.db.getBranchesSumFlow(branches_pos=br_p,branches_neg=br_n,
+        #                                 timeMaxMin=timeMaxMin,
+        #                                 acdc='ac')
+        # DC branches
+
+        #            dcie =  self.db.getBranchesSumFlow(branches_pos=dcbr_p,
+        #                                                 branches_neg=dcbr_n,
+        #                                                 timeMaxMin=timeMaxMin,
+        #                                                 acdc='dc')
+        #            import_a = (sum(v for v in ie['pos'] if v>=0)
+        #                         +sum(-v for v in ie['neg'] if v<0)
+        #                         #+sum(v for v in dcie['pos'] if v>=0)
+        #                         #+sum(-v for v in dcie['neg'] if v<0)
+        #                         )
+        #            export_a = (sum(-v for v in ie['pos'] if v<0)
+        #                         +sum(v for v in ie['neg'] if v>=0)
+        #                         #+sum(-v for v in dcie['pos'] if v<0)
+        #                         #+sum(v for v in dcie['neg'] if v>=0)
+        #                         )
+        df_importexport.loc[area, "import"] = flow_in
+        df_importexport.loc[area, "export"] = flow_out
+    print()
+    return df_importexport
 
 
 def getLoadheddingInAreaFromDB(db: Database, area, timeMaxMin=None):

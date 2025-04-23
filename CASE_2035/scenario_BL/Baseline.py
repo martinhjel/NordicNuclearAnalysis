@@ -23,7 +23,7 @@ except NameError:
     BASE_DIR = BASE_DIR / f'CASE_{CASE_YEAR}' / f'scenario_{SCENARIO}'
 
 # SQL PATH
-SQL_FILE = BASE_DIR / f"powergama_{SCENARIO}_{VERSION}_{SIM_YEAR_START}_{SIM_YEAR_END}_gas.sqlite"
+SQL_FILE = BASE_DIR / f"powergama_{SCENARIO}_{VERSION}_{SIM_YEAR_START}_{SIM_YEAR_END}.sqlite"
 
 # FILE PATHS
 DATA_PATH = BASE_DIR / 'data'
@@ -33,4 +33,4 @@ OUTPUT_PATH_PLOTS = BASE_DIR / 'results' / 'plots'
 
 # %%  === Configure Grid and Run Simulation ===
 data, time_max_min = setup_grid(VERSION, DATE_START, DATE_END, DATA_PATH, SCENARIO)
-res = solve_lp(data, SQL_FILE, loss_method, replace=True, solver='glpk')
+res = solve_lp(data, SQL_FILE, loss_method, replace=True, solver='gurobi')

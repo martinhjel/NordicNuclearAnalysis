@@ -4,6 +4,7 @@ from functions.database_functions import  * # Functions like 'getSystemCostFromD
 from zoneinfo import ZoneInfo
 from powergama.database import Database  # Import Database-Class specifically
 import pandas as pd
+import numpy as np
 
 
 # === General Configurations ===
@@ -11,13 +12,11 @@ SIM_YEAR_START = 1991           # Start year for the main simulation  (SQL-file)
 SIM_YEAR_END = 2020             # End year for the main simulation  (SQL-file)
 CASE_YEAR = 2025
 SCENARIO = 'BM'
-VERSION = 'v96'
+VERSION = 'v100'
 TIMEZONE = ZoneInfo("UTC")  # Definerer UTC tidssone
 
-####  PASS PÅ HARD KODING I SQL FIL
-
 DATE_START = pd.Timestamp(f'{SIM_YEAR_START}-01-01 00:00:00', tz='UTC')
-DATE_END = pd.Timestamp(f'{SIM_YEAR_END}-01-01 23:00:00', tz='UTC')
+DATE_END = pd.Timestamp(f'{SIM_YEAR_END}-12-31 23:00:00', tz='UTC')
 
 loss_method = 0
 
@@ -43,12 +42,11 @@ database = Database(SQL_FILE)
 
 
 
-
 # %% Nordic Grid Map
 
 # === INITIALIZATIONS ===
 START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1991, "month": 1, "day": 1, "hour": 23}
+END = {"year": 1991, "month": 12, "day": 31, "hour": 23}
 nordic_grid_map_fromDB(data, database, time_range = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END),
                        OUTPUT_PATH = OUTPUT_PATH, version = VERSION, START = START, END = END, exchange_rate_NOK_EUR = 11.38)
 
@@ -58,19 +56,17 @@ nordic_grid_map_fromDB(data, database, time_range = get_hour_range(SIM_YEAR_STAR
 zones = ['NO1', 'NO2', 'NO3', 'NO4', 'NO5', 'SE1', 'SE2', 'SE3', 'SE4',
          'DK1', 'DK2', 'FI', 'DE', 'GB', 'NL', 'LT', 'PL', 'EE']
 year_range = list(range(SIM_YEAR_START, SIM_YEAR_END + 1))
-price_matrix = createZonePriceMatrix(data, database, zones, year_range, TIMEZONE, SIM_YEAR_START, SIM_YEAR_END)
+price_matrix, log = createZonePriceMatrix(data, database, zones, year_range, TIMEZONE, SIM_YEAR_START, SIM_YEAR_END)
 
 # %% Plot Zonal Price Matrix
 plotZonePriceMatrix(price_matrix, save_fig=True, OUTPUT_PATH_PLOTS=OUTPUT_PATH_PLOTS)
 
 
-
-
 # %% Check Total Consumption for a given period.
 # Demand Response
 # === INITIALIZATIONS ===
-START = {"year": 2010, "month": 1, "day": 1, "hour": 0}
-END = {"year": 2011, "month": 1, "day": 1, "hour": 0}
+START = {"year": 2002, "month": 1, "day": 1, "hour": 0}
+END = {"year": 2002, "month": 12, "day": 31, "hour": 23}
 
 time_Demand = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
 demandTotal = getDemandPerAreaFromDB(data, database, area='NO', timeMaxMin=time_Demand)
@@ -79,8 +75,8 @@ print(sum(demandTotal['sum']))
 
 # %% === Get Production Data ===
 # === INITIALIZATIONS ===
-START = {"year": 1999, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1999, "month": 1, "day": 2, "hour": 0}
+START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
+END = {"year": 1991, "month": 12, "day": 31, "hour": 23}
 area = 'NO'
 
 time_Prod = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
@@ -92,8 +88,8 @@ print(total_Production)
 # %% Collect the system cost and mean area price for the system for a given period
 
 # === INITIALIZATIONS ===
-START = {"year": 1992, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1993, "month": 1, "day": 1, "hour": 0}
+START = {"year": 1999, "month": 1, "day": 1, "hour": 0}
+END = {"year": 1999, "month": 12, "day": 31, "hour": 23}
 
 time_SC_MP = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
 calcSystemCostAndMeanPriceFromDB(data, database, time_SC_MP, time_SC_MP)
@@ -141,15 +137,16 @@ plot_Flow_fromDB(data, database, DATE_START, time_Lines, OUTPUT_PATH_PLOTS, plot
 
 # === INITIALIZATIONS ===
 START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1993, "month": 12, "day": 31, "hour": 23}
+END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
 
 # === PLOT CONFIGURATIONS ===
+#  TODO: NÅR SAVE_FIG = TRUE --> DENNE BLIR SVG, IKKE PDF
 plot_config = {
-    'areas': ['FI'],            # When plotting multiple years in one year, recommend to only use one area
+    'areas': ['SE'],            # When plotting multiple years in one year, recommend to only use one area
     'relative': True,           # Relative storage filling, True gives percentage
     "plot_by_year": True,       # True: One curve for each year in same plot, or False:all years collected in one plot over the whole simulation period
     "duration_curve": False,    # True: Plot duration curve, or False: Plot storage filling over time
-    "save_fig": False,          # True: Save plot as pdf
+    "save_fig": True,          # True: Save plot as pdf
     "interval": 1               # Number of months on x-axis. 1 = Step is one month, 12 = Step is 12 months
 }
 
@@ -323,35 +320,117 @@ if zone is not None:
     nodes_in_zone_prod = getProductionNodesInZone(data, database, zone, time_Prod, correct_date_start_Prod, week=True)
 
 
+
+
+
+
+
+
+
+
+
+# === EINAR ===
+# %% National-level electricity production and consumption
+"""
+Retrieves and aggregates electricity production and demand data at the national level.
+
+Overview:
+- Extracts simulated weekly production and consumption data for a specified country and time period.
+- Organizes the output into two levels of temporal resolution:
+    - A weekly-level DataFrame indexed by datetime.
+    - An annual-level DataFrame obtained by summing values across calendar years.
+"""
+
+# === INITIALIZATIONS ===
+START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
+END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
+
+df_gen_dem, df_prices, total = get_production_by_type_FromDB(data, database, "NO", get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END), "1991-01-01")
+df_gen_dem.index = pd.to_datetime(df_gen_dem.index)
+df_gen_dem['Year'] = df_gen_dem.index.year
+df_gen_yearly = df_gen_dem.groupby('Year').sum()
+
+
+# %% TETS - NY APPROACH BASERT PÅ TIDSSTEG OG IKKE DATO! National-level electricity production and consumption
+"""
+Retrieves and aggregates electricity production and demand data at the national level.
+
+Based on idealyears over the 30-year climate periode so that each year has same number of hours so it can be comparable to each other.
+
+
+Overview:
+
+"""
+
+
+# === INITIALIZATIONS ===
+country = "NO"  # Country code
+
+n_ideal_years = 30
+n_timesteps = int(8766.4 * n_ideal_years)
+
+df_gen, df_prices, total_production, df_gen_per_year = get_production_by_type_ideal_timestep(
+    data=data,
+    db=database,
+    area_OP=country,
+    n_timesteps=n_timesteps
+)
+
+
+
+# %% Node-level production by type
+"""
+Retrieval and aggregation of electricity production by technology type at the node level 
+for a specified time period.
+
+Overview:
+- Calculates the total electricity production (in MWh) by each production type for selected nodes.
+- Accepts a list of nodes and a time interval as input.
+- Queries simulation results from a structured SQL database.
+- Returns a structured DataFrame where rows represent nodes and columns represent production types.
+
+"""
+
+# === INITIALIZATIONS ===
+START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
+END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
+nodes = ["FI_10", "FI_12", "SE3_3", "SE3_6", "GB", "NL"]
+
+time_range = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
+dispatch_df = get_total_production_by_type_per_node(data, database, nodes, time_range)
+
+
 # %% Sensitivities Nuclear production
 
 # === INITIALIZATIONS ===
 START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1991, "month": 1, "day": 1, "hour": 23}
+END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
 
-
-# Sensitivity [€]
+# Sum sensitivity [€] over all time steps
 df_NuclearSens_raw = database.getResultNuclearSens(get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END))
-df_long = df_NuclearSens_raw.reset_index().melt(id_vars="timestep", var_name="generator_idx", value_name="sensitivity [€]")
-df_long["node"] = df_long["generator_idx"].apply(lambda i: data.generator["node"][i])
-df_sens_per_node = df_long.groupby("node")["sensitivity [€]"].sum().reset_index()
-df_NuclearSens_per_node = df_sens_per_node.sort_values("sensitivity [€]", ascending=True)
-
+df_sens_nuclear_gen = df_NuclearSens_raw.sum().reset_index()
+df_sens_nuclear_gen.columns = ["generator_idx", "sensitivity [€]"]
+df_sens_nuclear_gen["node"] = df_sens_nuclear_gen["generator_idx"].apply(lambda i: data.generator["node"][i])
+df_sens_nuclear_gen = df_sens_nuclear_gen[["generator_idx", "node", "sensitivity [€]"]]
 
 # Sensitivity avg. [€/h]
 n_timesteps = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)[1]-get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)[0]
-df_NuclearSens_per_node["sensitivity avg. [€/h]"] = df_sens_per_node["sensitivity [€]"] / n_timesteps
-
+df_sens_nuclear_gen["sensitivity avg. [€/h]"] = df_sens_nuclear_gen["sensitivity [€]"] / n_timesteps
 
 # Price avg. [€/MWh]
+node_ids = list(data.node["id"])
 avg_prices_all = database.getResultNodalPricesMean(get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END))
-avg_prices = {
-    name: avg_prices_all[i]
-    for i, name in enumerate(data.node["id"])
-    if i < len(avg_prices_all)
-}
-df_NuclearSens_per_node["price avg. [€/MWh]"] = df_NuclearSens_per_node["node"].map(avg_prices)
+if len(avg_prices_all) != len(node_ids):
+    print(f"⚠️ Number of prices ({len(avg_prices_all)}) does not match number of nodes ({len(node_ids)}). Mapping only the first {min(len(node_ids), len(avg_prices_all))}.")
+min_len = min(len(node_ids), len(avg_prices_all))
+avg_prices = dict(zip(node_ids[:min_len], avg_prices_all[:min_len]))
+df_sens_nuclear_gen["nodal price avg. [€/MWh]"] = df_sens_nuclear_gen["node"].map(avg_prices)
 
+# Nodal price avg. sensitivity diff [€/MWh]
+df_sens_nuclear_gen["sensitivity diff [€/MWh]"] = df_sens_nuclear_gen["nodal price avg. [€/MWh]"] + df_sens_nuclear_gen["sensitivity avg. [€/h]"]
+
+# Sort the dataframe by sensitivity
+df_sens_nuclear_gen = df_sens_nuclear_gen.sort_values("sensitivity [€]", ascending=True)
 
 
 #%% Excel ###
@@ -366,9 +445,9 @@ Main Features:
 
 # === INITIALIZATIONS ===
 START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1991, "month": 12, "day": 31, "hour": 23}
-Nodes = ['SE2_4', 'FI_3']
-SELECTED_BRANCHES  = [['NO3_1','SE2_4']] # See branch CSV files for correct connections
+END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
+Nodes = ['FI_10','FI_12','SE3_3','SE3_6','GB','NL']
+SELECTED_BRANCHES  = [['NO2_1','GB']]
 # ======================================================================================================================
 
 start_hour, end_hour = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
@@ -378,6 +457,7 @@ nodal_prices_per_node = GetPriceAtSpecificNodes(Nodes, data, database, start_hou
 reservoir_filling_per_node, storage_cap = GetReservoirFillingAtSpecificNodes(Nodes, data, database, start_hour, end_hour)
 flow_data = getFlowDataOnBranches(data, database, [start_hour, end_hour], SELECTED_BRANCHES)
 excel_filename = ExportToExcel(Nodes, production_per_node, consumption_per_node, nodal_prices_per_node, reservoir_filling_per_node, storage_cap, flow_data, START, END, SCENARIO, VERSION, OUTPUT_PATH)
+
 
 
 # %% === Write Flow Data to Excel ===

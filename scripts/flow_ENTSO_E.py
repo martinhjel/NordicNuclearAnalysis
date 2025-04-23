@@ -164,7 +164,7 @@ results_dir = os.path.join("..", "NordicNuclearAnalysis", "results", "Flow_bz_En
 print(f"Sjekker katalog: {os.path.abspath(results_dir)}")
 
 # Variabel for percentil-verdi (kan enkelt endres her)
-PERCENTILE_VALUE = 98.5
+PERCENTILE_VALUE = 97.5
 
 # Liste for å samle percentilverdier for hver forbindelse
 percentile_flows = []

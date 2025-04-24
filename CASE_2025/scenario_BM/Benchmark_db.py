@@ -12,7 +12,7 @@ SIM_YEAR_START = 1991           # Start year for the main simulation  (SQL-file)
 SIM_YEAR_END = 2020             # End year for the main simulation  (SQL-file)
 CASE_YEAR = 2025
 SCENARIO = 'BM'
-VERSION = 'v100'
+VERSION = 'v101_sens'
 TIMEZONE = ZoneInfo("UTC")  # Definerer UTC tidssone
 
 DATE_START = pd.Timestamp(f'{SIM_YEAR_START}-01-01 00:00:00', tz='UTC')
@@ -55,11 +55,15 @@ nordic_grid_map_fromDB(data, database, time_range = get_hour_range(SIM_YEAR_STAR
 # TODO: legg til mulighet for å ha øre/kwh
 zones = ['NO1', 'NO2', 'NO3', 'NO4', 'NO5', 'SE1', 'SE2', 'SE3', 'SE4',
          'DK1', 'DK2', 'FI', 'DE', 'GB', 'NL', 'LT', 'PL', 'EE']
+
+START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
+END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
+
 year_range = list(range(SIM_YEAR_START, SIM_YEAR_END + 1))
 price_matrix, log = createZonePriceMatrix(data, database, zones, year_range, TIMEZONE, SIM_YEAR_START, SIM_YEAR_END)
 
 # %% Plot Zonal Price Matrix
-plotZonePriceMatrix(price_matrix, save_fig=True, OUTPUT_PATH_PLOTS=OUTPUT_PATH_PLOTS)
+plotZonePriceMatrix(price_matrix, save_fig=True, OUTPUT_PATH_PLOTS=OUTPUT_PATH_PLOTS, start=START, end=END, version=VERSION)
 
 
 # %% Check Total Consumption for a given period.
@@ -320,15 +324,6 @@ if zone is not None:
     nodes_in_zone_prod = getProductionNodesInZone(data, database, zone, time_Prod, correct_date_start_Prod, week=True)
 
 
-
-
-
-
-
-
-
-
-
 # === EINAR ===
 # %% National-level electricity production and consumption
 """
@@ -343,7 +338,7 @@ Overview:
 
 # === INITIALIZATIONS ===
 START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
+END = {"year": 1991, "month": 12, "day": 31, "hour": 23}
 
 df_gen_dem, df_prices, total = get_production_by_type_FromDB(data, database, "NO", get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END), "1991-01-01")
 df_gen_dem.index = pd.to_datetime(df_gen_dem.index)
@@ -362,11 +357,10 @@ Overview:
 
 """
 
-
 # === INITIALIZATIONS ===
-country = "NO"  # Country code
+country = "DK"  # Country code
 
-n_ideal_years = 30
+n_ideal_years = 3
 n_timesteps = int(8766.4 * n_ideal_years)
 
 df_gen, df_prices, total_production, df_gen_per_year = get_production_by_type_ideal_timestep(
@@ -378,7 +372,7 @@ df_gen, df_prices, total_production, df_gen_per_year = get_production_by_type_id
 
 
 
-# %% Node-level production by type
+# % Node-level production by type
 """
 Retrieval and aggregation of electricity production by technology type at the node level 
 for a specified time period.
@@ -392,13 +386,40 @@ Overview:
 """
 
 # === INITIALIZATIONS ===
-START = {"year": 2020, "month": 1, "day": 1, "hour": 0}
-END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
+START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
+END = {"year": 1991, "month": 12, "day": 31, "hour": 23}
 nodes = ["DK1_2", "DK1_3", "DK2_2"]
 
 time_range = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
 dispatch_df = get_total_production_by_type_per_node(data, database, nodes, time_range)
 
+# %% Capture price
+
+# === INITIALIZATIONS ===
+START = {"year": 1998, "month": 1, "day": 1, "hour": 0}
+END = {"year": 1998, "month": 12, "day": 31, "hour": 23}
+nodes = ["DK1_2", "DK1_3", "DK2_2"]
+
+start_hour, end_hour = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
+production_per_node, gen_idx, gen_type = GetProductionAtSpecificNodes(nodes, data, database, start_hour, end_hour)
+nodal_prices_per_node = GetPriceAtSpecificNodes(nodes, data, database, start_hour, end_hour)
+
+capture_prices_df, capture_rates_df = CalculateCapturePrice(production_per_node, nodal_prices_per_node)
+
+# %% Capture price
+
+# === INITIALIZATIONS ===
+START = {"year": 1991}
+END = {"year": 2020}
+# SELECTED_NODES = ["DK1_2", "DK1_3", "DK2_2"]
+SELECTED_NODES = "ALL"
+nodes = data.node["id"].dropna().unique().tolist() if SELECTED_NODES == "ALL" else SELECTED_NODES
+
+capture_prices_over_years, value_factors_over_years = CalculateCapturePriceAndValueFactorOverYears(START, END, nodes, data=data, database=database, timezone=TIMEZONE)
+
+
+# capture_prices_over_years = CalculateCapturePriceOverYears(START, END, nodes, data=data, database=database, timezone=TIMEZONE)
+# value_factors_over_years = CalculateValueFactorOverYears(START, END, nodes, data=data, database=database, timezone=TIMEZONE)
 
 # %% Sensitivities Nuclear production
 

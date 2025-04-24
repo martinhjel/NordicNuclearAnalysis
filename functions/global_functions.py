@@ -248,9 +248,6 @@ def createZonePriceMatrix(data, database, zones, year_range, TIMEZONE, SIM_YEAR_
     log_text = "\n".join(log_messages)
     return zonal_price_map, log_text
 
-
-
-
 ########################################### MAP FUNCTIONS ######################################################
 
 def nordic_grid_map_fromDB(data, db: Database, time_range, OUTPUT_PATH, version, START, END, exchange_rate_NOK_EUR=11.38):
@@ -889,7 +886,7 @@ def plot_LDC_interconnections(data, db, grid_data_path, time_max_min, OUTPUT_PAT
 
 
 
-################################### ANALYSES FUNCTIONS #############################################################
+################################### ANALYSIS FUNCTIONS #############################################################
 
 
 # Time handling function using Python's built-in datetime objects.
@@ -990,6 +987,174 @@ def GetProductionAtSpecificNodes(Nodes, data: GridData, database: Database, star
             production_per_node[node].setdefault(typ, []).append(power_output.get(gen, [1]))  # Setter 0 hvis data mangler
 
     return production_per_node, gen_idx, gen_type
+
+
+
+#### Calculate capture price
+
+def CalculateCapturePrice(production_per_node, nodal_prices_per_node):
+    """
+       Calculates capture price and capture rate for each generation type at each node.
+
+       Parameters
+       ----------
+       production_per_node : dict
+           {node: {type: [time series per generator]}}
+       nodal_prices_per_node : dict
+           {node: [hourly prices]}
+
+       Returns
+       -------
+       pd.DataFrame
+           DataFrame with capture price (EUR/MWh) and capture rate (relative to avg. price)
+           per generation type and node.
+    """
+    result_capture_price = []
+    result_capture_rate = []
+
+    for node, types in production_per_node.items():
+        prices = pd.Series(nodal_prices_per_node[node])
+        avg_price = prices.mean()
+        print(avg_price)
+        node_capture_price = {"Node": node}
+        node_capture_rate = {"Node": node}
+
+        for typ, all_production_series in types.items():
+            total_production = pd.DataFrame(all_production_series).sum(axis=0)
+
+            if total_production.sum() > 0:
+                capture_price = (total_production * prices).sum() / total_production.sum()
+                node_capture_price[f"{typ.capitalize()} (EUR/MWh)"] = capture_price
+                node_capture_rate[f"{typ.capitalize()} (Capture Rate)"] = capture_price / avg_price
+            else:
+                node_capture_price[f"{typ.capitalize()} (EUR/MWh)"] = None
+                node_capture_rate[f"{typ.capitalize()} (Capture Rate)"] = None
+
+        result_capture_price.append(node_capture_price)
+        result_capture_rate.append(node_capture_rate)
+
+    return pd.DataFrame(result_capture_price).set_index("Node"), pd.DataFrame(result_capture_rate).set_index("Node")
+
+
+def CalculateCapturePriceOverYears(START, END, nodes, data, database, timezone):
+    all_years_capture_prices = []
+
+    for year in range(START["year"], END["year"] + 1):
+        period_start = {"year": year, "month": 1, "day": 1, "hour": 0}
+        period_end = {"year": year, "month": 12, "day": 31, "hour": 23}
+
+        start_hour, end_hour = get_hour_range(year, year, timezone, period_start, period_end)
+
+        production_per_node, _, _ = GetProductionAtSpecificNodes(
+            nodes, data, database, start_hour, end_hour
+        )
+        nodal_prices_per_node = GetPriceAtSpecificNodes(
+            nodes, data, database, start_hour, end_hour
+        )
+
+        capture_price_df, _ = CalculateCapturePrice(production_per_node, nodal_prices_per_node)
+
+        capture_price_df["Year"] = year
+        capture_price_df["Node"] = capture_price_df.index
+        all_years_capture_prices.append(capture_price_df)
+
+    if not all_years_capture_prices:
+        raise ValueError("No valid capture price data collected for any year.")
+
+    full_df = pd.concat(all_years_capture_prices)
+    full_df.set_index(["Year", "Node"], inplace=True)
+    return full_df
+
+
+def CalculateValueFactorOverYears(START, END, nodes, data, database, timezone):
+    all_years_value_factors = []
+
+    for year in range(START["year"], END["year"] + 1):
+        period_start = {"year": year, "month": 1, "day": 1, "hour": 0}
+        period_end = {"year": year, "month": 12, "day": 31, "hour": 23}
+
+        start_hour, end_hour = get_hour_range(year, year, timezone, period_start, period_end)
+
+        nodal_prices_per_node = GetPriceAtSpecificNodes(
+            nodes, data, database, start_hour, end_hour
+        )
+
+        # Gjennomsnittspris per node for dette året
+        avg_prices = {node: pd.Series(prices).mean() for node, prices in nodal_prices_per_node.items()}
+
+        # Capture-priser for dette året
+        production_per_node, _, _ = GetProductionAtSpecificNodes(
+            nodes, data, database, start_hour, end_hour
+        )
+        capture_price_df, _ = CalculateCapturePrice(production_per_node, nodal_prices_per_node)
+
+        # Beregn Value Factor per node
+        vf_df = capture_price_df.copy()
+        for node in vf_df.index:
+            for col in vf_df.columns:
+                vf_df.loc[node, col] = (
+                    vf_df.loc[node, col] / avg_prices[node]
+                    if pd.notnull(vf_df.loc[node, col]) else None
+                )
+
+        vf_df["Year"] = year
+        vf_df["Node"] = vf_df.index
+        all_years_value_factors.append(vf_df)
+
+    full_vf_df = pd.concat(all_years_value_factors)
+    full_vf_df.set_index(["Year", "Node"], inplace=True)
+    return full_vf_df
+
+def CalculateCapturePriceAndValueFactorOverYears(START, END, nodes, data, database, timezone):
+    capture_price_dfs = []
+    value_factor_dfs = []
+
+    for year in range(START["year"], END["year"] + 1):
+        period_start = {"year": year, "month": 1, "day": 1, "hour": 0}
+        period_end = {"year": year, "month": 12, "day": 31, "hour": 23}
+
+        start_hour, end_hour = get_hour_range(year, year, timezone, period_start, period_end)
+
+        print(f"Fetching data for {year}")
+        production_per_node, _, _ = GetProductionAtSpecificNodes(nodes, data, database, start_hour, end_hour)
+        nodal_prices_per_node = GetPriceAtSpecificNodes(nodes, data, database, start_hour, end_hour)
+
+        avg_prices = {node: pd.Series(prices).mean() for node, prices in nodal_prices_per_node.items()}
+        capture_df, _ = CalculateCapturePrice(production_per_node, nodal_prices_per_node)
+
+        # Append capture price
+        df_cp = capture_df.copy()
+        df_cp["Year"] = year
+        df_cp["Node"] = df_cp.index
+        capture_price_dfs.append(df_cp)
+
+        # Create value factor
+        df_vf = capture_df.copy()
+        for node in df_vf.index:
+            for col in df_vf.columns:
+                df_vf.loc[node, col] = (
+                    df_vf.loc[node, col] / avg_prices[node]
+                    if pd.notnull(df_vf.loc[node, col]) else None
+                )
+        df_vf["Year"] = year
+        df_vf["Node"] = df_vf.index
+        value_factor_dfs.append(df_vf)
+
+    # Kombiner alt
+    capture_price_full = pd.concat(capture_price_dfs).set_index(["Year", "Node"])
+    value_factor_full = pd.concat(value_factor_dfs).set_index(["Year", "Node"])
+
+    return capture_price_full, value_factor_full
+
+
+
+
+
+
+
+
+
+
 
 
 

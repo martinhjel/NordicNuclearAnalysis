@@ -684,7 +684,7 @@ def get_production_by_type_ideal_timestep(data: GridData, db: Database, area_OP,
 
 
 
-
+# def get_capture_price_by_type_per_node(data: GridData, db: Database, nodes: list, time_range: tuple):
 
 
 

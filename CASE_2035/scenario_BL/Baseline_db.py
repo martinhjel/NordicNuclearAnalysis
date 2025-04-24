@@ -8,10 +8,10 @@ import pandas as pd
 
 # === General Configurations ===
 SIM_YEAR_START = 1991           # Start year for the main simulation  (SQL-file)
-SIM_YEAR_END = 2020             # End year for the main simulation  (SQL-file)
+SIM_YEAR_END = 1994             # End year for the main simulation  (SQL-file)
 CASE_YEAR = 2035
 SCENARIO = 'BL'
-VERSION = 'v9'
+VERSION = 'v17'
 TIMEZONE = ZoneInfo("UTC")  # Definerer UTC tidssone
 
 ####  PASS PÅ HARD KODING I SQL FIL
@@ -31,7 +31,7 @@ except NameError:
     BASE_DIR = BASE_DIR / f'CASE_{CASE_YEAR}' / f'scenario_{SCENARIO}'
 
 # === File Paths ===
-SQL_FILE = BASE_DIR / f"powergama_{SCENARIO}_{VERSION}_{SIM_YEAR_START}_{SIM_YEAR_END}.sqlite"
+SQL_FILE = BASE_DIR / f"powergama_{SCENARIO}_{VERSION}_{SIM_YEAR_START}_{SIM_YEAR_END}_gas.sqlite"
 DATA_PATH = BASE_DIR / 'data'
 GRID_DATA_PATH = DATA_PATH / 'system'
 OUTPUT_PATH = BASE_DIR / 'results'
@@ -42,16 +42,68 @@ data, time_max_min = setup_grid(VERSION, DATE_START, DATE_END, DATA_PATH, SCENAR
 database = Database(SQL_FILE)
 
 
+# %%
+
+START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
+END = {"year": 1995, "month": 12, "day": 31, "hour": 23}
+time_Shed = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
+dfplot = plotEnergyMix(data=data, database=database, areas=['NO', 'SE', 'FI', 'DK'], timeMaxMin=time_Shed, variable="capacity")
+
+# %% === GET ENERGY BALANCE ON NODAL AND ZONAL LEVEL ===
+
+START = {"year": 1997, "month": 1, "day": 1, "hour": 0}
+END = {"year": 1997, "month": 12, "day": 31, "hour": 23}
+time_EB = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
+all_nodes = data.node.id
+
+flow_data = getFlowDataOnALLBranches(data, database, time_EB)       # TAR LANG TID
+totalDemand = getDemandForAllNodesFromDB(data, database, time_EB)
+totalProduction = getProductionForAllNodesFromDB(data, database, time_EB)   # TAR LANG TID
+totalLoadShedding = database.getResultLoadheddingSum(timeMaxMin=time_EB)
+# %%
+node_energyBalance = getEnergyBalanceNodeLevel(all_nodes, totalDemand, totalProduction, totalLoadShedding, flow_data, OUTPUT_PATH, VERSION, START)
+zone_energyBalance = getEnergyBalanceZoneLevel(all_nodes, totalDemand, totalProduction, totalLoadShedding, flow_data, OUTPUT_PATH, VERSION, START)
+df_importexport = getImportExportFromDB(data, database, timeMaxMin=time_EB) # Import/Export data for all AREAS
+
+# %%
+
+# Filter DataFrame for plotting (exclude 'DE')
+exclude_zones = ['DE', 'GB', 'PL', 'NL', 'LT', 'EE']
+plot_data = zone_energyBalance[~zone_energyBalance['Zone'].isin(exclude_zones)]
+
+# Create a bar plot for the zone-level energy balance
+fig, ax = plt.subplots(figsize=(12, 6))
+bar_width = 0.13
+index = np.arange(len(plot_data))
+
+# Plot bars for each component
+ax.bar(index, plot_data['Production'], bar_width, label='Production', color='green')
+ax.bar(index + bar_width, plot_data['Import'], bar_width, label='Import', color='blue')
+ax.bar(index + 2*bar_width, plot_data['Demand'], bar_width, label='Demand', color='red')
+ax.bar(index + 3*bar_width, plot_data['Export'], bar_width, label='Export', color='orange')
+ax.bar(index + 4*bar_width, plot_data['Load Shedding'], bar_width, label='Load Shedding', color='gray')
+
+# Customize plot
+ax.set_xlabel('Zones')
+ax.set_ylabel('Power [MW]')
+ax.set_title('Zone-Level Energy Balance in Nordic Power System')
+ax.set_xticks(index + 2.5*bar_width)
+ax.set_xticklabels(plot_data['Zone'], rotation=45)
+ax.legend()
+
+plt.tight_layout()
+# plt.savefig('zone_energy_balance_plot.png')
+plt.show()
+
 
 # %% Nordic Grid Map
 
 # === INITIALIZATIONS ===
 START = {"year": 2012, "month": 1, "day": 1, "hour": 0}
 END = {"year": 2012, "month": 12, "day": 31, "hour": 23}
+
 nordic_grid_map_fromDB(data, database, time_range = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END),
-                       OUTPUT_PATH = OUTPUT_PATH, version = VERSION, START = START, END = END, exchange_rate_NOK_EUR = 11.38)
-
-
+                       OUTPUT_PATH = OUTPUT_PATH / 'maps', version = VERSION, START = START, END = END, exchange_rate_NOK_EUR = 11.38)
 
 
 
@@ -60,7 +112,7 @@ nordic_grid_map_fromDB(data, database, time_range = get_hour_range(SIM_YEAR_STAR
 zones = ['NO1', 'NO2', 'NO3', 'NO4', 'NO5', 'SE1', 'SE2', 'SE3', 'SE4',
          'DK1', 'DK2', 'FI', 'DE', 'GB', 'NL', 'LT', 'PL', 'EE']
 START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
+END = {"year": 1994, "month": 12, "day": 31, "hour": 23}
 year_range = list(range(SIM_YEAR_START, SIM_YEAR_END + 1))
 price_matrix, log = createZonePriceMatrix(data, database, zones, year_range, TIMEZONE, SIM_YEAR_START, SIM_YEAR_END)
 
@@ -74,7 +126,7 @@ plotZonePriceMatrix(price_matrix, save_fig=True, OUTPUT_PATH_PLOTS=OUTPUT_PATH_P
 # === INITIALIZATIONS ===
 START = {"year": 1993, "month": 1, "day": 1, "hour": 0}
 END = {"year": 1993, "month": 12, "day": 31, "hour": 23}
-area = 'NO'
+area = 'EE'
 
 time_Demand = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
 demandTotal = getDemandPerAreaFromDB(data, database, area=area, timeMaxMin=time_Demand)
@@ -83,9 +135,9 @@ print(sum(demandTotal['sum']))
 
 # %% === Get Production Data ===
 # === INITIALIZATIONS ===
-START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1991, "month": 12, "day": 31, "hour": 23}
-area = 'SE'
+START = {"year": 1993, "month": 1, "day": 1, "hour": 0}
+END = {"year": 1993, "month": 12, "day": 31, "hour": 23}
+area = 'EE'
 
 time_Prod = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
 total_Production = getProductionPerAreaFromDB(data, database, time_Prod, area)
@@ -97,7 +149,7 @@ print(total_Production)
 
 # === INITIALIZATIONS ===
 START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
+END = {"year": 1994, "month": 12, "day": 31, "hour": 23}
 
 # === PLOT CONFIGURATIONS ===
 plot_config = {
@@ -123,7 +175,7 @@ END = {"year": 1995, "month": 12, "day": 31, "hour": 23}
 
 # === PLOT CONFIGURATIONS ===
 plot_config = {
-    'zones': ['NO1'],                     # When plotting multiple years in one year, recommend to only use one zone
+    'zones': ['SE2'],                     # When plotting multiple years in one year, recommend to only use one zone
     'relative': True,                            # Relative storage filling, True gives percentage
     "plot_by_year": 3,                           # (1) Each year in individual plot, (2) Entire Timeline, (3) Each year show over 1 year timeline.
     "duration_curve": False,                     # True: Plot duration curve, or False: Plot storage filling over time
@@ -140,11 +192,12 @@ plot_SF_Zones_FromDB(data, database, time_SF, OUTPUT_PATH_PLOTS, DATE_START, plo
 
 
 
+
 # %% GET FLOW ON CHOSEN BRANCHES
 
 # === INITIALIZATIONS ===
-START = {"year": 2012, "month": 1, "day": 1, "hour": 0}
-END = {"year": 2012, "month": 12, "day": 31, "hour": 23}
+START = {"year": 1994, "month": 1, "day": 1, "hour": 0}
+END = {"year": 1994, "month": 12, "day": 31, "hour": 23}
 
 # === PLOT CONFIGURATIONS ===
 
@@ -174,8 +227,8 @@ plot_Flow_fromDB(data, database, DATE_START, time_Lines, OUTPUT_PATH_PLOTS, plot
 # %% PLOT ZONAL PRICES
 
 # === INITIALIZATIONS ===
-START = {"year": 2012, "month": 1, "day": 1, "hour": 0}
-END = {"year": 2012, "month": 12, "day": 31, "hour": 23}
+START = {"year": 1994, "month": 1, "day": 1, "hour": 0}
+END = {"year": 1994, "month": 12, "day": 31, "hour": 23}
 
 # === PLOT CONFIGURATIONS ===
 plot_config = {
@@ -223,19 +276,166 @@ print(f"Total production in {plot_config['area']}: {tot_prod:.2f} MWh")
 # %%
 
 # === INITIALIZATIONS ===
-START = {"year": 2010, "month": 1, "day": 1, "hour": 0}
-END = {"year": 2010, "month": 12, "day": 31, "hour": 23}
-area = None
-zone = 'SE1'
+START = {"year": 1993, "month": 1, "day": 1, "hour": 0}
+END = {"year": 1993, "month": 12, "day": 31, "hour": 23}
+area = 'NO'
+zone = None
 
 # Juster area for å se på sonene, og zone for å se på nodene i sonen
 # === COMPUTE TIMERANGE AND PLOT FLOW ===
 time_Prod = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
 correct_date_start_Prod = DATE_START + pd.Timedelta(hours=time_Prod[0])
 if area is not None:
-    zones_in_area_prod = getProductionZonesInArea(data, database, area, time_Prod, correct_date_start_Prod, week=True)
+    zones_in_area_prod = getProductionZonesInArea(data, database, area, time_Prod, OUTPUT_PATH, correct_date_start_Prod, week=True)
+    energyBalanceZones = zones_in_area_prod.sum(axis=0)
+
 if zone is not None:
-    nodes_in_zone_prod = getProductionNodesInZone(data, database, zone, time_Prod, correct_date_start_Prod, week=True)
+    nodes_in_zone_prod = getProductionNodesInZone(data, database, zone, time_Prod, OUTPUT_PATH, correct_date_start_Prod, week=True)
+    energyBalanceNodes = nodes_in_zone_prod.sum(axis=0)
 
 
-energyBalance = nodes_in_zone_prod.sum(axis=0)
+# %% === PDF HANDLING ===
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
+import matplotlib
+
+# Enable LaTeX rendering for Computer Modern font
+matplotlib.rcParams['text.usetex'] = True
+matplotlib.rcParams['font.family'] = 'serif'
+matplotlib.rcParams['font.serif'] = ['cmr10']  # Computer Modern Roman
+matplotlib.rcParams['axes.formatter.use_mathtext'] = True  # Fix cmr10 warning
+matplotlib.rcParams['axes.unicode_minus'] = False  # Fix minus sign rendering
+
+# Placeholder: Define zones (excluding 'DE') based on previous node-to-zone mapping
+node_names = [node for node in all_nodes]
+node_to_zone = {}
+for node in node_names:
+    if '_' in node:
+        zone = node.split('_')[0]
+    else:
+        zone = node
+    node_to_zone[node] = zone
+all_zones = sorted([zone for zone in set(node_to_zone.values())])
+
+# Placeholder: Generate sample data for each zone (replace with actual data)
+time_period = pd.date_range(start="2025-01-01", end="2025-01-02", freq="h")  # Use 'h' for hourly
+n_timesteps = len(time_period)
+
+# Sample data structure
+zone_data = {}
+for zone in all_zones:
+    zone_data[zone] = {
+        'consumption': pd.DataFrame({
+            'time': time_period,
+            'demand': np.random.uniform(100, 1000, n_timesteps)  # MW
+        }),
+        'generation': pd.DataFrame({
+            'time': time_period,
+            'wind': np.random.uniform(0, 500, n_timesteps),      # MW
+            'hydro': np.random.uniform(0, 600, n_timesteps),     # MW
+            'thermal': np.random.uniform(0, 400, n_timesteps)    # MW
+        }),
+        'prices': pd.DataFrame({
+            'time': time_period,
+            'price': np.random.uniform(20, 100, n_timesteps)     # €/MWh
+        }),
+        'storage': pd.DataFrame({
+            'time': time_period,
+            'level': np.random.uniform(0, 1000, n_timesteps)     # MWh
+        }) if np.random.rand() > 0.3 else None  # Simulate some zones lacking storage
+    }
+
+# PDF settings
+pdf_filename = "zone_energy_report.pdf"
+page_width, page_height = 8.27, 11.69  # A4 in inches (595 x 842 points at 72 DPI)
+margin = 0.25  # Reduced margins (in inches)
+plot_width = page_width - 2 * margin  # ~7.77 inches
+plot_height = 3.0  # Plot height (in inches, ~216 points)
+spacing = 0.2  # Spacing between plots (in inches)
+max_page_height = page_height - 2 * margin  # Usable page height (~11.19 inches)
+
+# Initialize PDF
+with PdfPages(pdf_filename) as pdf:
+    for zone in all_zones:
+        current_height = 0  # Track total height used on current page
+        figs = []  # Store figures for this zone
+
+        # 1. Consumption Plot
+        fig, ax = plt.subplots(figsize=(plot_width, plot_height))
+        data = zone_data[zone]['consumption']
+        ax.plot(data['time'], data['demand'], color='red', label='Demand')
+        ax.set_title(f"Consumption in {zone}", fontsize=12)
+        ax.set_xlabel("Time", fontsize=10)
+        ax.set_ylabel("Demand (MW)", fontsize=10)
+        ax.legend()
+        ax.grid(True)
+        plt.xticks(rotation=45, fontsize=8)
+        plt.yticks(fontsize=8)
+        plt.tight_layout()
+        figs.append(fig)
+
+        # 2. Generation by Type Plot
+        fig, ax = plt.subplots(figsize=(plot_width, plot_height))
+        gen_data = zone_data[zone]['generation']
+        for column in gen_data.columns[1:]:  # Skip 'time'
+            ax.plot(gen_data['time'], gen_data[column], label=column.capitalize())
+        ax.set_title(f"Generation by Type in {zone}", fontsize=12)
+        ax.set_xlabel("Time", fontsize=10)
+        ax.set_ylabel("Generation (MW)", fontsize=10)
+        ax.legend()
+        ax.grid(True)
+        plt.xticks(rotation=45, fontsize=8)
+        plt.yticks(fontsize=8)
+        plt.tight_layout()
+        figs.append(fig)
+
+        # 3. Prices Plot
+        fig, ax = plt.subplots(figsize=(plot_width, plot_height))
+        price_data = zone_data[zone]['prices']
+        ax.plot(price_data['time'], price_data['price'], color='blue', label='Price')
+        ax.set_title(f"Prices in {zone}", fontsize=12)
+        ax.set_xlabel("Time", fontsize=10)
+        ax.set_ylabel("Price (€/MWh)", fontsize=10)
+        ax.legend()
+        ax.grid(True)
+        plt.xticks(rotation=45, fontsize=8)
+        plt.yticks(fontsize=8)
+        plt.tight_layout()
+        figs.append(fig)
+
+        # 4. Storage Filling Plot (if available)
+        if zone_data[zone]['storage'] is not None:
+            fig, ax = plt.subplots(figsize=(plot_width, plot_height))
+            storage_data = zone_data[zone]['storage']
+            ax.plot(storage_data['time'], storage_data['level'], color='purple', label='Storage Level')
+            ax.set_title(f"Storage Filling in {zone}", fontsize=12)
+            ax.set_xlabel("Time", fontsize=10)
+            ax.set_ylabel("Storage (MWh)", fontsize=10)
+            ax.legend()
+            ax.grid(True)
+            plt.xticks(rotation=45, fontsize=8)
+            plt.yticks(fontsize=8)
+            plt.tight_layout()
+            figs.append(fig)
+
+        # Save figures to PDF, grouping by zone
+        for i, fig in enumerate(figs):
+            # Calculate height needed for this plot (plot_height + spacing, except for last plot)
+            plot_total_height = plot_height + (spacing if i < len(figs) - 1 else 0)
+
+            # Check if plot fits on current page
+            if current_height + plot_total_height > max_page_height and current_height > 0:
+                pdf.savefig(bbox_inches='tight')  # Save current page
+                current_height = 0  # Reset for new page
+
+            pdf.savefig(fig, bbox_inches='tight')  # Save figure
+            current_height += plot_total_height  # Update height used
+            plt.close(fig)  # Close figure to free memory
+
+        # Reset for next zone (no extra pdf.savefig needed)
+        current_height = 0
+
+print(f"PDF generated: {pdf_filename}")

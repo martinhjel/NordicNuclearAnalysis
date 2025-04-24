@@ -884,6 +884,184 @@ def plot_LDC_interconnections(data, db, grid_data_path, time_max_min, OUTPUT_PAT
 
 
 
+def getEnergyBalanceZoneLevel(all_nodes, totalDemand, totalProduction, totalLoadShedding, flow_data, OUTPUT_PATH, VERSION, START):
+    """
+
+    :param all_nodes:
+    :param totalDemand:
+    :param totalProduction:
+    :param totalLoadShedding:
+    :param flow_data:
+    :param OUTPUT_PATH:
+    :return: zone_energyBalance
+    """
+    # Extract node names from all_nodes (list of tuples)
+    node_names = [node for node in all_nodes]
+
+    # Create node-to-zone mapping
+    node_to_zone = {}
+    for node in node_names:
+        if '_' in node:
+            # Take prefix before first underscore (e.g., 'DK1_3' -> 'DK1', 'SE3_hub_east' -> 'SE3')
+            zone = node.split('_')[0]
+        else:
+            # No underscore (e.g., 'GB', 'DE') -> use full name as zone
+            zone = node
+        node_to_zone[node] = zone
+
+    # Get all unique zones
+    all_zones = sorted(set(node_to_zone.values()))
+
+    # Aggregate node-level data by zone
+    zone_demand = {zone: 0 for zone in all_zones}
+    zone_production = {zone: 0 for zone in all_zones}
+    zone_load_shedding = {zone: 0 for zone in all_zones}
+
+    # Sum Demand and Production for each zone
+    for node in node_names:
+        zone = node_to_zone[node]
+        zone_demand[zone] += totalDemand.get(node, 0)
+        zone_production[zone] += totalProduction.get(node, 0)
+
+
+    # Sum Load Shedding for each zone (totalLoadShedding is a list aligned with all_nodes)
+    for i, node in enumerate(all_nodes):
+        zone = node_to_zone[node]
+        if i < len(totalLoadShedding):
+            zone_load_shedding[zone] += totalLoadShedding[i]
+
+    # Assuming flow_data is a list of lists or a DataFrame
+    # Convert to DataFrame for easier handling if not already
+    if isinstance(flow_data, list):
+        flow_df = pd.DataFrame(flow_data[1:], columns=flow_data[0])
+    else:
+        flow_df = flow_data
+
+    # Initialize dictionaries for zone-level import and export
+    zone_imports = {zone: 0 for zone in all_zones}
+    zone_exports = {zone: 0 for zone in all_zones}
+
+
+    import ast
+    # Process each line in flow_data
+    for _, row in flow_df.iterrows():
+        from_node = row['from']
+        to_node = row['to']
+        loads = row['load [MW]']  # List of load values
+
+        # Ensure loads is a list or array
+        if isinstance(loads, str):
+            loads = ast.literal_eval(loads)  # Safer parsing
+        loads = np.array(loads)
+
+        # Get zones for from and to nodes
+        from_zone = node_to_zone.get(from_node)
+        to_zone = node_to_zone.get(to_node)
+
+        # Skip if nodes are in the same zone or if zones are not defined
+        if from_zone is None or to_zone is None or from_zone == to_zone:
+            continue
+
+        # Positive load: flow from 'from' to 'to'
+        # - 'from' zone exports (positive load)
+        # - 'to' zone imports (positive load)
+        positive_loads = loads[loads > 0]
+        if len(positive_loads) > 0:
+            zone_exports[from_zone] += sum(positive_loads)
+            zone_imports[to_zone] += sum(positive_loads)
+
+        # Negative load: flow from 'to' to 'from'
+        # - 'to' zone exports (absolute of negative load)
+        # - 'from' zone imports (absolute of negative load)
+        negative_loads = loads[loads < 0]
+        if len(negative_loads) > 0:
+            zone_exports[to_zone] += sum(-negative_loads)  # Absolute value
+            zone_imports[from_zone] += sum(-negative_loads)  # Absolute value
+
+
+    # Prepare zone-level EBData
+    EBDataZoneLevel = {
+        'Zone': all_zones,
+        'Demand': [zone_demand[zone] for zone in all_zones],
+        'Production': [zone_production[zone] for zone in all_zones],
+        'Load Shedding': [zone_load_shedding[zone] for zone in all_zones],
+        'Import': [zone_imports[zone] for zone in all_zones],
+        'Export': [zone_exports[zone] for zone in all_zones],
+    }
+
+    # Create the zone-level energyBalance DataFrame
+    zone_energyBalance = pd.DataFrame(EBDataZoneLevel)
+    zone_energyBalance['Balance'] = zone_energyBalance['Production'] + zone_energyBalance['Import'] - zone_energyBalance['Demand'] - zone_energyBalance['Export'] + zone_energyBalance['Load Shedding']
+
+    zone_energyBalance.to_csv(OUTPUT_PATH / 'data_files' / f'zone_energy_balance_{VERSION}_{START['year']}.csv', index=False)
+    return zone_energyBalance
+
+
+# Initialize dictionaries to store import and export sums for each node
+def getEnergyBalanceNodeLevel(all_nodes, totalDemand, totalProduction, totalLoadShedding, flow_data, OUTPUT_PATH, VERSION, START):
+    """
+    :param all_nodes:
+    :param totalDemand:
+    :param totalProduction:
+    :param totalLoadShedding:
+    :param flow_data:
+    :param OUTPUT_PATH:
+    :return: energyBalance
+    """
+    node_imports = {node: 0 for node in all_nodes}
+    node_exports = {node: 0 for node in all_nodes}
+
+    # Process each line in flow_data
+    for _, row in flow_data.iterrows():
+        from_node = row['from']
+        to_node = row['to']
+        loads = row['load [MW]']  # List of load values
+
+        # Ensure loads is a list or array
+        if isinstance(loads, str):
+            loads = eval(loads)  # Convert string representation to list if needed
+        loads = np.array(loads)
+
+        # Positive load: flow from 'from' to 'to'
+        # - 'from' node exports (positive load)
+        # - 'to' node imports (positive load)
+        positive_loads = loads[loads > 0]
+        if len(positive_loads) > 0:
+            if from_node in node_exports:
+                node_exports[from_node] += sum(positive_loads)
+            if to_node in node_imports:
+                node_imports[to_node] += sum(positive_loads)
+
+        # Negative load: flow from 'to' to 'from'
+        # - 'to' node exports (absolute of negative load)
+        # - 'from' node imports (absolute of negative load)
+        negative_loads = loads[loads < 0]
+        if len(negative_loads) > 0:
+            if to_node in node_exports:
+                node_exports[to_node] += sum(-negative_loads)  # Absolute value
+            if from_node in node_imports:
+                node_imports[from_node] += sum(-negative_loads)  # Absolute value
+
+    # Prepare EBData with all components, including Balance
+    # Handle totalLoadShedding as a list aligned with all_nodes
+    load_shedding_values = [totalLoadShedding[i] if i < len(totalLoadShedding) else 0 for i in range(len(all_nodes))]
+
+    EBData = {
+        'Node': all_nodes,
+        'Demand': [totalDemand.get(n, 0) for n in all_nodes],
+        'Load Shedding': load_shedding_values,
+        'Production': [totalProduction.get(n, 0) for n in all_nodes],
+        'Import': [node_imports.get(n, 0) for n in all_nodes],
+        'Export': [node_exports.get(n, 0) for n in all_nodes],
+    }
+
+    # Create the energyBalance DataFrame
+    energyBalance = pd.DataFrame(EBData)
+    energyBalance['Balance'] = energyBalance['Production'] + energyBalance['Import'] - energyBalance['Demand'] - energyBalance['Export'] + energyBalance['Load Shedding']
+    # Save the DataFrame to a CSV file for reference
+    energyBalance.to_csv(OUTPUT_PATH / 'data_files' / f'node_energy_balance_{VERSION}_{START['year']}.csv', index=False)
+    return energyBalance
+
 
 
 
@@ -1258,6 +1436,7 @@ def GetReservoirFillingAtSpecificNodes(Nodes, data: GridData, database: Database
 
 
 # === FLOW TO EXCEL ===
+
 
 def getFlowDataOnBranches(data: GridData, db: Database, time_max_min, chosen_connections):
     """

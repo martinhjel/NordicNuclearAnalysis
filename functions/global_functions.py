@@ -23,6 +23,9 @@ from functions.database_functions import *
 from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
 from datetime import datetime, timedelta
+from collections import defaultdict
+import time
+
 
 
 def read_grid_data(version,
@@ -990,7 +993,7 @@ def getEnergyBalanceZoneLevel(all_nodes, totalDemand, totalProduction, totalLoad
     zone_energyBalance = pd.DataFrame(EBDataZoneLevel)
     zone_energyBalance['Balance'] = zone_energyBalance['Production'] + zone_energyBalance['Import'] - zone_energyBalance['Demand'] - zone_energyBalance['Export'] + zone_energyBalance['Load Shedding']
 
-    zone_energyBalance.to_csv(OUTPUT_PATH / 'data_files' / f'zone_energy_balance_{VERSION}_{START['year']}.csv', index=False)
+    zone_energyBalance.to_csv(OUTPUT_PATH / 'data_files' / f"zone_energy_balance_{VERSION}_{START['year']}.csv", index=False)
     return zone_energyBalance
 
 
@@ -1129,79 +1132,103 @@ def auto_adjust_column_width(ws, max_width=30):
 #### Get production in specific node
 
 def GetProductionAtSpecificNodes(Nodes, data: GridData, database: Database, start_hour, end_hour):
-    """
-    Henter produksjonsdata for spesifikke noder i et gitt tidsintervall.
+    print(f'🔄 Samler produksjon fra {len(Nodes)} noder...')
 
-    Args:
-        Nodes (list): Liste over nodenavn (f.eks. ['NO1_1', 'NO1_2']).
-        data (object): Datastruktur med informasjon om noder, generatorer osv.
-        database (object): Databaseforbindelse for å hente produksjonsdata.
-        start_hour (int): Startindeks for tidsserien.
-        end_hour (int): Sluttindeks for tidsserien.
-
-    Returns:
-        tuple:
-            - production_per_node (dict): Produksjonsdata per node og type.
-            - gen_idx (list): Liste over generator-IDer per node.
-            - gen_type (list): Liste over generatortyper per node.
-    """
-    print(f'Collecting Production at Nodes {", ".join(Nodes)}')
-
-    # === FINN INDEKSENE FOR NODENE ===
+    # === 1. Lag mappings og samle alle generatorer ===
     node_idx = [int(data.node[data.node['id'] == node].index[0]) for node in Nodes]
-
-    # === HENT GENERATORER OG DERES TYPER ===
     gen_idx = [[gen for gen in data.getGeneratorsAtNode(idx)] for idx in node_idx]
     gen_type = [[data.generator.loc[gen, "type"] for gen in gens] for gens in gen_idx]
-    flat_gen_idx = [gen for sublist in gen_idx for gen in sublist]  # Flater ut listen
 
-    # === HENT PRODUKSJONSDATA FRA DATABASE ===
-    power_output = {gen: database.getResultGeneratorPower([gen], (start_hour, end_hour)) for gen in flat_gen_idx}
+    # Flat generatorliste og mapping
+    flat_gen_ids = []
+    gen_to_node_type = {}
 
-    # === ORGANISERE PRODUKSJON PER NODE OG TYPE ===
-    production_per_node = {node: {} for node in Nodes}
-    for node, gen_list, type_list in zip(Nodes, gen_idx, gen_type):
-        for gen, typ in zip(gen_list, type_list):
-            production_per_node[node].setdefault(typ, []).append(power_output.get(gen, [1]))  # Setter 0 hvis data mangler
+    for node, gens, types in zip(Nodes, gen_idx, gen_type):
+        for gen, typ in zip(gens, types):
+            flat_gen_ids.append(gen)
+            gen_to_node_type[gen] = (node, typ)
 
-    return production_per_node, gen_idx, gen_type
+    print(f"🔍 Henter produksjon for {len(flat_gen_ids)} generatorer fra databasen...")
+
+    # === 2. Hent produksjon for ALLE generatorer i én spørring ===
+    generator_outputs = database.getResultGeneratorPowerPerGenerator(flat_gen_ids, (start_hour, end_hour))
+
+    # === 3. Strukturér produksjon per node og type ===
+    production_per_node = defaultdict(lambda: defaultdict(list))
+
+    for gen_id, output in generator_outputs.items():
+        node, typ = gen_to_node_type[gen_id]
+        production_per_node[node][typ].append(output)
+
+    print(f"✅ Ferdig strukturert produksjon for {len(production_per_node)} noder.")
+
+    return dict(production_per_node), gen_idx, gen_type
+
+
+
+
+
+# def GetProductionAtSpecificNodes(Nodes, data: GridData, database: Database, start_hour, end_hour):
+#     """
+#     Henter produksjonsdata for spesifikke noder i et gitt tidsintervall.
+#
+#     Args:
+#         Nodes (list): Liste over nodenavn (f.eks. ['NO1_1', 'NO1_2']).
+#         data (object): Datastruktur med informasjon om noder, generatorer osv.
+#         database (object): Databaseforbindelse for å hente produksjonsdata.
+#         start_hour (int): Startindeks for tidsserien.
+#         end_hour (int): Sluttindeks for tidsserien.
+#
+#     Returns:
+#         tuple:
+#             - production_per_node (dict): Produksjonsdata per node og type.
+#             - gen_idx (list): Liste over generator-IDer per node.
+#             - gen_type (list): Liste over generatortyper per node.
+#     """
+#     print(f'Collecting Production at Nodes {", ".join(Nodes)}')
+#
+#     # === FINN INDEKSENE FOR NODENE ===
+#     node_idx = [int(data.node[data.node['id'] == node].index[0]) for node in Nodes]
+#
+#     # === HENT GENERATORER OG DERES TYPER ===
+#     gen_idx = [[gen for gen in data.getGeneratorsAtNode(idx)] for idx in node_idx]
+#     gen_type = [[data.generator.loc[gen, "type"] for gen in gens] for gens in gen_idx]
+#
+#     flat_gen_idx = [gen for sublist in gen_idx for gen in sublist]  # Flater ut listen
+#
+#     # === HENT PRODUKSJONSDATA FRA DATABASE ===
+#     power_output = {gen: database.getResultGeneratorPower([gen], (start_hour, end_hour)) for gen in flat_gen_idx}
+#     # power_output = {gen: database.getResultGeneratorPower([gen], (start_hour, end_hour)) for gen in flat_gen_idx}
+#
+#     # === ORGANISERE PRODUKSJON PER NODE OG TYPE ===
+#     production_per_node = {node: {} for node in Nodes}
+#     for node, gen_list, type_list in zip(Nodes, gen_idx, gen_type):
+#         for gen, typ in zip(gen_list, type_list):
+#             production_per_node[node].setdefault(typ, []).append(power_output.get(gen, [1]))  # Setter 0 hvis data mangler
+#
+#     return production_per_node, gen_idx, gen_type
 
 
 
 #### Calculate capture price
 
 def CalculateCapturePrice(production_per_node, nodal_prices_per_node):
-    """
-       Calculates capture price and capture rate for each generation type at each node.
-
-       Parameters
-       ----------
-       production_per_node : dict
-           {node: {type: [time series per generator]}}
-       nodal_prices_per_node : dict
-           {node: [hourly prices]}
-
-       Returns
-       -------
-       pd.DataFrame
-           DataFrame with capture price (EUR/MWh) and capture rate (relative to avg. price)
-           per generation type and node.
-    """
     result_capture_price = []
     result_capture_rate = []
 
     for node, types in production_per_node.items():
-        prices = pd.Series(nodal_prices_per_node[node])
+        prices = np.array(nodal_prices_per_node[node])
         avg_price = prices.mean()
-        print(avg_price)
         node_capture_price = {"Node": node}
         node_capture_rate = {"Node": node}
 
         for typ, all_production_series in types.items():
-            total_production = pd.DataFrame(all_production_series).sum(axis=0)
+            # Vectoriser summen direkte med numpy
+            total_production = np.sum(all_production_series, axis=0)
 
-            if total_production.sum() > 0:
-                capture_price = (total_production * prices).sum() / total_production.sum()
+            total_production_sum = total_production.sum()
+            if total_production_sum > 0:
+                capture_price = np.sum(total_production * prices) / total_production_sum
                 node_capture_price[f"{typ.capitalize()} (EUR/MWh)"] = capture_price
                 node_capture_rate[f"{typ.capitalize()} (Capture Rate)"] = capture_price / avg_price
             else:
@@ -1290,10 +1317,10 @@ def CalculateCapturePriceAndValueFactorOverYears(START, END, nodes, data, databa
     for year in range(START["year"], END["year"] + 1):
         period_start = {"year": year, "month": 1, "day": 1, "hour": 0}
         period_end = {"year": year, "month": 12, "day": 31, "hour": 23}
-
         start_hour, end_hour = get_hour_range(year, year, timezone, period_start, period_end)
 
         print(f"Fetching data for {year}")
+        t0 = time.time()
         production_per_node, _, _ = GetProductionAtSpecificNodes(nodes, data, database, start_hour, end_hour)
         nodal_prices_per_node = GetPriceAtSpecificNodes(nodes, data, database, start_hour, end_hour)
 
@@ -1314,9 +1341,19 @@ def CalculateCapturePriceAndValueFactorOverYears(START, END, nodes, data, databa
                     df_vf.loc[node, col] / avg_prices[node]
                     if pd.notnull(df_vf.loc[node, col]) else None
                 )
+
+        # Fjern (EUR/MWh) fra kolonnenavn
+        df_vf.columns = [
+            col.replace(" (EUR/MWh)", "") if "(EUR/MWh)" in col else col
+            for col in df_vf.columns
+        ]
+
         df_vf["Year"] = year
         df_vf["Node"] = df_vf.index
         value_factor_dfs.append(df_vf)
+
+        t1 = time.time()
+        print(f"Time taken for year {year}: {t1 - t0:.2f} seconds")
 
     # Kombiner alt
     capture_price_full = pd.concat(capture_price_dfs).set_index(["Year", "Node"])
@@ -1370,28 +1407,45 @@ def GetConsumptionAtSpecificNodes(Nodes, data: GridData, database: Database, sta
 
 
 def GetPriceAtSpecificNodes(Nodes, data: GridData, database: Database, start_hour, end_hour):
-    """
-    Henter nodalpris for spesifikke noder i et gitt tidsintervall.
+    print(f'💰 Henter priser for {len(Nodes)} noder i batch...')
 
-    Args:
-        Nodes (list): Liste over nodenavn.
-        data (object): Datastruktur med informasjon om noder.
-        database (object): Databaseforbindelse for å hente priser.
-        start_hour (int): Startindeks for tidsserien.
-        end_hour (int): Sluttindeks for tidsserien.
+    node_idx_map = {node: int(data.node[data.node['id'] == node].index[0]) for node in Nodes}
+    node_indices = list(node_idx_map.values())
 
-    Returns:
-        dict: Nodalpris per node.
-    """
-    print(f'Collecting Prices at Nodes {", ".join(Nodes)}')
+    # Hent alle priser i én spørring
+    prices_by_index = database.getResultNodalPricesPerNode(node_indices, (start_hour, end_hour))
 
-    # === FINN INDEKSENE FOR NODENE ===
-    node_idx = [int(data.node[data.node['id'] == node].index[0]) for node in Nodes]
-
-    # === HENT NODALPRIS FOR HVER NODE ===
-    nodal_prices = {node: database.getResultNodalPrice(idx, (start_hour, end_hour)) for node, idx in zip(Nodes, node_idx)}
+    # Map indeks tilbake til nodenavn
+    inverse_index_map = {v: k for k, v in node_idx_map.items()}
+    nodal_prices = {inverse_index_map[idx]: price_list for idx, price_list in prices_by_index.items()}
 
     return nodal_prices
+
+
+
+# def GetPriceAtSpecificNodes(Nodes, data: GridData, database: Database, start_hour, end_hour):
+#     """
+#     Henter nodalpris for spesifikke noder i et gitt tidsintervall.
+#
+#     Args:
+#         Nodes (list): Liste over nodenavn.
+#         data (object): Datastruktur med informasjon om noder.
+#         database (object): Databaseforbindelse for å hente priser.
+#         start_hour (int): Startindeks for tidsserien.
+#         end_hour (int): Sluttindeks for tidsserien.
+#
+#     Returns:
+#         dict: Nodalpris per node.
+#     """
+#     print(f'Collecting Prices at Nodes {", ".join(Nodes)}')
+#
+#     # === FINN INDEKSENE FOR NODENE ===
+#     node_idx = [int(data.node[data.node['id'] == node].index[0]) for node in Nodes]
+#
+#     # === HENT NODALPRIS FOR HVER NODE ===
+#     nodal_prices = {node: database.getResultNodalPrice(idx, (start_hour, end_hour)) for node, idx in zip(Nodes, node_idx)}
+#
+#     return nodal_prices
 
 
 
@@ -1700,3 +1754,77 @@ def writeFlowToExcel(flow_data, START, END, OUTPUT_PATH, case, version):
 
     print(f"\n✅ Excel file saved at: {full_path}")
     return str(full_path)
+
+
+
+def get_zone_production_summary(SELECTED_NODES, START, END, TIMEZONE, SIM_YEAR_START, SIM_YEAR_END, data, database):
+    '''
+    Retrieves production data for the selected nodes over the specified time period,
+    aggregates the production by zone and by type, converts the results to TWh,
+    and merges selected production types into broader categories.
+
+    Parameters:
+        SELECTED_NODES (list or str): List of node IDs to include or "ALL" to select all nodes.
+        START (dict): Dictionary defining the start time with keys "year", "month", "day", "hour".
+        END (dict): Dictionary defining the end time with keys "year", "month", "day", "hour".
+        TIMEZONE (str): Timezone name.
+        SIM_YEAR_START (datetime): Start of simulation year.
+        SIM_YEAR_END (datetime): End of simulation year.
+        data (object): Data object containing node information.
+        database (object): Database connection or access object for production data.
+
+    Returns:
+        zone_summed_df (pd.DataFrame): Aggregated production per original production type, in TWh.
+        zone_summed_merged_df (pd.DataFrame): Aggregated production per merged production type, with total, in TWh.
+    '''
+
+    Nodes = data.node["id"].dropna().unique().tolist() if SELECTED_NODES == "ALL" else SELECTED_NODES
+    start_hour, end_hour = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
+    production_per_node, gen_idx, gen_type = GetProductionAtSpecificNodes(Nodes, data, database, start_hour, end_hour)
+
+    zone_sums = {}
+
+    for node, prodtypes in production_per_node.items():
+        zone = node.split("_")[0]
+        if zone not in zone_sums:
+            zone_sums[zone] = {}
+
+        for prodtype, values_list in prodtypes.items():
+            if not values_list or not values_list[0]:
+                prod_sum = 0
+            else:
+                values = values_list[0]
+                prod_sum = sum(values)
+
+            if prodtype not in zone_sums[zone]:
+                zone_sums[zone][prodtype] = prod_sum
+            else:
+                zone_sums[zone][prodtype] += prod_sum
+
+    zone_summed_df = pd.DataFrame(zone_sums).T
+    zone_summed_df = zone_summed_df / 1e6  # Convert from MWh to TWh
+
+    merge_mapping = {
+        "Hydro": ["hydro", "ror"],
+        "Nuclear": ["nuclear"],
+        "Solar": ["solar"],
+        "Thermal": ["fossil_gas", "fossil_other", "biomass"],
+        "Wind Onshore": ["wind_on"],
+        "Wind Offshore": ["wind_off"]
+    }
+
+    zone_summed_merged = {}
+
+    for new_type, old_types in merge_mapping.items():
+        zone_summed_merged[new_type] = zone_summed_df[old_types].sum(axis=1, skipna=True)
+
+    zone_summed_merged_df = pd.DataFrame(zone_summed_merged)
+
+    zone_summed_merged_df["Production Total"] = zone_summed_merged_df.sum(axis=1)
+
+    desired_order = ["Production Total", "Hydro", "Nuclear", "Solar", "Thermal", "Wind Onshore", "Wind Offshore"]
+    zone_summed_merged_df = zone_summed_merged_df[desired_order]
+
+    return zone_summed_df, zone_summed_merged_df
+
+

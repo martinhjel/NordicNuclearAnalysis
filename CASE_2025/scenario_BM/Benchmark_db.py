@@ -12,7 +12,7 @@ SIM_YEAR_START = 1991           # Start year for the main simulation  (SQL-file)
 SIM_YEAR_END = 2020             # End year for the main simulation  (SQL-file)
 CASE_YEAR = 2025
 SCENARIO = 'BM'
-VERSION = 'v101_sens'
+VERSION = 'v103_sens'
 TIMEZONE = ZoneInfo("UTC")  # Definerer UTC tidssone
 
 DATE_START = pd.Timestamp(f'{SIM_YEAR_START}-01-01 00:00:00', tz='UTC')
@@ -324,6 +324,8 @@ if zone is not None:
     nodes_in_zone_prod = getProductionNodesInZone(data, database, zone, time_Prod, correct_date_start_Prod, week=True)
 
 
+
+
 # === EINAR ===
 # %% National-level electricity production and consumption
 """
@@ -358,10 +360,11 @@ Overview:
 """
 
 # === INITIALIZATIONS ===
-country = "DK"  # Country code
+country = "NO"  # Country code
 
-n_ideal_years = 3
-n_timesteps = int(8766.4 * n_ideal_years)
+n_ideal_years = 30
+n_timesteps = int(8766.4 * n_ideal_years) # Ved full 30-års simuleringsperiode
+
 
 df_gen, df_prices, total_production, df_gen_per_year = get_production_by_type_ideal_timestep(
     data=data,
@@ -372,7 +375,7 @@ df_gen, df_prices, total_production, df_gen_per_year = get_production_by_type_id
 
 
 
-# % Node-level production by type
+# %% Node-level production by type
 """
 Retrieval and aggregation of electricity production by technology type at the node level 
 for a specified time period.
@@ -395,31 +398,28 @@ dispatch_df = get_total_production_by_type_per_node(data, database, nodes, time_
 
 # %% Capture price
 
-# === INITIALIZATIONS ===
-START = {"year": 1998, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1998, "month": 12, "day": 31, "hour": 23}
-nodes = ["DK1_2", "DK1_3", "DK2_2"]
-
-start_hour, end_hour = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
-production_per_node, gen_idx, gen_type = GetProductionAtSpecificNodes(nodes, data, database, start_hour, end_hour)
-nodal_prices_per_node = GetPriceAtSpecificNodes(nodes, data, database, start_hour, end_hour)
-
-capture_prices_df, capture_rates_df = CalculateCapturePrice(production_per_node, nodal_prices_per_node)
+#
+# # === INITIALIZATIONS ===
+# START = {"year": 1998, "month": 1, "day": 1, "hour": 0}
+# END = {"year": 1998, "month": 12, "day": 31, "hour": 23}
+# nodes = ["DK1_2", "DK1_3", "DK2_2"]
+#
+# start_hour, end_hour = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
+# production_per_node, gen_idx, gen_type = GetProductionAtSpecificNodes(nodes, data, database, start_hour, end_hour)
+# nodal_prices_per_node = GetPriceAtSpecificNodes(nodes, data, database, start_hour, end_hour)
+#
+# capture_prices_df, capture_rates_df = CalculateCapturePrice(production_per_node, nodal_prices_per_node)
 
 # %% Capture price
 
 # === INITIALIZATIONS ===
 START = {"year": 1991}
 END = {"year": 2020}
-# SELECTED_NODES = ["DK1_2", "DK1_3", "DK2_2"]
-SELECTED_NODES = "ALL"
+SELECTED_NODES = ["DK1_2", "DK1_3", "DK2_2"]
+# SELECTED_NODES = "ALL"
 nodes = data.node["id"].dropna().unique().tolist() if SELECTED_NODES == "ALL" else SELECTED_NODES
-
 capture_prices_over_years, value_factors_over_years = CalculateCapturePriceAndValueFactorOverYears(START, END, nodes, data=data, database=database, timezone=TIMEZONE)
 
-
-# capture_prices_over_years = CalculateCapturePriceOverYears(START, END, nodes, data=data, database=database, timezone=TIMEZONE)
-# value_factors_over_years = CalculateValueFactorOverYears(START, END, nodes, data=data, database=database, timezone=TIMEZONE)
 
 # %% Sensitivities Nuclear production
 
@@ -495,10 +495,19 @@ flow_data = getFlowDataOnBranches(database, time_Flow, GRID_DATA_PATH, SELECTED_
 flow_path = writeFlowToExcel(flow_data, START, END, TIMEZONE, OUTPUT_PATH, SCENARIO, VERSION)
 
 
+# %% === Get production by type aggregate by zone ===
+'''
+Aggregates electricity production by zone and production type over a specified time period. 
+Returns two DataFrames: (1) detailed production per type, and (2) production merged into broader categories, in TWh.
 
-
-
-
-
-
-
+Input:
+- SELECTED_NODES = List of node IDs (e.g., ["NO1_1", "NO1_2", "NO1_3"]) 
+  or the string "ALL" to include all nodes in the system.
+'''
+# === INITIALIZATIONS ===
+START = {"year": 2020, "month": 1, "day": 1, "hour": 0}
+END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
+SELECTED_NODES = "ALL"
+# SELECTED_NODES = ["SE4_1", "SE4_2", "SE3_1", "SE2_1", "SE2_2"]
+# ======================================================================================================================
+zone_summed_df, zone_summed_merged_df = get_zone_production_summary(SELECTED_NODES, START, END, TIMEZONE, SIM_YEAR_START, SIM_YEAR_END, data, database)

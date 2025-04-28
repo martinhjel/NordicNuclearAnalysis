@@ -135,7 +135,7 @@ def grid_plot(scenario_data):
 def main():
     case_year = 2035
     scenario = 'BL'
-    version = 'v10'
+    version = 'v24'
     scenario_data = read_data(case_year, scenario, version)
     grid_map = grid_plot(scenario_data)
 

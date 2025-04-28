@@ -180,7 +180,7 @@ def plot_SF_Zones_FromDB(data: GridData, database: Database, time_SF ,OUTPUT_PAT
                                   plot_by_year=True,
                                   save_plot=plot_config['save_fig'],
                                   duration_curve=plot_config['duration_curve'],
-                                  tex_font=True)
+                                  tex_font=False)
 
 
 

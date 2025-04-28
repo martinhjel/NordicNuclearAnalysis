@@ -1821,9 +1821,9 @@ def get_zone_production_summary(SELECTED_NODES, START, END, TIMEZONE, SIM_YEAR_S
 
     zone_summed_merged_df = pd.DataFrame(zone_summed_merged)
 
-    zone_summed_merged_df["Production Total"] = zone_summed_merged_df.sum(axis=1)
+    zone_summed_merged_df["Production total"] = zone_summed_merged_df.sum(axis=1)
 
-    desired_order = ["Production Total", "Hydro", "Nuclear", "Solar", "Thermal", "Wind Onshore", "Wind Offshore"]
+    desired_order = ["Production total", "Hydro", "Nuclear", "Solar", "Thermal", "Wind Onshore", "Wind Offshore"]
     zone_summed_merged_df = zone_summed_merged_df[desired_order]
 
     return zone_summed_df, zone_summed_merged_df

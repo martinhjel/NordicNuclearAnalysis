@@ -1108,3 +1108,83 @@ class Database(DatabaseBaseClass):
                     GROUP BY indx,timestep"""  # nosec B608 - is safe even if bandit says no
                 df = pd.read_sql_query(query, con, params=(timeMaxMin[0], timeMaxMin[-1]) + tuple(br_indx))
         return df
+
+
+
+
+
+
+    # Nye effektive spørrefunksjoner - EINAR
+
+    def getResultGeneratorPowerPerGenerator(self, generatorindx, timeMaxMin):
+        """Get power output time series per generator ID"""
+        if not isinstance(generatorindx, list):
+            generatorindx = [generatorindx]
+        if len(generatorindx) == 0:
+            return {}
+
+        maxnum = self.SQLITE_MAX_VARIABLE_NUMBER
+        indx_chunks = [generatorindx[i : i + maxnum] for i in range(0, len(generatorindx), maxnum)]
+
+        con = db.connect(self.filename)
+        power_output = {}
+
+        with con:
+            cur = con.cursor()
+            for indx in indx_chunks:
+                str_bind = ",".join("?" for _ in indx)
+                cur.execute(
+                    f"""
+                    SELECT indx, timestep, output FROM Res_Generators
+                    WHERE timestep>=? AND timestep<? AND indx IN ({str_bind})
+                    ORDER BY indx, timestep
+                    """,
+                    (timeMaxMin[0], timeMaxMin[1]) + tuple(indx)
+                )
+                rows = cur.fetchall()
+
+                from collections import defaultdict
+                buffer = defaultdict(list)
+                for gen_id, timestep, value in rows:
+                    buffer[gen_id].append(value)
+                power_output.update(buffer)
+
+        return power_output
+
+
+    def getResultNodalPricesPerNode(self, node_indices, timeMaxMin):
+        """Henter nodalpriser per node som {node_index: [prices]}"""
+        if not isinstance(node_indices, list):
+            node_indices = [node_indices]
+        if len(node_indices) == 0:
+            return {}
+
+        maxnum = self.SQLITE_MAX_VARIABLE_NUMBER
+        indx_chunks = [node_indices[i: i + maxnum] for i in range(0, len(node_indices), maxnum)]
+
+        con = db.connect(self.filename)
+        prices_by_node = {}
+
+        with con:
+            cur = con.cursor()
+            for chunk in indx_chunks:
+                str_bind = ",".join("?" for _ in chunk)
+                cur.execute(
+                    f"""
+                    SELECT indx, timestep, nodalprice FROM Res_Nodes
+                    WHERE timestep >= ? AND timestep < ? AND indx IN ({str_bind})
+                    ORDER BY indx, timestep
+                    """,
+                    (timeMaxMin[0], timeMaxMin[1]) + tuple(chunk)
+                )
+                rows = cur.fetchall()
+
+                from collections import defaultdict
+                buffer = defaultdict(list)
+                for node_idx, timestep, price in rows:
+                    buffer[node_idx].append(price)
+                prices_by_node.update(buffer)
+
+        return prices_by_node
+
+

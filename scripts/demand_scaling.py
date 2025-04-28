@@ -1,9 +1,9 @@
 import pandas as pd
 import pathlib
 
-CASE_YEAR = '2035'
-SCENARIO = 'BL'
-VERSION = 'v2'
+CASE_YEAR = '2025'
+SCENARIO = 'BM'
+VERSION = 'v100'
 
 # Get the base directory
 try:
@@ -13,7 +13,7 @@ except NameError:
     # For notebooks or interactive shells
     BASE_DIR = pathlib.Path().cwd()
 
-DATA_PATH = BASE_DIR / f'CASE_{CASE_YEAR}' / f'scenario_{SCENARIO}' / 'data' / 'system' / 'OLD' / f'consumer_{SCENARIO}_v0.csv'
+DATA_PATH = BASE_DIR / f'CASE_{CASE_YEAR}' / f'scenario_{SCENARIO}' / 'data' / 'system' / f'consumer_{SCENARIO}_{VERSION}.csv'
 
 # Henter ut consumer data fra Benchmark data
 consumer_data = pd.read_csv(DATA_PATH)
@@ -23,6 +23,10 @@ profile = pd.read_csv(profilePATH)
 
 
 # %%
+
+### FOR 2035 ###
+
+
 # Print max normaliserte load for each zone
 print("SE1: ", profile['load_SE1'].max())
 print("SE2: ", profile['load_SE2'].max())
@@ -119,18 +123,21 @@ consumer_data_updated.to_csv(SAVE_PATH, index=False)
 
 # %% Scale demand_avg for all nodes
 
-scaling_factor = {'DK1' : 1.474,
-                  'DK2' : 1.474,
-                  'FI'  : 1.405,
-                  'NO1' : 1.1253,
-                  'NO2' : 1.804,
-                  'NO3' : 1.2783,
-                  'NO4' : 2.002,
-                  'NO5' : 1.2984,
-                  'SE1' : 10.5,
-                  'SE2' : 2.742,
-                  'SE3' : 1.325,
-                  'SE4' : 1.0,
+
+### For 2025 ###
+
+scaling_factor = {'DK1' : 2658/2571,
+                  'DK2' : 1670/1616,
+                  'FI'  : 9182/9046,
+                  'NO1' : 4054/3994,
+                  'NO2' : 4169/4107,
+                  'NO3' : 3284/3235,
+                  'NO4' : 2330/2295,
+                  'NO5' : 1974/1954,
+                  'SE1' : 1200/1232,
+                  'SE2' : 1679/1723,
+                  'SE3' : 9302/9544,
+                  'SE4' : 2446/2520,
                   'GB'  : 1.0,
                   'DE'  : 1.0,
                   'NL'  : 1.0,

@@ -150,6 +150,7 @@ def plot_storage_filling_area(storfilling, DATE_START, DATE_END, areas, interval
         ValueError: If an area is not found in the storfilling DataFrame columns.
     """
     fig, ax = plt.subplots(figsize=(10, 6))
+    cmap = plt.get_cmap('Blues')
     # Plot logic
     if not plot_by_year:
         for area in areas:
@@ -176,7 +177,12 @@ def plot_storage_filling_area(storfilling, DATE_START, DATE_END, areas, interval
 
 
     else:
-        for year in storfilling['year'].unique():
+        from matplotlib.colors import Normalize
+        years = sorted(storfilling['year'].unique())
+        norm = Normalize(vmin=0, vmax=len(years)-1)
+
+        for idx, year in enumerate(years):
+            color = cmap(norm(idx))
             for area in areas:
                 if area in storfilling.columns:
                     group = storfilling[storfilling['year'] == year]
@@ -184,16 +190,10 @@ def plot_storage_filling_area(storfilling, DATE_START, DATE_END, areas, interval
                     if duration_curve:
                         # Duration curve: sort values in descending order
                         sorted_values = group[area].sort_values(ascending=False).reset_index(drop=True)
-                        if area[-1].isdigit():
-                            ax.plot(sorted_values, label=f"{area} (Duration Curve)")
-                        else:
-                            ax.plot(sorted_values, label=f"{year} (Duration Curve)")
+                        label = f"{year} (Duration Curve)" if not area[-1].isdigit() else f"{area} (Duration Curve)"
+                        ax.plot(sorted_values, label=label, color=color)
                     else:
-                        # Standard plot with day of year
-                        if area[-1].isdigit():
-                            ax.plot(group.index.dayofyear, group[area], label=f"{year}")
-                        else:
-                            ax.plot(group.index.dayofyear, group[area], label=f"{year}")
+                        ax.plot(group.index.dayofyear, group[area], label=f"{year}", color=color)
                 else:
                     raise ValueError(f"{area} not found in storfilling DataFrame columns")
 
@@ -229,7 +229,7 @@ def plot_storage_filling_area(storfilling, DATE_START, DATE_END, areas, interval
         plt.rcParams.update({
             "text.usetex": True,
             "font.family": "serif",
-            "font.serif": ["Computer Modern Roman"]})
+            "font.serif": ['cmr10']})
 
     # Show and/or save the plot
     if save_plot:

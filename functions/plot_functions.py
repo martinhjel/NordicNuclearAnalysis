@@ -499,7 +499,7 @@ def plotZonePriceMatrix(price_matrix, save_fig, OUTPUT_PATH_PLOTS, start, end, v
     plt.ylabel("Zone")
     plt.tight_layout()
     if save_fig:
-        filename = f"ZonePriceMatrix_{version}_{start['year']}_{end['year']}.pdf"
+        filename = f"ZonePriceMatrix_{version}_{start}_{end}.pdf"
         plt.savefig(OUTPUT_PATH_PLOTS / filename)
         return filename
     plt.show()

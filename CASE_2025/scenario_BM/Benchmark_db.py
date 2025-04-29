@@ -55,15 +55,10 @@ nordic_grid_map_fromDB(data, database, time_range = get_hour_range(SIM_YEAR_STAR
 # TODO: legg til mulighet for å ha øre/kwh
 zones = ['NO1', 'NO2', 'NO3', 'NO4', 'NO5', 'SE1', 'SE2', 'SE3', 'SE4',
          'DK1', 'DK2', 'FI', 'DE', 'GB', 'NL', 'LT', 'PL', 'EE']
-
-START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
-
 year_range = list(range(SIM_YEAR_START, SIM_YEAR_END + 1))
 price_matrix, log = createZonePriceMatrix(data, database, zones, year_range, TIMEZONE, SIM_YEAR_START, SIM_YEAR_END)
-
-# %% Plot Zonal Price Matrix
-plotZonePriceMatrix(price_matrix, save_fig=True, OUTPUT_PATH_PLOTS=OUTPUT_PATH_PLOTS, start=START, end=END, version=VERSION)
+# Plot Zonal Price Matrix
+plotZonePriceMatrix(price_matrix, save_fig=True, OUTPUT_PATH_PLOTS=OUTPUT_PATH_PLOTS, start=SIM_YEAR_START, end=SIM_YEAR_END, version=VERSION)
 
 
 # %% Check Total Consumption for a given period.
@@ -322,9 +317,24 @@ if area is not None:
     zones_in_area_prod = getProductionZonesInArea(data, database, area, time_Prod, correct_date_start_Prod, week=True)
 if zone is not None:
     nodes_in_zone_prod = getProductionNodesInZone(data, database, zone, time_Prod, correct_date_start_Prod, week=True)
+'''
+Input:
+- SELECTED_NODES = List of node IDs (e.g., ["NO1_1", "NO1_2", "NO1_3"]) 
+  or the string "ALL" to include all nodes in the system.
+'''
+# === INITIALIZATIONS ===
+START = {"year": 2020, "month": 1, "day": 1, "hour": 0}
+END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
+SELECTED_NODES = "ALL"
+# SELECTED_NODES = ["SE4_1", "SE4_2", "SE3_1", "SE2_1", "SE2_2"]
+# ======================================================================================================================
+zone_summed_df, zone_summed_merged_df = get_zone_production_summary(SELECTED_NODES, START, END, TIMEZONE, SIM_YEAR_START, SIM_YEAR_END, data, database)
 
 
-
+# %% === Get production by type aggregate by zone ===
+'''
+Aggregates electricity production by zone and production type over a specified time period. 
+Returns two DataFrames: (1) detailed production per type, and (2) production merged into broader categories, in TWh.
 
 # === EINAR ===
 # %% National-level electricity production and consumption

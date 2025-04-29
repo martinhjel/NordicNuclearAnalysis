@@ -8,10 +8,10 @@ import pandas as pd
 
 # === General Configurations ===
 SIM_YEAR_START = 1991           # Start year for the main simulation  (SQL-file)
-SIM_YEAR_END = 1994             # End year for the main simulation  (SQL-file)
+SIM_YEAR_END = 1991             # End year for the main simulation  (SQL-file)
 CASE_YEAR = 2035
 SCENARIO = 'BL'
-VERSION = 'v17'
+VERSION = 'v25'
 TIMEZONE = ZoneInfo("UTC")  # Definerer UTC tidssone
 
 ####  PASS PÅ HARD KODING I SQL FIL
@@ -31,7 +31,7 @@ except NameError:
     BASE_DIR = BASE_DIR / f'CASE_{CASE_YEAR}' / f'scenario_{SCENARIO}'
 
 # === File Paths ===
-SQL_FILE = BASE_DIR / f"powergama_{SCENARIO}_{VERSION}_{SIM_YEAR_START}_{SIM_YEAR_END}_gas.sqlite"
+SQL_FILE = BASE_DIR / f"powergama_{SCENARIO}_{VERSION}_{SIM_YEAR_START}_{SIM_YEAR_END}.sqlite"
 DATA_PATH = BASE_DIR / 'data'
 GRID_DATA_PATH = DATA_PATH / 'system'
 OUTPUT_PATH = BASE_DIR / 'results'
@@ -42,17 +42,93 @@ data, time_max_min = setup_grid(VERSION, DATE_START, DATE_END, DATA_PATH, SCENAR
 database = Database(SQL_FILE)
 
 
-# %%
+# %% === ZONAL PRICE MAP ===
 
+# TODO: legg til mulighet for å ha øre/kwh
+zones = ['NO1', 'NO2', 'NO3', 'NO4', 'NO5', 'SE1', 'SE2', 'SE3', 'SE4',
+         'DK1', 'DK2', 'FI', 'DE', 'GB', 'NL', 'LT', 'PL', 'EE']
 START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1995, "month": 12, "day": 31, "hour": 23}
-time_Shed = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
-dfplot = plotEnergyMix(data=data, database=database, areas=['NO', 'SE', 'FI', 'DK'], timeMaxMin=time_Shed, variable="capacity")
+END = {"year": 1991, "month": 12, "day": 31, "hour": 23}
+year_range = list(range(SIM_YEAR_START, SIM_YEAR_END + 1))
+price_matrix, log = createZonePriceMatrix(data, database, zones, year_range, TIMEZONE, SIM_YEAR_START, SIM_YEAR_END)
+
+# Plot Zonal Price Matrix
+plotZonePriceMatrix(price_matrix, save_fig=True, OUTPUT_PATH_PLOTS=OUTPUT_PATH_PLOTS, start=START, end=END, version=VERSION)
+
+
+
+# START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
+# END = {"year": 1994, "month": 12, "day": 31, "hour": 23}
+# time_Shed = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
+# dfplot = plotEnergyMix(data=data, database=database, areas=['NO', 'SE', 'FI', 'DK'], timeMaxMin=time_Shed, variable="capacity")
 
 # %% === GET ENERGY BALANCE ON NODAL AND ZONAL LEVEL ===
 
-START = {"year": 1997, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1997, "month": 12, "day": 31, "hour": 23}
+
+#
+# def getProductionForAllNodesFromDB(data: GridData, database: Database, time_Prod):
+#     """
+#     Returns total production per node over the given time range.
+#
+#     Parameters
+#     ----------
+#     data : GridData
+#         Contains node list & generator-to-node mapping.
+#     database : Database
+#         Has getResultGeneratorPower(gen_ids, time_range) → List[List[float]]
+#     time_Prod : list
+#         [min, max] time window for which to fetch generation.
+#
+#     Returns
+#     -------
+#     prod_per_node : dict[int, float]
+#         Maps each node ID → total produced energy in that window.
+#     """
+#     prod_per_node = {node_id: 0.0 for node_id in data.node.id}  # Initialize all nodes with zero production
+#
+#     # Get all generators and their node mappings
+#     all_generators = []
+#     gen_to_node = {}
+#     for node_idx in data.node.index.tolist():
+#         node_id = data.node.loc[node_idx, 'id']
+#         gens = data.getGeneratorsAtNode(node_idx)
+#         for gen in gens:
+#             all_generators.append(gen)
+#             gen_to_node[gen] = node_id
+#
+#     if not all_generators:
+#         return prod_per_node
+#
+#     # Fetch production for all generators in one query
+#     series = database.getResultGeneratorPower(all_generators, time_Prod)
+#     if not series:
+#         return prod_per_node
+#
+#     # Aggregate production by node
+#     # Assuming series is a list of lists where each inner list is [gen_id, timestep, output]
+#     for gen_output in series:
+#         gen_id = gen_output[0]  # Adjust based on actual series structure
+#         output = sum(gen_output[2:])  # Sum output values
+#         node_id = gen_to_node[gen_id]
+#         prod_per_node[node_id] += output
+#
+#     return prod_per_node
+#
+# START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
+# END = {"year": 1991, "month": 12, "day": 31, "hour": 23}
+# time_EB = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
+# prod = getProductionForAllNodesFromDB(data, database, time_EB)
+
+# %%
+
+energyBalance = {}
+
+# for i in range(0, 30):
+#     year = 1991 + i
+#     print(year)
+
+START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
+END = {"year": 1991, "month": 12, "day": 31, "hour": 23}
 time_EB = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
 all_nodes = data.node.id
 
@@ -60,47 +136,144 @@ flow_data = getFlowDataOnALLBranches(data, database, time_EB)       # TAR LANG T
 totalDemand = getDemandForAllNodesFromDB(data, database, time_EB)
 totalProduction = getProductionForAllNodesFromDB(data, database, time_EB)   # TAR LANG TID
 totalLoadShedding = database.getResultLoadheddingSum(timeMaxMin=time_EB)
-# %%
+
+# Calculate energy balance at node and zone levels
 node_energyBalance = getEnergyBalanceNodeLevel(all_nodes, totalDemand, totalProduction, totalLoadShedding, flow_data, OUTPUT_PATH, VERSION, START)
 zone_energyBalance = getEnergyBalanceZoneLevel(all_nodes, totalDemand, totalProduction, totalLoadShedding, flow_data, OUTPUT_PATH, VERSION, START)
-df_importexport = getImportExportFromDB(data, database, timeMaxMin=time_EB) # Import/Export data for all AREAS
+# Store energy balance results in the dictionary
+# energyBalance[2020] = {
+#     "node_level": node_energyBalance,
+#     "zone_level": zone_energyBalance
+# }
+
+# df_importexport = getImportExportFromDB(data, database, timeMaxMin=time_EB) # Import/Export data for all AREAS
+
+
+# %%
+START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
+END = {"year": 1991, "month": 12, "day": 31, "hour": 23}
+time_EB = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
+all_nodes = data.node.id.tolist()
+production, gen_idx, gen_type = GetProductionAtSpecificNodes(all_nodes, data, database, time_EB[0], time_EB[1])
+
+
+
+# %% National-level electricity production and consumption
+"""
+Retrieves and aggregates electricity production and demand data at the national level.
+
+Overview:
+- Extracts simulated weekly production and consumption data for a specified country and time period.
+- Organizes the output into two levels of temporal resolution:
+    - A weekly-level DataFrame indexed by datetime.
+    - An annual-level DataFrame obtained by summing values across calendar years.
+"""
+
+# === INITIALIZATIONS ===
+START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
+END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
+
+df_gen_dem, df_prices, total = get_production_by_type_FromDB(data, database, "NO", get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END), "1991-01-01")
+df_gen_dem.index = pd.to_datetime(df_gen_dem.index)
+df_gen_dem['Year'] = df_gen_dem.index.year
+df_gen_yearly = df_gen_dem.groupby('Year').sum()
+
+
+# %% === Get production by type aggregate by zone ===
+'''
+Aggregates electricity production by zone and production type over a specified time period. 
+Returns two DataFrames: (1) detailed production per type, and (2) production merged into broader categories, in TWh.
+
+Input:
+- SELECTED_NODES = List of node IDs (e.g., ["NO1_1", "NO1_2", "NO1_3"]) 
+  or the string "ALL" to include all nodes in the system.
+'''
+# === INITIALIZATIONS ===
+START = {"year": 1993, "month": 1, "day": 1, "hour": 0}
+END = {"year": 1993, "month": 12, "day": 31, "hour": 23}
+SELECTED_NODES = "ALL"
+# SELECTED_NODES = ["SE4_1", "SE4_2", "SE3_1", "SE2_1", "SE2_2"]
+# ======================================================================================================================
+zone_summed_df, zone_summed_merged_df = get_zone_production_summary(SELECTED_NODES, START, END, TIMEZONE, SIM_YEAR_START, SIM_YEAR_END, data, database)
+
+
+
+# %% === CHECK SPILLED VS PRODUCED ===
+START = {"year": 2020, "month": 1, "day": 1, "hour": 0}
+END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
+time_EB = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
+gen_idx = [385]
+sum_spilled, sum_produced = checkSpilled_vs_ProducedAtGen(database, gen_idx, time_EB)
+
+
+# %% === GET IMPORTS/EXPORTS FOR EACH ZONE ===
+
+START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
+END = {"year": 1994, "month": 12, "day": 31, "hour": 23}
+time_EB = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
+flow_data = getFlowDataOnALLBranches(data, database, time_EB)
+
+zone_imports, zone_exports = getZoneImportExports(data, flow_data)
+# Example: Print results
+print("Zone Imports (importer, exporter): Total Import [MWh]")
+for (importer, exporter), total in zone_imports.items():
+    print(f"{importer} importing from {exporter}: {total:.2f} MWh")
+
 
 # %%
 
-# Filter DataFrame for plotting (exclude 'DE')
-exclude_zones = ['DE', 'GB', 'PL', 'NL', 'LT', 'EE']
-plot_data = zone_energyBalance[~zone_energyBalance['Zone'].isin(exclude_zones)]
+def plotInflowInArea(data: GridData, area, date_start, date_end):
 
-# Create a bar plot for the zone-level energy balance
-fig, ax = plt.subplots(figsize=(12, 6))
-bar_width = 0.13
-index = np.arange(len(plot_data))
+    genTypeIdx = data.getGeneratorsPerAreaAndType()[area]['hydro']
+    if area in ['SE', 'FI']:
+        genTypeIdx.extend(data.getGeneratorsPerAreaAndType()[area].get('ror', []))
+    # Inflow
+    inflowFactor = data.generator["inflow_fac"][
+        genTypeIdx[0]]  # Assuming all generators have the same inflow factor
+    inflowProfile = data.generator["inflow_ref"][
+        genTypeIdx]  # All generators have different inflow profiles, zone-based
+    inflow_df = pd.DataFrame()
 
-# Plot bars for each component
-ax.bar(index, plot_data['Production'], bar_width, label='Production', color='green')
-ax.bar(index + bar_width, plot_data['Import'], bar_width, label='Import', color='blue')
-ax.bar(index + 2*bar_width, plot_data['Demand'], bar_width, label='Demand', color='red')
-ax.bar(index + 3*bar_width, plot_data['Export'], bar_width, label='Export', color='orange')
-ax.bar(index + 4*bar_width, plot_data['Load Shedding'], bar_width, label='Load Shedding', color='gray')
+    for gen in genTypeIdx:
+        prodCap = data.generator['pmax'][gen]  # MW
+        inflow_value = data.profiles[inflowProfile[gen]]
+        inflow_df[gen] = [i * prodCap * inflowFactor for i in inflow_value]
+    inflow = inflow_df.sum(axis=1)
+    # Slice the inflow series using index-based selection
+    # inflow = inflow.iloc[time_max_min[0]:time_max_min[1]]  # +1 to include the max index
+    print(f"Total inflow: {sum(inflow) / 1e6:.2f} TWh")
 
-# Customize plot
-ax.set_xlabel('Zones')
-ax.set_ylabel('Power [MW]')
-ax.set_title('Zone-Level Energy Balance in Nordic Power System')
-ax.set_xticks(index + 2.5*bar_width)
-ax.set_xticklabels(plot_data['Zone'], rotation=45)
-ax.legend()
+    # Plot inflow
+    # Plot setup
+    import matplotlib
+    matplotlib.rcParams['text.usetex'] = True
+    matplotlib.rcParams['font.family'] = 'serif'
+    matplotlib.rcParams['font.serif'] = ['cmr10']  # Computer Modern Roman
+    matplotlib.rcParams['axes.formatter.use_mathtext'] = True  # Fix cmr10 warning
+    matplotlib.rcParams['axes.unicode_minus'] = False  # Fix minus sign rendering
+    fig, ax = plt.subplots(figsize=(10, 5))
+    ax.plot(inflow.index, inflow.values, label='Inflow', color='blue')
+    plt.title('Inflow over Time (NO)')
+    plt.xlabel('hours')
+    plt.ylabel('Inflow (MWh/h)')
+    plt.legend()
+    plt.tight_layout()
+    plt.grid()
+    plt.show()
+    return inflow
 
-plt.tight_layout()
-# plt.savefig('zone_energy_balance_plot.png')
-plt.show()
-
+# === INITIALIZATIONS ===
+START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
+END = {"year": 1993, "month": 12, "day": 31, "hour": 23}
+time_EB = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
+area = 'NO'
+inflow = plotInflowInArea(data, area, START, END)
 
 # %% Nordic Grid Map
 
 # === INITIALIZATIONS ===
-START = {"year": 2012, "month": 1, "day": 1, "hour": 0}
-END = {"year": 2012, "month": 12, "day": 31, "hour": 23}
+START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
+END = {"year": 1994, "month": 12, "day": 31, "hour": 23}
 
 nordic_grid_map_fromDB(data, database, time_range = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END),
                        OUTPUT_PATH = OUTPUT_PATH / 'maps', version = VERSION, START = START, END = END, exchange_rate_NOK_EUR = 11.38)
@@ -112,11 +285,11 @@ nordic_grid_map_fromDB(data, database, time_range = get_hour_range(SIM_YEAR_STAR
 zones = ['NO1', 'NO2', 'NO3', 'NO4', 'NO5', 'SE1', 'SE2', 'SE3', 'SE4',
          'DK1', 'DK2', 'FI', 'DE', 'GB', 'NL', 'LT', 'PL', 'EE']
 START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1994, "month": 12, "day": 31, "hour": 23}
+END = {"year": 1991, "month": 12, "day": 31, "hour": 23}
 year_range = list(range(SIM_YEAR_START, SIM_YEAR_END + 1))
 price_matrix, log = createZonePriceMatrix(data, database, zones, year_range, TIMEZONE, SIM_YEAR_START, SIM_YEAR_END)
 
-# %% Plot Zonal Price Matrix
+# Plot Zonal Price Matrix
 plotZonePriceMatrix(price_matrix, save_fig=True, OUTPUT_PATH_PLOTS=OUTPUT_PATH_PLOTS, start=START, end=END, version=VERSION)
 
 
@@ -124,9 +297,9 @@ plotZonePriceMatrix(price_matrix, save_fig=True, OUTPUT_PATH_PLOTS=OUTPUT_PATH_P
 # %% Check Total Consumption for a given period.
 # Demand Response
 # === INITIALIZATIONS ===
-START = {"year": 1993, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1993, "month": 12, "day": 31, "hour": 23}
-area = 'EE'
+START = {"year": 2020, "month": 1, "day": 1, "hour": 0}
+END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
+area = 'NO'
 
 time_Demand = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
 demandTotal = getDemandPerAreaFromDB(data, database, area=area, timeMaxMin=time_Demand)
@@ -135,9 +308,9 @@ print(sum(demandTotal['sum']))
 
 # %% === Get Production Data ===
 # === INITIALIZATIONS ===
-START = {"year": 1993, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1993, "month": 12, "day": 31, "hour": 23}
-area = 'EE'
+START = {"year": 2020, "month": 1, "day": 1, "hour": 0}
+END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
+area = 'PL'
 
 time_Prod = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
 total_Production = getProductionPerAreaFromDB(data, database, time_Prod, area)
@@ -149,7 +322,7 @@ print(total_Production)
 
 # === INITIALIZATIONS ===
 START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1994, "month": 12, "day": 31, "hour": 23}
+END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
 
 # === PLOT CONFIGURATIONS ===
 plot_config = {
@@ -169,13 +342,15 @@ plot_SF_Areas_FromDB(data, database, time_SF, OUTPUT_PATH_PLOTS, DATE_START, plo
 # Todo: Trengs det fortsatt litt jobb med scaleringen av selve plottet, men det er ikke krise enda.
 # Todo: Må OGSÅ ha mulighet til å plotte storage filling ned på node nivå.
 
+
+# TODO: ENDRE FARGE NYANSEN TIL Å JUSTERE FARGEN LITT FOR HVERT ÅR SOM GÅR, EKS LYSERE OG LYSERE
 # === INITIALIZATIONS ===
 START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1995, "month": 12, "day": 31, "hour": 23}
+END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
 
 # === PLOT CONFIGURATIONS ===
 plot_config = {
-    'zones': ['SE2'],                     # When plotting multiple years in one year, recommend to only use one zone
+    'zones': ['NO3'],                     # When plotting multiple years in one year, recommend to only use one zone
     'relative': True,                            # Relative storage filling, True gives percentage
     "plot_by_year": 3,                           # (1) Each year in individual plot, (2) Entire Timeline, (3) Each year show over 1 year timeline.
     "duration_curve": False,                     # True: Plot duration curve, or False: Plot storage filling over time
@@ -196,8 +371,8 @@ plot_SF_Zones_FromDB(data, database, time_SF, OUTPUT_PATH_PLOTS, DATE_START, plo
 # %% GET FLOW ON CHOSEN BRANCHES
 
 # === INITIALIZATIONS ===
-START = {"year": 1994, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1994, "month": 12, "day": 31, "hour": 23}
+START = {"year": 1993, "month": 1, "day": 1, "hour": 0}
+END = {"year": 1993, "month": 12, "day": 31, "hour": 23}
 
 # === PLOT CONFIGURATIONS ===
 
@@ -205,7 +380,7 @@ plot_config = {
     'areas': ['SE'],            # When plotting multiple years in one year, recommend to only use one area
     "plot_by_year": False,      # Each year in individual plot or all years collected in one plot
     "duration_curve": True,     # True: Plot duration curve, or False: Plot storage filling over time
-    "duration_relative": False, # Hours(False) or Percentage(True)
+    "duration_relative": True, # Hours(False) or Percentage(True)
     "save_fig": False,          # True: Save plot as pdf
     "interval": 1,              # Number of months on x-axis. 1 = Step is one month, 12 = Step is 12 months
     "check": False,
@@ -215,9 +390,12 @@ plot_config = {
 # === CHOOSE BRANCHES TO CHECK ===
 # SELECTED_BRANCHES  = [['NL','NO2_4'],['NO2_4','DE'], ['NO2_1','GB'], ['DK1_1','NO2_5']] # See branch CSV files for correct connections
 # SELECTED_BRANCHES  = [['SE2_3','SE3_1'],['SE3_1','SE2_7'], ['SE3_1','SE2_6'], ['SE3_5','SE2_5'], ['SE2_6','SE3_2']]
-SELECTED_BRANCHES  = [['SE1_2','SE2_2'],['SE1_3','SE2_2'], ['FI_3','SE1_2'], ['FI_3','SE1_3'], ['NO4_1','SE1_1']]
+# SELECTED_BRANCHES  = [['SE1_2','SE2_2'],['SE1_3','SE2_2'], ['FI_3','SE1_2'], ['FI_3','SE1_3'], ['NO4_1','SE1_1']]
+# SELECTED_BRANCHES = [['NL','NO2_4'],['NO2_4','DE'], ['NO2_1','GB'], ['DK1_1','NO2_5']] # NO
+# SELECTED_BRANCHES = [['SE4_2','DE'], ['SE3_10','LT'], ['SE4_1','PL'], ['DK2_2','SE4_2'], ['SE3_7','DK1_1'], ['SE3_1','FI_10'], ['SE3_3','FI_10']] # SE
+# SELECTED_BRANCHES = [['DK2_2','DE'], ['DK2_hub','DE'], ['DE','DK1_3']]
 
-
+SELECTED_BRANCHES = [['SE4_1','PL'],['SE3_10','LT']]
 
 # === COMPUTE TIMERANGE AND PLOT FLOW ===
 time_Lines = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
@@ -250,18 +428,18 @@ calcPlot_ZonalPrices_FromDB(data, database, time_ZP, OUTPUT_PATH_PLOTS, DATE_STA
 # Siden det er ukes aggregert, bør man trekke fra 23 timer for vanlig år, og 1d23t for skuddår
 # for et godt plot.
 # === INITIALIZATIONS ===
-START = {"year": 2012, "month": 1, "day": 1, "hour": 0}
-END = {"year": 2012, "month": 12, "day": 31, "hour": 0}
+START = {"year": 1994, "month": 1, "day": 1, "hour": 0}
+END = {"year": 1994, "month": 12, "day": 31, "hour": 0}
 
 # === PLOT CONFIGURATIONS ===
 plot_config = {
-    'area': 'NO',
-    'title': 'Production, Consumption and Price in SE',
-    "fig_size": (10, 6),
+    'area': 'GB',
+    'title': 'Production, Consumption and Price in GB',
+    "fig_size": (15, 10),
     "plot_full_timeline": True,
     "duration_curve": False,
     "box_in_frame": False,
-    "save_fig": False,                      # True: Save plot as pdf
+    "save_fig": True,                      # True: Save plot as pdf
     "interval": 1                           # Number of months on x-axis. 1 = Step is one month, 12 = Step is 12 months
 }
 
@@ -278,8 +456,8 @@ print(f"Total production in {plot_config['area']}: {tot_prod:.2f} MWh")
 # === INITIALIZATIONS ===
 START = {"year": 1993, "month": 1, "day": 1, "hour": 0}
 END = {"year": 1993, "month": 12, "day": 31, "hour": 23}
-area = 'NO'
-zone = None
+area = None
+zone = 'NO2'
 
 # Juster area for å se på sonene, og zone for å se på nodene i sonen
 # === COMPUTE TIMERANGE AND PLOT FLOW ===

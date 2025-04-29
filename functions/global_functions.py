@@ -194,74 +194,93 @@ def createZonePriceMatrix(data, database, zones, year_range, TIMEZONE, SIM_YEAR_
     log_messages = []
     zonal_price_map = pd.DataFrame(index=zones)
 
+    # Set up time range for the entire period
+    try:
+        START = {"year": year_range[0], "month": 1, "day": 1, "hour": 0}
+        END = {"year": year_range[-1], "month": 12, "day": 31, "hour": 23}
+        start_datetime = datetime(START["year"], START["month"], START["day"], START["hour"], 0, tzinfo=TIMEZONE)
+        end_datetime = datetime(END["year"], END["month"], END["day"], END["hour"], 0, tzinfo=TIMEZONE)
+        time_range = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
+        date_index = pd.date_range(start=start_datetime, end=end_datetime, freq='h', inclusive='left')
+    except Exception as e:
+        log_messages.append(f"❌ Failed to generate time range for {year_range[0]}-{year_range[-1]}: {e}")
+        print(f"❌ Failed to generate time range for {year_range[0]}-{year_range[-1]}: {e}")
+        return zonal_price_map, "\n".join(log_messages)
+
+    # Fetch all nodal prices for the entire period
+    try:
+        log_messages.append(f"📡 Fetching all nodal prices for {year_range[0]}-{year_range[-1]}...")
+        print(f"📡 Fetching all nodal prices for {year_range[0]}-{year_range[-1]}...")
+        start_time = time.time()
+        price_data = database.getResultNodalPricesAll(time_range)
+        end_time = time.time()
+        log_messages.append(f"⏱️ Fetching duration: {end_time - start_time:.2f} seconds.")
+        print(f"⏱️ Fetching duration: {end_time - start_time:.2f} seconds.")
+    except Exception as e:
+        log_messages.append(f"❌ Failed to fetch nodal prices for {year_range[0]}-{year_range[-1]}: {e}")
+        print(f"❌ Failed to fetch nodal prices for {year_range[0]}-{year_range[-1]}: {e}")
+        return zonal_price_map, "\n".join(log_messages)
+
+    # Convert price data to DataFrame
+    try:
+        # Create DataFrame from list of (timestep, node_index, nodalprice)
+        print("📊 Processing price data...")
+        start_time = time.time()
+        df_all = pd.DataFrame(price_data, columns=['timestep', 'node_index', 'nodalprice'])
+        # Pivot to get nodes as columns, timesteps as rows
+        df_pivot = df_all.pivot(index='timestep', columns='node_index', values='nodalprice')
+        # Align with date_index
+        df_pivot.index = date_index[:len(df_pivot)]
+        end_time = time.time()
+        log_messages.append(f"⏱️ Processing duration: {end_time - start_time:.2f} seconds.")
+        print(f"⏱️ Processing duration: {end_time - start_time:.2f} seconds.")
+    except Exception as e:
+        log_messages.append(f"❌ Failed to process price data for {year_range[0]}-{year_range[-1]}: {e}")
+        print(f"❌ Failed to process price data for {year_range[0]}-{year_range[-1]}: {e}")
+        return zonal_price_map, "\n".join(log_messages)
+
+    # Process each year
     for year in year_range:
-        START = {"year": year, "month": 1, "day": 1, "hour": 0}
-        if year >= year_range[-1]:
-            END = {"year": year, "month": 12, "day": 31, "hour": 23}
-        else:
-            END = {"year": year + 1, "month": 1, "day": 1, "hour": 0}
-
-        # Time setup
         try:
-            start_datetime = datetime(START["year"], START["month"], START["day"], START["hour"], 0, tzinfo=TIMEZONE)
-            end_datetime = datetime(END["year"], END["month"], END["day"], END["hour"], 0, tzinfo=TIMEZONE)
-            time_range = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
-            date_index = pd.date_range(start=start_datetime, end=end_datetime, freq='h', inclusive='left')
-        except Exception as e:
-            log_messages.append(f"❌ Failed to generate time range for year {year}: {e}")
-            print(f"❌ Failed to generate time range for year {year}: {e}")
-            continue
+            # Define year boundaries
+            year_start = datetime(year, 1, 1, 0, 0, tzinfo=TIMEZONE)
+            year_end = datetime(year, 12, 31, 23, 0, tzinfo=TIMEZONE) if year == year_range[-1] else datetime(year + 1, 1, 1, 0, 0, tzinfo=TIMEZONE)
+            # Filter DataFrame for this year
+            df_year = df_pivot.loc[year_start:year_end]
 
-        # Fetch all nodal prices for the year
-        try:
-            log_messages.append(f"📡 Fetching all nodal prices for year {year}...")
-            print(f"📡 Fetching all nodal prices for year {year}...")
-            price_data = database.getResultNodalPricesAll(time_range)
-        except Exception as e:
-            log_messages.append(f"❌ Failed to fetch nodal prices for year {year}: {e}")
-            print(f"❌ Failed to fetch nodal prices for year {year}: {e}")
-            continue
+            # Process each zone
+            for zone in zones:
+                try:
+                    nodes_in_zone = data.node[data.node['zone'] == zone].index.tolist()
+                    if not nodes_in_zone:
+                        log_messages.append(f"⚠️ No nodes found for zone {zone} — skipping.")
+                        print(f"⚠️ No nodes found for zone {zone} — skipping.")
+                        continue
 
-        # Convert price data to DataFrame
-        try:
-            # Create DataFrame from list of (timestep, node_index, nodalprice)
-            df_all = pd.DataFrame(price_data, columns=['timestep', 'node_index', 'nodalprice'])
-            # Pivot to get nodes as columns, timesteps as rows
-            df_pivot = df_all.pivot(index='timestep', columns='node_index', values='nodalprice')
-            # Align with date_index
-            df_pivot.index = date_index[:len(df_pivot)]
-        except Exception as e:
-            log_messages.append(f"❌ Failed to process price data for year {year}: {e}")
-            print(f"❌ Failed to process price data for year {year}: {e}")
-            continue
+                    # Filter DataFrame to only nodes in this zone
+                    zone_nodes = [node for node in nodes_in_zone if node in df_year.columns]
+                    if not zone_nodes:
+                        log_messages.append(f"⚠️ No price data available for zone {zone} in year {year}. Skipping.")
+                        print(f"⚠️ No price data available for zone {zone} in year {year}. Skipping.")
+                        continue
 
-        # Process each zone
-        for zone in zones:
-            try:
-                nodes_in_zone = data.node[data.node['zone'] == zone].index.tolist()
-                if not nodes_in_zone:
-                    log_messages.append(f"⚠️ No nodes found for zone {zone} — skipping.")
-                    print(f"⚠️ No nodes found for zone {zone} — skipping.")
+                    # Calculate average price for the zone
+                    df_zone = df_year[zone_nodes]
+                    avg_price = df_zone.mean(axis=1).mean()
+                    zonal_price_map.loc[zone, str(year)] = round(avg_price, 2)
+
+                except Exception as e:
+                    log_messages.append(f"❌ Failed processing zone {zone} in year {year}: {e}")
+                    print(f"❌ Failed processing zone {zone} in year {year}: {e}")
                     continue
 
-                # Filter DataFrame to only nodes in this zone
-                zone_nodes = [node for node in nodes_in_zone if node in df_pivot.columns]
-                if not zone_nodes:
-                    log_messages.append(f"⚠️ No price data available for zone {zone} in year {year}. Skipping.")
-                    print(f"⚠️ No price data available for zone {zone} in year {year}. Skipping.")
-                    continue
-
-                # Calculate average price for the zone
-                df_zone = df_pivot[zone_nodes]
-                avg_price = df_zone.mean(axis=1).mean()
-                zonal_price_map.loc[zone, str(year)] = round(avg_price, 2)
-
-            except Exception as e:
-                log_messages.append(f"❌ Failed processing zone {zone} in year {year}: {e}")
-                print(f"❌ Failed processing zone {zone} in year {year}: {e}")
-                continue
+        except Exception as e:
+            log_messages.append(f"❌ Failed processing year {year}: {e}")
+            print(f"❌ Failed processing year {year}: {e}")
+            continue
 
     # Join all messages into one string, preserving line breaks
+    print("✅ Processing complete!")
     log_text = "\n".join(log_messages)
     return zonal_price_map, log_text
 

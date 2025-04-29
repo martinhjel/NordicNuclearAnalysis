@@ -212,6 +212,30 @@ def createZonePriceMatrix(data, database, zones, year_range, TIMEZONE, SIM_YEAR_
             print(f"❌ Failed to generate time range for year {year}: {e}")
             continue
 
+        # Fetch all nodal prices for the year
+        try:
+            log_messages.append(f"📡 Fetching all nodal prices for year {year}...")
+            print(f"📡 Fetching all nodal prices for year {year}...")
+            price_data = database.getResultNodalPricesAll(time_range)
+        except Exception as e:
+            log_messages.append(f"❌ Failed to fetch nodal prices for year {year}: {e}")
+            print(f"❌ Failed to fetch nodal prices for year {year}: {e}")
+            continue
+
+        # Convert price data to DataFrame
+        try:
+            # Create DataFrame from list of (timestep, node_index, nodalprice)
+            df_all = pd.DataFrame(price_data, columns=['timestep', 'node_index', 'nodalprice'])
+            # Pivot to get nodes as columns, timesteps as rows
+            df_pivot = df_all.pivot(index='timestep', columns='node_index', values='nodalprice')
+            # Align with date_index
+            df_pivot.index = date_index[:len(df_pivot)]
+        except Exception as e:
+            log_messages.append(f"❌ Failed to process price data for year {year}: {e}")
+            print(f"❌ Failed to process price data for year {year}: {e}")
+            continue
+
+        # Process each zone
         for zone in zones:
             try:
                 nodes_in_zone = data.node[data.node['zone'] == zone].index.tolist()
@@ -220,28 +244,18 @@ def createZonePriceMatrix(data, database, zones, year_range, TIMEZONE, SIM_YEAR_
                     print(f"⚠️ No nodes found for zone {zone} — skipping.")
                     continue
 
-                log_messages.append(f"📡 Fetching nodal prices for zone {zone} in year {year}...")
-                print(f"📡 Fetching nodal prices for zone {zone} in year {year}...")
-
-                node_prices = {}
-                for node in nodes_in_zone:
-                    try:
-                        node_prices[node] = getNodalPricesFromDB(database, node, time_range)
-                    except Exception as e:
-                        log_messages.append(f"❌ Failed to fetch prices for node {node} in zone {zone}: {e}")
-                        print(f"❌ Failed to fetch prices for node {node} in zone {zone}: {e}")
-                        continue
-
-                if not node_prices:
-                    log_messages.append(f"⚠️ No prices available for zone {zone} in year {year}. Skipping.")
-                    print(f"⚠️ No prices available for zone {zone} in year {year}. Skipping.")
+                # Filter DataFrame to only nodes in this zone
+                zone_nodes = [node for node in nodes_in_zone if node in df_pivot.columns]
+                if not zone_nodes:
+                    log_messages.append(f"⚠️ No price data available for zone {zone} in year {year}. Skipping.")
+                    print(f"⚠️ No price data available for zone {zone} in year {year}. Skipping.")
                     continue
 
-                df = pd.DataFrame(node_prices)
-                df.index = date_index
-
-                avg_price = df.mean(axis=1).mean()
+                # Calculate average price for the zone
+                df_zone = df_pivot[zone_nodes]
+                avg_price = df_zone.mean(axis=1).mean()
                 zonal_price_map.loc[zone, str(year)] = round(avg_price, 2)
+
             except Exception as e:
                 log_messages.append(f"❌ Failed processing zone {zone} in year {year}: {e}")
                 print(f"❌ Failed processing zone {zone} in year {year}: {e}")
@@ -1755,6 +1769,78 @@ def writeFlowToExcel(flow_data, START, END, OUTPUT_PATH, case, version):
 
     print(f"\n✅ Excel file saved at: {full_path}")
     return str(full_path)
+
+
+
+def get_zone_production_summary(SELECTED_NODES, START, END, TIMEZONE, SIM_YEAR_START, SIM_YEAR_END, data, database):
+    '''
+    Retrieves production data for the selected nodes over the specified time period,
+    aggregates the production by zone and by type, converts the results to TWh,
+    and merges selected production types into broader categories.
+
+    Parameters:
+        SELECTED_NODES (list or str): List of node IDs to include or "ALL" to select all nodes.
+        START (dict): Dictionary defining the start time with keys "year", "month", "day", "hour".
+        END (dict): Dictionary defining the end time with keys "year", "month", "day", "hour".
+        TIMEZONE (str): Timezone name.
+        SIM_YEAR_START (datetime): Start of simulation year.
+        SIM_YEAR_END (datetime): End of simulation year.
+        data (object): Data object containing node information.
+        database (object): Database connection or access object for production data.
+
+    Returns:
+        zone_summed_df (pd.DataFrame): Aggregated production per original production type, in TWh.
+        zone_summed_merged_df (pd.DataFrame): Aggregated production per merged production type, with total, in TWh.
+    '''
+
+    Nodes = data.node["id"].dropna().unique().tolist() if SELECTED_NODES == "ALL" else SELECTED_NODES
+    start_hour, end_hour = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
+    production_per_node, gen_idx, gen_type = GetProductionAtSpecificNodes(Nodes, data, database, start_hour, end_hour)
+
+    zone_sums = {}
+
+    for node, prodtypes in production_per_node.items():
+        zone = node.split("_")[0]
+        if zone not in zone_sums:
+            zone_sums[zone] = {}
+
+        for prodtype, values_list in prodtypes.items():
+            if not values_list or not values_list[0]:
+                prod_sum = 0
+            else:
+                values = values_list[0]
+                prod_sum = sum(values)
+
+            if prodtype not in zone_sums[zone]:
+                zone_sums[zone][prodtype] = prod_sum
+            else:
+                zone_sums[zone][prodtype] += prod_sum
+
+    zone_summed_df = pd.DataFrame(zone_sums).T
+    zone_summed_df = zone_summed_df / 1e6  # Convert from MWh to TWh
+
+    merge_mapping = {
+        "Hydro": ["hydro", "ror"],
+        "Nuclear": ["nuclear"],
+        "Solar": ["solar"],
+        "Thermal": ["fossil_gas", "fossil_other", "biomass"],
+        "Wind Onshore": ["wind_on"],
+        "Wind Offshore": ["wind_off"]
+    }
+
+    zone_summed_merged = {}
+
+    for new_type, old_types in merge_mapping.items():
+        zone_summed_merged[new_type] = zone_summed_df[old_types].sum(axis=1, skipna=True)
+
+    zone_summed_merged_df = pd.DataFrame(zone_summed_merged)
+
+    zone_summed_merged_df["Production total"] = zone_summed_merged_df.sum(axis=1)
+
+    desired_order = ["Production total", "Hydro", "Nuclear", "Solar", "Thermal", "Wind Onshore", "Wind Offshore"]
+    zone_summed_merged_df = zone_summed_merged_df[desired_order]
+
+    return zone_summed_df, zone_summed_merged_df
 
 
 

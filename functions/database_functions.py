@@ -288,10 +288,12 @@ def getProductionPerAreaFromDB(data: GridData, database, time_Prod, area):
     flat_gen_idx = [gen for sublist in gen_idx for gen in sublist]  # Flater ut listen
 
     # === SUMMER PRODUKSJON ===
-    totalProd = 0
-    for gen in flat_gen_idx:
-        prod = database.getResultGeneratorPower([gen], time_Prod)
-        totalProd += sum(prod)
+    # totalProd = 0
+    # for gen in flat_gen_idx:
+    #     prod = database.getResultGeneratorPower([gen], time_Prod)
+    #     totalProd += sum(prod)
+
+    totalProd = sum(database.getResultGeneratorPower(flat_gen_idx, time_Prod))
 
     return totalProd
 
@@ -1012,6 +1014,88 @@ def getImportExportFromDB(data: GridData, database: Database, areas=None, timeMa
         df_importexport.loc[area, "export"] = flow_out
     print()
     return df_importexport
+
+
+def getZoneImportExports(data: GridData, flow_data):
+    all_nodes = data.node.id
+    # TODO: getResultBranchFlowAll denne henter all branch flow med en gang.
+    # Initialize dictionaries to store imports and exports between zone pairs
+    zone_imports = defaultdict(float)  # Key: (importer_zone, exporter_zone), Value: total import
+    zone_exports = defaultdict(float)  # Key: (exporter_zone, importer_zone), Value: total export
+    node_names = [node for node in all_nodes]
+    node_to_zone = {}
+    for node in node_names:
+        if '_' in node:
+            # Take prefix before first underscore (e.g., 'DK1_3' -> 'DK1', 'SE3_hub_east' -> 'SE3')
+            zone = node.split('_')[0]
+        else:
+            # No underscore (e.g., 'GB', 'DE') -> use full name as zone
+            zone = node
+        node_to_zone[node] = zone
+
+    # Process each line in flow_data
+    for _, row in flow_data.iterrows():
+        from_node = row['from']
+        to_node = row['to']
+        loads = row['load [MW]']  # List of load values
+
+        # Ensure loads is a list or array
+        if isinstance(loads, str):
+            loads = eval(loads)  # Convert string representation to list if needed
+        loads = np.array(loads)
+
+        # Map nodes to their respective zones
+        from_zone = node_to_zone[from_node]
+        to_zone = node_to_zone[to_node]
+
+        # Skip if the nodes are in the same zone (optional, depending on your needs)
+        if from_zone == to_zone:
+            continue
+
+        # Define zone pair (order matters for direction)
+        zone_pair_forward = (from_zone, to_zone)  # from_zone -> to_zone
+        zone_pair_reverse = (to_zone, from_zone)  # to_zone -> from_zone
+
+        # Positive load: flow from 'from' to 'to'
+        # - 'from_zone' exports to 'to_zone'
+        # - 'to_zone' imports from 'from_zone'
+        positive_loads = loads[loads > 0]
+        if len(positive_loads) > 0:
+            total_positive = sum(positive_loads)
+            zone_exports[zone_pair_forward] += total_positive
+            zone_imports[zone_pair_reverse] += total_positive
+
+        # Negative load: flow from 'to' to 'from'
+        # - 'to_zone' exports to 'from_zone'
+        # - 'from_zone' imports from 'to_zone'
+        negative_loads = loads[loads < 0]
+        if len(negative_loads) > 0:
+            total_negative = sum(-negative_loads)  # Absolute value
+            zone_exports[zone_pair_reverse] += total_negative
+            zone_imports[zone_pair_forward] += total_negative
+
+    # Convert defaultdict to regular dict for cleaner output (optional)
+    zone_imports = dict(zone_imports)
+    zone_exports = dict(zone_exports)
+
+    return zone_imports, zone_exports
+
+
+
+def checkSpilled_vs_ProducedAtGen(database: Database, gen_idx, time_max_min):
+    """
+    Check spilled vs produced energy at a specific generator. Collect generator idx from grid data/generator
+    :param database:
+    :param gen_idx:
+    :param time_EB:
+    :return:
+    """
+    spilled = database.getResultGeneratorSpilled(gen_idx, time_max_min)
+    produced = database.getResultGeneratorPower(gen_idx, time_max_min)
+    sum_spilled = sum(spilled)
+    sum_produced = sum(produced)
+    print("Spilled: ", sum_spilled/1e6, " TWh,  Produced: ", sum_produced/1e6, " TWh")
+    return sum_spilled, sum_produced
 
 
 def getLoadheddingInAreaFromDB(db: Database, area, timeMaxMin=None):

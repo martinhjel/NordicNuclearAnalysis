@@ -1135,7 +1135,7 @@ def get_hour_range(YEAR_START, YEAR_END, TIMEZONE, start, end):
 
     # Beregn timeindeks
     start_hour_index = int((start_datetime - start_time).total_seconds() / 3600)
-    end_hour_index = int((end_datetime - start_time).total_seconds() / 3600)
+    end_hour_index = int((end_datetime - start_time).total_seconds() / 3600) +1
 
     print(f"Start hour index: {start_hour_index}")
     print(f"End hour index: {end_hour_index}")
@@ -1700,25 +1700,29 @@ def getFlowDataOnBranches(data: GridData, db: Database, time_max_min, chosen_con
     :param chosen_connections:
     :return: flow_df
     """
+
+    if chosen_connections is None:
+        print('No connections chosen.')
+        return pd.DataFrame()
     print(f'Collecting Flow Data at Lines {", ".join([f"{f} → {t}" for f, t in chosen_connections])}')
 
+    if chosen_connections is not None:
+        AC_interconnections, DC_interconnections = filter_connections_by_list(data, chosen_connections)
+        AC_interconnections_capacity = AC_interconnections['capacity']
+        DC_interconnections_capacity = DC_interconnections['capacity']
 
-    AC_interconnections, DC_interconnections = filter_connections_by_list(data, chosen_connections)
-    AC_interconnections_capacity = AC_interconnections['capacity']
-    DC_interconnections_capacity = DC_interconnections['capacity']
+        # Get connections
+        AC_dict, DC_dict = get_connections(data, chosen_connections)
 
-    # Get connections
-    AC_dict, DC_dict = get_connections(data, chosen_connections)
+        # Collect AC and DC flow data
+        flow_data_AC = collect_flow_data(db, time_max_min, AC_dict, AC_interconnections_capacity, ac=True)
+        flow_data_DC = collect_flow_data(db, time_max_min, DC_dict, DC_interconnections_capacity, ac=False)
 
-    # Collect AC and DC flow data
-    flow_data_AC = collect_flow_data(db, time_max_min, AC_dict, AC_interconnections_capacity, ac=True)
-    flow_data_DC = collect_flow_data(db, time_max_min, DC_dict, DC_interconnections_capacity, ac=False)
-
-    # Combine data into a single DataFrame
-    flow_df = pd.concat([
-        pd.DataFrame(flow_data_AC),
-        pd.DataFrame(flow_data_DC)
-    ], ignore_index=True)
+        # Combine data into a single DataFrame
+        flow_df = pd.concat([
+            pd.DataFrame(flow_data_AC),
+            pd.DataFrame(flow_data_DC)
+        ], ignore_index=True)
 
     return flow_df
 

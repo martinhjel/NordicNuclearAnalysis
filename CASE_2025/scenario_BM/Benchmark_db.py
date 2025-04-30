@@ -12,7 +12,7 @@ SIM_YEAR_START = 1991           # Start year for the main simulation  (SQL-file)
 SIM_YEAR_END = 2020             # End year for the main simulation  (SQL-file)
 CASE_YEAR = 2025
 SCENARIO = 'BM'
-VERSION = 'v103_sens'
+VERSION = 'v107_sens'
 TIMEZONE = ZoneInfo("UTC")  # Definerer UTC tidssone
 
 DATE_START = pd.Timestamp(f'{SIM_YEAR_START}-01-01 00:00:00', tz='UTC')
@@ -46,7 +46,7 @@ database = Database(SQL_FILE)
 
 # === INITIALIZATIONS ===
 START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1991, "month": 12, "day": 31, "hour": 23}
+END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
 nordic_grid_map_fromDB(data, database, time_range = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END),
                        OUTPUT_PATH = OUTPUT_PATH, version = VERSION, START = START, END = END, exchange_rate_NOK_EUR = 11.38)
 
@@ -141,7 +141,7 @@ END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
 # === PLOT CONFIGURATIONS ===
 #  TODO: NÅR SAVE_FIG = TRUE --> DENNE BLIR SVG, IKKE PDF
 plot_config = {
-    'areas': ['SE'],            # When plotting multiple years in one year, recommend to only use one area
+    'areas': ['NO'],            # When plotting multiple years in one year, recommend to only use one area
     'relative': True,           # Relative storage filling, True gives percentage
     "plot_by_year": True,       # True: One curve for each year in same plot, or False:all years collected in one plot over the whole simulation period
     "duration_curve": False,    # True: Plot duration curve, or False: Plot storage filling over time
@@ -158,12 +158,12 @@ plot_SF_Areas_FromDB(data, database, time_SF, OUTPUT_PATH_PLOTS, DATE_START, plo
 # Todo: Må OGSÅ ha mulighet til å plotte storage filling ned på node nivå.
 
 # === INITIALIZATIONS ===
-START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1993, "month": 12, "day": 31, "hour": 23}
+START = {"year": 2018, "month": 1, "day": 1, "hour": 0}
+END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
 
 # === PLOT CONFIGURATIONS ===
 plot_config = {
-    'zones': ['SE4'],                     # When plotting multiple years in one year, recommend to only use one zone
+    'zones': ['NO3'],                     # When plotting multiple years in one year, recommend to only use one zone
     'relative': True,                            # Relative storage filling, True gives percentage
     "plot_by_year": 3,                           # (1) Each year in individual plot, (2) Entire Timeline, (3) Each year show over 1 year timeline.
     "duration_curve": False,                     # True: Plot duration curve, or False: Plot storage filling over time
@@ -188,7 +188,7 @@ END = {"year": 1993, "month": 1, "day": 1, "hour": 0}
 
 # === PLOT CONFIGURATIONS ===
 plot_config = {
-    'zone': 'NO3',                          # When plotting multiple years in one year, recommend to only use one zone
+    'zone': 'NO2',                          # When plotting multiple years in one year, recommend to only use one zone
     'plot_all_nodes': True,                 # (True) Plot all nodes in a zone or (False) avg of all nodes
     "plot_by_year": False,                  # (True) Each year in individual plot or all years collected in one plot
     "duration_curve": False,                # (True) Plot duration curve, or (False) Plot storage filling over time PRICE OVER TIME?
@@ -317,24 +317,7 @@ if area is not None:
     zones_in_area_prod = getProductionZonesInArea(data, database, area, time_Prod, correct_date_start_Prod, week=True)
 if zone is not None:
     nodes_in_zone_prod = getProductionNodesInZone(data, database, zone, time_Prod, correct_date_start_Prod, week=True)
-'''
-Input:
-- SELECTED_NODES = List of node IDs (e.g., ["NO1_1", "NO1_2", "NO1_3"]) 
-  or the string "ALL" to include all nodes in the system.
-'''
-# === INITIALIZATIONS ===
-START = {"year": 2020, "month": 1, "day": 1, "hour": 0}
-END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
-SELECTED_NODES = "ALL"
-# SELECTED_NODES = ["SE4_1", "SE4_2", "SE3_1", "SE2_1", "SE2_2"]
-# ======================================================================================================================
-zone_summed_df, zone_summed_merged_df = get_zone_production_summary(SELECTED_NODES, START, END, TIMEZONE, SIM_YEAR_START, SIM_YEAR_END, data, database)
 
-
-# %% === Get production by type aggregate by zone ===
-'''
-Aggregates electricity production by zone and production type over a specified time period. 
-Returns two DataFrames: (1) detailed production per type, and (2) production merged into broader categories, in TWh.
 
 # === EINAR ===
 # %% National-level electricity production and consumption
@@ -370,7 +353,7 @@ Overview:
 """
 
 # === INITIALIZATIONS ===
-country = "NO"  # Country code
+country = "FI"  # Country code
 
 n_ideal_years = 30
 n_timesteps = int(8766.4 * n_ideal_years) # Ved full 30-års simuleringsperiode
@@ -477,8 +460,10 @@ Main Features:
 # === INITIALIZATIONS ===
 START = {"year": 2020, "month": 1, "day": 1, "hour": 0}
 END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
-Nodes = ["DK1_2", "DK1_3", "DK2_2"]
-SELECTED_BRANCHES  = [['NO2_1','GB']]
+Nodes = ["NO1_1", "NO2_1", "NO3_1", "NO4_1", "NO5_1"]  # Nuclear nodes: ["SE3_3", "SE3_6", "FI_10", "FI_12", "GB", "NL"]
+
+
+SELECTED_BRANCHES  = None
 # ======================================================================================================================
 
 start_hour, end_hour = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
@@ -521,3 +506,103 @@ SELECTED_NODES = "ALL"
 # SELECTED_NODES = ["SE4_1", "SE4_2", "SE3_1", "SE2_1", "SE2_2"]
 # ======================================================================================================================
 zone_summed_df, zone_summed_merged_df = get_zone_production_summary(SELECTED_NODES, START, END, TIMEZONE, SIM_YEAR_START, SIM_YEAR_END, data, database)
+
+
+# %% === For validation of simulated production per. type in each zone against historical data. ===
+
+# Klargjør simuleringsresultat for validation mot eSett Open Data
+zone_summed_merged_df["Other"] = 0
+zone_summed_merged_df = zone_summed_merged_df[[col for col in zone_summed_merged_df.columns if col != "Other"] + ["Other"]]
+zones_to_remove = ["GB", "DE", "NL", "EE", "LT", "PL"]
+zone_summed_merged_df = zone_summed_merged_df.drop(index=zones_to_remove, errors="ignore")
+
+
+# Data from eSett Open Data (2024) and energinet manually structured. (OBS: Other for DK is not correct)
+data = {
+    "Production total": [
+        "23 504 976,88", "10 415 509,92", "77 559 009,40", "21 655 091,37", "55 614 115,20",
+        "23 531 833,16", "23 831 200,10", "32 486 028,55", "24 340 088,61", "52 568 108,96",
+        "75 764 368,13", "9 266 869,76"
+    ],
+    "Hydro": [
+        "0,00", "0,00", "14 163 404,94", "20 373 792,38", "50 772 720,95",
+        "17 614 838,05", "18 925 248,00", "32 295 294,09", "16 742 020,14", "34 653 435,57",
+        "11 558 514,61", "1 435 190,32"
+    ],
+    "Nuclear": [
+        "0,00", "0,00", "31 089 513,50", "0,00", "0,00",
+        "0,00", "0,00", "0,00", "0,00", "0,00",
+        "48 739 158,76", "0,00"
+    ],
+    "Solar": [
+        "2621978,62", "1077359,66", "372 558,49", "112 435,12", "96 500,88",
+        "13 520,87", "712,29", "16 400,42", "14 033,40", "88 709,92",
+        "1 539 778,89", "820 842,69"
+    ],
+    "Thermal": [
+        "5896092,701", "4440883,971", "10 097 294,82", "210 522,57", "185 222,31",
+        "164 244,14", "1 540 310,13", "174 115,91", "135 590,53", "785 127,05",
+        "3 363 138,03", "1 115 343,87"
+    ],
+    "Wind Onshore": [
+        "9165290,836", "6129726,786", "20 054 297,31", "957 151,56", "4 557 816,79",
+        "5 738 724,92", "3 363 439,44", "2,25", "7 447 713,88", "17 029 707,54",
+        "10 471 969,52", "5 873 242,13"
+    ],
+    "Wind Offshore": [
+        "6129726,786", "3605418,939", "0,00", "0,00", "0,00",
+        "0,00", "0,00", "0,00", "0,00", "0,00",
+        "0,00", "0,00"
+    ],
+    "Other": [
+        "0", "0", "1 779 636,23", "1 189,74", "1 854,27",
+        "505,19", "1 490,23", "215,88", "730,66", "11 128,88",
+        "89 080,12", "22 250,75"
+    ]
+}
+
+# Define index (zone names)
+index = [
+    "DK1", "DK2", "FI", "NO1", "NO2", "NO3", "NO4", "NO5",
+    "SE1", "SE2", "SE3", "SE4"
+]
+
+df_eSett = pd.DataFrame(data, index=index)
+df_eSett = df_eSett.apply(lambda col: col.map(lambda x: float(str(x).replace(" ", "").replace(",", "."))))
+df_eSett = df_eSett / 1e6
+# comparison_df = zone_summed_merged_df - df_eSett
+# percent_error_df = 100 * (zone_summed_merged_df - df_eSett) / df_eSett
+
+# Ensure both DataFrames have the same row and column order
+zone_summed_merged_df = zone_summed_merged_df.reindex(index=df_eSett.index, columns=df_eSett.columns)
+
+# 1. Calculate absolute difference
+diff_df = zone_summed_merged_df - df_eSett
+
+# 2. Calculate percent error (relative difference)
+percent_error_df = 100 * (zone_summed_merged_df - df_eSett) / df_eSett
+
+# Optional: round to 2 decimal places for neat display
+diff_df = diff_df.round(2)
+percent_error_df = percent_error_df.round(2)
+
+# Print or display
+print("Absolute difference (TWh):")
+print(diff_df)
+
+print("\nPercent error (%):")
+print(percent_error_df)
+
+# %% FRA baseline
+
+START = {"year": 2020, "month": 1, "day": 1, "hour": 0}
+END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
+time_EB = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
+all_nodes = data.node.id
+
+flow_data = getFlowDataOnALLBranches(data, database, time_EB)       # TAR LANG TID
+totalDemand = getDemandForAllNodesFromDB(data, database, time_EB)
+totalProduction = getProductionForAllNodesFromDB(data, database, time_EB)   # TAR LANG TID
+totalLoadShedding = database.getResultLoadheddingSum(timeMaxMin=time_EB)
+node_energyBalance = getEnergyBalanceNodeLevel(all_nodes, totalDemand, totalProduction, totalLoadShedding, flow_data, OUTPUT_PATH, VERSION, START)
+zone_energyBalance = getEnergyBalanceZoneLevel(all_nodes, totalDemand, totalProduction, totalLoadShedding, flow_data, OUTPUT_PATH, VERSION, START)

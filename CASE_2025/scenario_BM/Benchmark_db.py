@@ -178,7 +178,6 @@ time_SF = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
 plot_SF_Zones_FromDB(data, database, time_SF, OUTPUT_PATH_PLOTS, DATE_START, plot_config)
 
 
-
 # %% Plot nodal prices Norway in a zone
 
 #Todo: Denne fungerer ikke:"plot_by_year": True,  # Each year in individual plot or all years collected in one plot
@@ -189,7 +188,7 @@ END = {"year": 1993, "month": 1, "day": 1, "hour": 0}
 
 # === PLOT CONFIGURATIONS ===
 plot_config = {
-    'zone': 'NO3',                          # When plotting multiple years in one year, recommend to only use one zone
+    'zone': 'NO2',                          # When plotting multiple years in one year, recommend to only use one zone
     'plot_all_nodes': True,                 # (True) Plot all nodes in a zone or (False) avg of all nodes
     "plot_by_year": False,                  # (True) Each year in individual plot or all years collected in one plot
     "duration_curve": False,                # (True) Plot duration curve, or (False) Plot storage filling over time PRICE OVER TIME?
@@ -198,6 +197,7 @@ plot_config = {
     "tex_font": False
 
 }
+
 
 # === COMPUTE TIMERANGE AND PLOT PRICE ===
 time_NP = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
@@ -219,6 +219,7 @@ plot_config = {
     "interval": 1,                          # Number of months on x-axis. 1 = Step is one month, 12 = Step is 12 months
     "tex_font": False                       # Keep false
 }
+
 
 # === COMPUTE TIMERANGE AND PLOT PRICE ===
 time_ZP = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)

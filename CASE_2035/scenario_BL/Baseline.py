@@ -6,7 +6,7 @@ SCENARIO = 'BL'
 VERSION = 'v25'
 
 SIM_YEAR_START = 1991
-SIM_YEAR_END = 2020
+SIM_YEAR_END = 1991
 DATE_START = pd.Timestamp(f'{SIM_YEAR_START}-01-01 00:00:00', tz='UTC')
 DATE_END = pd.Timestamp(f'{SIM_YEAR_END}-12-31 23:00:00', tz='UTC')
 
@@ -33,4 +33,4 @@ OUTPUT_PATH_PLOTS = BASE_DIR / 'results' / 'plots'
 
 # %%  === Configure Grid and Run Simulation ===
 data, time_max_min = setup_grid(VERSION, DATE_START, DATE_END, DATA_PATH, SCENARIO)
-res = solve_lp(data, SQL_FILE, loss_method, replace=True, solver='glpk')
+res = solve_lp(data, SQL_FILE, loss_method, replace=True, solver='gurobi')

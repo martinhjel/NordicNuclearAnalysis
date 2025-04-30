@@ -42,12 +42,6 @@ data, time_max_min = setup_grid(VERSION, DATE_START, DATE_END, DATA_PATH, SCENAR
 database = Database(SQL_FILE)
 
 
-
-
-# %%
-
-
-
 # %% === ZONAL PRICE MAP ===
 
 # TODO: legg til mulighet for å ha øre/kwh
@@ -193,8 +187,8 @@ Input:
   or the string "ALL" to include all nodes in the system.
 '''
 # === INITIALIZATIONS ===
-START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1991, "month": 12, "day": 31, "hour": 23}
+START = {"year": 1993, "month": 1, "day": 1, "hour": 0}
+END = {"year": 1993, "month": 12, "day": 31, "hour": 23}
 SELECTED_NODES = "ALL"
 # SELECTED_NODES = ["SE4_1", "SE4_2", "SE3_1", "SE2_1", "SE2_2"]
 # ======================================================================================================================
@@ -256,7 +250,7 @@ def plotInflowInArea(data: GridData, area, date_start, date_end):
     matplotlib.rcParams['axes.formatter.use_mathtext'] = True  # Fix cmr10 warning
     matplotlib.rcParams['axes.unicode_minus'] = False  # Fix minus sign rendering
     fig, ax = plt.subplots(figsize=(10, 5))
-    ax.plot(inflow.index, inflow.values, label='Inflow', color='blue', linewidth=0.5)
+    ax.plot(inflow.index, inflow.values, label='Inflow', color='blue')
     plt.title('Inflow over Time (NO)')
     plt.xlabel('hours')
     plt.ylabel('Inflow (MWh/h)')
@@ -268,7 +262,7 @@ def plotInflowInArea(data: GridData, area, date_start, date_end):
 
 # === INITIALIZATIONS ===
 START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
+END = {"year": 1993, "month": 12, "day": 31, "hour": 23}
 time_EB = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
 area = 'NO'
 inflow = plotInflowInArea(data, area, START, END)
@@ -301,7 +295,7 @@ plotZonePriceMatrix(price_matrix, save_fig=True, OUTPUT_PATH_PLOTS=OUTPUT_PATH_P
 # %% Check Total Consumption for a given period.
 # Demand Response
 # === INITIALIZATIONS ===
-START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
+START = {"year": 2020, "month": 1, "day": 1, "hour": 0}
 END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
 area = 'NO'
 
@@ -330,24 +324,24 @@ END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
 
 # === PLOT CONFIGURATIONS ===
 plot_config = {
-    'areas': ['FI'],            # When plotting multiple years in one year, recommend to only use one area
+    'areas': ['NO'],            # When plotting multiple years in one year, recommend to only use one area
     'relative': True,           # Relative storage filling, True gives percentage
     "plot_by_year": True,       # True: One curve for each year in same plot, or False:all years collected in one plot over the whole simulation period
     "duration_curve": False,    # True: Plot duration curve, or False: Plot storage filling over time
     "save_fig": False,          # True: Save plot as pdf
-    "interval": 1,              # Number of months on x-axis. 1 = Step is one month, 12 = Step is 12 months
-    "empty_threshold": 1e-6     # If relative (True), then empty threshold is in percentage. If relative (False), then empty threshold is in MWh.
+    "interval": 1,               # Number of months on x-axis. 1 = Step is one month, 12 = Step is 12 months
 }
 
 # === COMPUTE TIMERANGE AND PLOT FLOW ===
 time_SF = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
 plot_SF_Areas_FromDB(data, database, time_SF, OUTPUT_PATH_PLOTS, DATE_START, plot_config)
 
-
 # %% PLOT STORAGE FILLING ZONES
 # Todo: Trengs det fortsatt litt jobb med scaleringen av selve plottet, men det er ikke krise enda.
 # Todo: Må OGSÅ ha mulighet til å plotte storage filling ned på node nivå.
 
+
+# TODO: ENDRE FARGE NYANSEN TIL Å JUSTERE FARGEN LITT FOR HVERT ÅR SOM GÅR, EKS LYSERE OG LYSERE
 # === INITIALIZATIONS ===
 START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
 END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
@@ -359,10 +353,11 @@ plot_config = {
     "plot_by_year": 3,                           # (1) Each year in individual plot, (2) Entire Timeline, (3) Each year show over 1 year timeline.
     "duration_curve": False,                     # True: Plot duration curve, or False: Plot storage filling over time
     "save_fig": False,                           # True: Save plot as pdf
-    "interval": 1,                                # Number of months on x-axis. 1 = Step is one month, 12 = Step is 12 months
-    "empty_threshold": 1e-6                         # If relative (True), then empty threshold is in percentage. If relative (False), then empty threshold is in MWh.
+    "interval": 1                                # Number of months on x-axis. 1 = Step is one month, 12 = Step is 12 months
 }
 
+# If you want to go in and change title, follow the function from here to its source location and change it there.
+# Remember that you then have to reset the console run
 # === COMPUTE TIMERANGE AND PLOT FLOW ===
 time_SF = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
 plot_SF_Zones_FromDB(data, database, time_SF, OUTPUT_PATH_PLOTS, DATE_START, plot_config)
@@ -408,12 +403,12 @@ plot_Flow_fromDB(data, database, DATE_START, time_Lines, OUTPUT_PATH_PLOTS, plot
 # %% PLOT ZONAL PRICES
 
 # === INITIALIZATIONS ===
-START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
+START = {"year": 1994, "month": 1, "day": 1, "hour": 0}
 END = {"year": 1994, "month": 12, "day": 31, "hour": 23}
 
 # === PLOT CONFIGURATIONS ===
 plot_config = {
-    'zones': ['NO3'],                       # Zones for plotting
+    'zones': ['NO2'],                       # Zones for plotting
     "plot_by_year": True,                   # (True)Each year in individual plot or (False) all years collected in one plot
     "duration_curve": False,                # True: Plot duration curve, or False: Plot storage filling over time
     "save_fig": False,                      # True: Save plot as pdf

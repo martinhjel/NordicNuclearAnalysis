@@ -145,8 +145,9 @@ plot_config = {
     'relative': True,           # Relative storage filling, True gives percentage
     "plot_by_year": True,       # True: One curve for each year in same plot, or False:all years collected in one plot over the whole simulation period
     "duration_curve": False,    # True: Plot duration curve, or False: Plot storage filling over time
-    "save_fig": True,          # True: Save plot as pdf
-    "interval": 1               # Number of months on x-axis. 1 = Step is one month, 12 = Step is 12 months
+    "save_fig": False,          # True: Save plot as pdf
+    "interval": 1,              # Number of months on x-axis. 1 = Step is one month, 12 = Step is 12 months
+    "empty_threshold": 1e-6     # If relative (True), then empty threshold is in percentage. If relative (False), then empty threshold is in MWh.
 }
 
 # === COMPUTE TIMERANGE AND PLOT FLOW ===
@@ -158,7 +159,7 @@ plot_SF_Areas_FromDB(data, database, time_SF, OUTPUT_PATH_PLOTS, DATE_START, plo
 # Todo: Må OGSÅ ha mulighet til å plotte storage filling ned på node nivå.
 
 # === INITIALIZATIONS ===
-START = {"year": 2018, "month": 1, "day": 1, "hour": 0}
+START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
 END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
 
 # === PLOT CONFIGURATIONS ===
@@ -168,11 +169,10 @@ plot_config = {
     "plot_by_year": 3,                           # (1) Each year in individual plot, (2) Entire Timeline, (3) Each year show over 1 year timeline.
     "duration_curve": False,                     # True: Plot duration curve, or False: Plot storage filling over time
     "save_fig": False,                           # True: Save plot as pdf
-    "interval": 1                                # Number of months on x-axis. 1 = Step is one month, 12 = Step is 12 months
+    "interval": 1,                                # Number of months on x-axis. 1 = Step is one month, 12 = Step is 12 months
+    "empty_threshold": 1e-6                         # If relative (True), then empty threshold is in percentage. If relative (False), then empty threshold is in MWh.
 }
 
-# If you want to go in and change title, follow the function from here to its source location and change it there.
-# Remember that you then have to reset the console run
 # === COMPUTE TIMERANGE AND PLOT FLOW ===
 time_SF = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
 plot_SF_Zones_FromDB(data, database, time_SF, OUTPUT_PATH_PLOTS, DATE_START, plot_config)
@@ -198,7 +198,8 @@ plot_config = {
 
 }
 
-# === COMPUTE TIMERANGE AND PLOT FLOW ===
+
+# === COMPUTE TIMERANGE AND PLOT PRICE ===
 time_NP = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
 calcPlot_NP_FromDB(data, database, time_NP, OUTPUT_PATH_PLOTS, DATE_START, plot_config)
 
@@ -219,7 +220,8 @@ plot_config = {
     "tex_font": False                       # Keep false
 }
 
-# === COMPUTE TIMERANGE AND PLOT FLOW ===
+
+# === COMPUTE TIMERANGE AND PLOT PRICE ===
 time_ZP = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
 calcPlot_ZonalPrices_FromDB(data, database, time_ZP, OUTPUT_PATH_PLOTS, DATE_START, plot_config)
 
@@ -353,7 +355,7 @@ Overview:
 """
 
 # === INITIALIZATIONS ===
-country = "FI"  # Country code
+country = "NO"  # Country code
 
 n_ideal_years = 30
 n_timesteps = int(8766.4 * n_ideal_years) # Ved full 30-års simuleringsperiode
@@ -460,10 +462,8 @@ Main Features:
 # === INITIALIZATIONS ===
 START = {"year": 2020, "month": 1, "day": 1, "hour": 0}
 END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
-Nodes = ["NO1_1", "NO2_1", "NO3_1", "NO4_1", "NO5_1"]  # Nuclear nodes: ["SE3_3", "SE3_6", "FI_10", "FI_12", "GB", "NL"]
-
-
-SELECTED_BRANCHES  = None
+Nodes = ["DK1_2", "DK1_3", "DK2_2"]
+SELECTED_BRANCHES  = [['NO2_1','GB']]
 # ======================================================================================================================
 
 start_hour, end_hour = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)

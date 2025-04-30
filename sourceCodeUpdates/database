@@ -1063,6 +1063,7 @@ class Database(DatabaseBaseClass):
             values = [row[1] for row in rows]
         return values
 
+
     def getResultBranchLossesSum(self, timeMaxMin, acdc="ac"):
         """Sum of losses for each time-step time step"""
         sqlTable = "Res_Branches"
@@ -1108,9 +1109,6 @@ class Database(DatabaseBaseClass):
                     GROUP BY indx,timestep"""  # nosec B608 - is safe even if bandit says no
                 df = pd.read_sql_query(query, con, params=(timeMaxMin[0], timeMaxMin[-1]) + tuple(br_indx))
         return df
-
-
-
 
 
 
@@ -1188,3 +1186,36 @@ class Database(DatabaseBaseClass):
         return prices_by_node
 
 
+    # Ny funksjon for å hente storagefilling for generatorer - Aleks
+    def getStorageFillingForGenerators(self, genidx, timeMaxMin):
+        """
+        Query the database for aggregated storage filling for specified generators.
+
+        Parameters
+        ----------
+        db_filename : str
+            Path to the database file.
+        genidx : list
+            List of generator indices to query.
+        timeMaxMin : list
+            [min, max] - lower and upper time interval.
+
+        Returns
+        -------
+        list
+            List of tuples (timestep, total_storage) sorted by timestep.
+        """
+        con = db.connect(self.filename)
+        with con:
+            str_bind = ",".join("?" for _ in genidx)
+            cur = con.cursor()
+            cur.execute(
+                f"""SELECT timestep, SUM(storage) as total_storage
+                    FROM Res_Storage
+                    WHERE timestep>=? AND timestep<? AND indx IN ({str_bind})
+                    GROUP BY timestep
+                    ORDER BY timestep""",
+                (timeMaxMin[0], timeMaxMin[-1]) + tuple(genidx),
+            )
+            rows = cur.fetchall()
+            return rows

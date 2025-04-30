@@ -1135,7 +1135,7 @@ def get_hour_range(YEAR_START, YEAR_END, TIMEZONE, start, end):
 
     # Beregn timeindeks
     start_hour_index = int((start_datetime - start_time).total_seconds() / 3600)
-    end_hour_index = int((end_datetime - start_time).total_seconds() / 3600)
+    end_hour_index = int((end_datetime - start_time).total_seconds() / 3600) + 1
 
     print(f"Start hour index: {start_hour_index}")
     print(f"End hour index: {end_hour_index}")

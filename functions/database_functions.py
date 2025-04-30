@@ -196,85 +196,203 @@ def getAreaPricesAverageFromDB(data: GridData, db: Database, areas=None, timeMax
     return avg_area_price
 
 
-def getStorageFillingInAreasFromDB(data: GridData, db: Database, areas, generator_type, relative_storage, timeMaxMin):
+# def getStorageFillingInAreasFromDB(data: GridData, db: Database, areas, generator_type, relative_storage, timeMaxMin):
+#     """
+#     Get the storage filling in areas from the database.
+#
+#     Parameters
+#     ----------
+#     data : dict
+#         The data dictionary.
+#     db : Database
+#         The database object.
+#     areas : list
+#         List of areas.
+#     generator_type : str
+#         The generator type.
+#     relative_storage : bool
+#         If True, the relative storage is returned.
+#     timeMaxMin : list (default = None)
+#         [min, max] - lower and upper time interval
+#
+#     Returns
+#     -------
+#     filling : dict
+#         The storage filling.
+#     """
+#     storageGen = data.getIdxGeneratorsWithStorage()
+#     storageTypes = data.generator.type
+#     nodeNames = data.generator.node
+#     nodeAreas = data.node.area
+#     storCapacities = data.generator.storage_cap
+#     generators = []
+#     capacity = 0
+#     for gen in storageGen:
+#         area = nodeAreas[data.node.id.tolist().index(nodeNames[gen])]
+#         if area in areas and storageTypes[gen] == generator_type:
+#             generators.append(gen)
+#             if relative_storage:
+#                 capacity += storCapacities[gen]
+#     filling = db.getResultStorageFillingMultiple(generators, timeMaxMin, capacity)
+#     return filling
+
+
+
+def getStorageFillingInAreaFromDB(data: GridData, db: Database, areas, generator_type, relative_storage, timeMaxMin):
     """
-    Get the storage filling in areas from the database.
+    Get the storage filling in single area from the database using a single query.
 
     Parameters
     ----------
-    data : dict
-        The data dictionary.
+    data : GridData
+        The data object containing generator and node information.
     db : Database
         The database object.
     areas : list
         List of areas.
-    generator_type : str
+    generator_type : list
         The generator type.
     relative_storage : bool
         If True, the relative storage is returned.
-    timeMaxMin : list (default = None)
+    timeMaxMin : list
         [min, max] - lower and upper time interval
 
     Returns
     -------
     filling : dict
-        The storage filling.
+        The storage filling, aggregated by timestep.
     """
+    # Get storage generators and their properties
     storageGen = data.getIdxGeneratorsWithStorage()
     storageTypes = data.generator.type
     nodeNames = data.generator.node
     nodeAreas = data.node.area
     storCapacities = data.generator.storage_cap
+
+    # Filter generators by area and type
     generators = []
-    capacity = 0
+    total_capacity = 0
     for gen in storageGen:
         area = nodeAreas[data.node.id.tolist().index(nodeNames[gen])]
-        if area in areas and storageTypes[gen] == generator_type:
+        if area in areas and storageTypes[gen] in generator_type:
             generators.append(gen)
             if relative_storage:
-                capacity += storCapacities[gen]
-        filling = db.getResultStorageFillingMultiple(generators, timeMaxMin, capacity)
+                total_capacity += storCapacities[gen]
+
+    if not generators:
+        return {}  # Return empty dict if no generators match
+
+    # Perform a single database query
+    rows = db.getStorageFillingForGenerators(generators, timeMaxMin)
+
+    # Process results
+    filling = {}
+    for row in rows:
+        timestep, storage = row
+        value = storage / total_capacity if relative_storage and total_capacity > 0 else storage
+        filling[timestep] = value
+
     return filling
 
 
-def getStorageFillingInZonesFromDB(data: GridData, db: Database, zones, generator_type, relative_storage, timeMaxMin):
+
+
+
+# def getStorageFillingInZonesFromDB(data: GridData, db: Database, zones, generator_type, relative_storage, timeMaxMin):
+#     """
+#     Get the storage filling in areas from the database.
+#
+#     Parameters
+#     ----------
+#     data : dict
+#         The data dictionary.
+#     db : Database
+#         The database object.
+#     zones : list
+#         List of zones.
+#     generator_type : str
+#         The generator type.
+#     relative_storage : bool
+#         If True, the relative storage is returned.
+#     timeMaxMin : list (default = None)
+#         [min, max] - lower and upper time interval
+#
+#     Returns
+#     -------
+#     filling : dict
+#         The storage filling.
+#     """
+#     storageGen = data.getIdxGeneratorsWithStorage()
+#     storageTypes = data.generator.type
+#     nodeNames = data.generator.node
+#     nodeZones = data.node.zone
+#     storCapacities = data.generator.storage_cap
+#     generators = []
+#     capacity = 0
+#     for gen in storageGen:
+#         zone = nodeZones[data.node.id.tolist().index(nodeNames[gen])]
+#         if zone in zones and storageTypes[gen] == generator_type:
+#             generators.append(gen)
+#             if relative_storage:
+#                 capacity += storCapacities[gen]
+#         filling = db.getResultStorageFillingMultiple(generators, timeMaxMin, capacity)
+#     return filling
+
+
+def getStorageFillingInZoneFromDB(data: GridData, db: Database, zones, generator_type, relative_storage, timeMaxMin):
     """
-    Get the storage filling in areas from the database.
+    Get the storage filling in single area from the database using a single query.
 
     Parameters
     ----------
-    data : dict
-        The data dictionary.
+    data : GridData
+        The data object containing generator and node information.
     db : Database
         The database object.
-    zones : list
-        List of zones.
-    generator_type : str
+    areas : list
+        List of areas.
+    generator_type : list
         The generator type.
     relative_storage : bool
         If True, the relative storage is returned.
-    timeMaxMin : list (default = None)
+    timeMaxMin : list
         [min, max] - lower and upper time interval
 
     Returns
     -------
     filling : dict
-        The storage filling.
+        The storage filling, aggregated by timestep.
     """
+    # Get storage generators and their properties
     storageGen = data.getIdxGeneratorsWithStorage()
     storageTypes = data.generator.type
     nodeNames = data.generator.node
     nodeZones = data.node.zone
     storCapacities = data.generator.storage_cap
+
+    # Filter generators by area and type
     generators = []
-    capacity = 0
+    total_capacity = 0
     for gen in storageGen:
         zone = nodeZones[data.node.id.tolist().index(nodeNames[gen])]
-        if zone in zones and storageTypes[gen] == generator_type:
+        if zone in zones and storageTypes[gen] in generator_type:
             generators.append(gen)
             if relative_storage:
-                capacity += storCapacities[gen]
-        filling = db.getResultStorageFillingMultiple(generators, timeMaxMin, capacity)
+                total_capacity += storCapacities[gen]
+
+    if not generators:
+        return {}  # Return empty dict if no generators match
+
+    # Perform a single database query
+    rows = db.getStorageFillingForGenerators(generators, timeMaxMin)
+
+    # Process results
+    filling = {}
+    for row in rows:
+        timestep, storage = row
+        value = storage / total_capacity if relative_storage and total_capacity > 0 else storage
+        filling[timestep] = value
+
     return filling
 
 

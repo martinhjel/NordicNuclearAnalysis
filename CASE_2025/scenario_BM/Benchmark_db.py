@@ -178,51 +178,50 @@ time_SF = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
 plot_SF_Zones_FromDB(data, database, time_SF, OUTPUT_PATH_PLOTS, DATE_START, plot_config)
 
 
-# %% PLOT STORAGE FILLING FOR AREAS
+# %% Plot nodal prices Norway in a zone
+
+#Todo: Denne fungerer ikke:"plot_by_year": True,  # Each year in individual plot or all years collected in one plot
 
 # === INITIALIZATIONS ===
-START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
+START = {"year": 1992, "month": 1, "day": 1, "hour": 0}
+END = {"year": 1993, "month": 1, "day": 1, "hour": 0}
 
 # === PLOT CONFIGURATIONS ===
 plot_config = {
-    'areas': ['NO'],            # When plotting multiple years in one year, recommend to only use one area
-    'relative': True,           # Relative storage filling, True gives percentage
-    "plot_by_year": True,       # True: One curve for each year in same plot, or False:all years collected in one plot over the whole simulation period
-    "duration_curve": False,    # True: Plot duration curve, or False: Plot storage filling over time
-    "save_fig": False,          # True: Save plot as pdf
-    "interval": 1,              # Number of months on x-axis. 1 = Step is one month, 12 = Step is 12 months
-    "empty_threshold": 1e-6     # If relative (True), then empty threshold is in percentage. If relative (False), then empty threshold is in MWh.
+    'zone': 'NO2',                          # When plotting multiple years in one year, recommend to only use one zone
+    'plot_all_nodes': True,                 # (True) Plot all nodes in a zone or (False) avg of all nodes
+    "plot_by_year": False,                  # (True) Each year in individual plot or all years collected in one plot
+    "duration_curve": False,                # (True) Plot duration curve, or (False) Plot storage filling over time PRICE OVER TIME?
+    "save_fig": False,                      # True: Save plot as pdf
+    "interval": 1,                          # Number of months on x-axis. 1 = Step is one month, 12 = Step is 12 months
+    "tex_font": False
+
 }
 
 # === COMPUTE TIMERANGE AND PLOT FLOW ===
-time_SF = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
-plot_SF_Areas_FromDB(data, database, time_SF, OUTPUT_PATH_PLOTS, DATE_START, plot_config)
+time_NP = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
+calcPlot_NP_FromDB(data, database, time_NP, OUTPUT_PATH_PLOTS, DATE_START, plot_config)
 
 
-# %% PLOT STORAGE FILLING ZONES
-# Todo: Trengs det fortsatt litt jobb med scaleringen av selve plottet, men det er ikke krise enda.
-# Todo: Må OGSÅ ha mulighet til å plotte storage filling ned på node nivå.
+# %% PLOT ZONAL PRICES
 
 # === INITIALIZATIONS ===
-START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
+START = {"year": 1992, "month": 1, "day": 1, "hour": 0}
+END = {"year": 1993, "month": 1, "day": 1, "hour": 0}
 
 # === PLOT CONFIGURATIONS ===
 plot_config = {
-    'zones': ['NO3'],                     # When plotting multiple years in one year, recommend to only use one zone
-    'relative': True,                            # Relative storage filling, True gives percentage
-    "plot_by_year": 3,                           # (1) Each year in individual plot, (2) Entire Timeline, (3) Each year show over 1 year timeline.
-    "duration_curve": False,                     # True: Plot duration curve, or False: Plot storage filling over time
-    "save_fig": False,                           # True: Save plot as pdf
-    "interval": 1,                                # Number of months on x-axis. 1 = Step is one month, 12 = Step is 12 months
-    "empty_threshold": 1e-6                         # If relative (True), then empty threshold is in percentage. If relative (False), then empty threshold is in MWh.
+    'zones': ['NO5'],                       # Zones for plotting
+    "plot_by_year": True,                   # (True)Each year in individual plot or (False) all years collected in one plot
+    "duration_curve": False,                # True: Plot duration curve, or False: Plot storage filling over time
+    "save_fig": False,                      # True: Save plot as pdf
+    "interval": 1,                          # Number of months on x-axis. 1 = Step is one month, 12 = Step is 12 months
+    "tex_font": False                       # Keep false
 }
 
 # === COMPUTE TIMERANGE AND PLOT FLOW ===
-time_SF = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
-plot_SF_Zones_FromDB(data, database, time_SF, OUTPUT_PATH_PLOTS, DATE_START, plot_config)
-
+time_ZP = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
+calcPlot_ZonalPrices_FromDB(data, database, time_ZP, OUTPUT_PATH_PLOTS, DATE_START, plot_config)
 
 
 
@@ -318,6 +317,7 @@ if area is not None:
     zones_in_area_prod = getProductionZonesInArea(data, database, area, time_Prod, correct_date_start_Prod, week=True)
 if zone is not None:
     nodes_in_zone_prod = getProductionNodesInZone(data, database, zone, time_Prod, correct_date_start_Prod, week=True)
+
 
 # === EINAR ===
 # %% National-level electricity production and consumption

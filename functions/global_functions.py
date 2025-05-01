@@ -16,6 +16,7 @@ import matplotlib.dates as mdates
 import powergama.scenarios as pgs
 from IPython.display import display
 import branca.colormap as cm
+from openpyxl.utils.datetime import days_to_time
 from powergama.GIS import _pointBetween
 from powergama.database import Database  # Import Database-Class specifically
 from powergama.GridData import GridData  # Import GridData-Class specifically
@@ -199,9 +200,8 @@ def createZonePriceMatrix(data, database, zones, year_range, TIMEZONE, SIM_YEAR_
         START = {"year": year_range[0], "month": 1, "day": 1, "hour": 0}
         END = {"year": year_range[-1], "month": 12, "day": 31, "hour": 23}
         start_datetime = datetime(START["year"], START["month"], START["day"], START["hour"], 0, tzinfo=TIMEZONE)
-        end_datetime = datetime(END["year"], END["month"], END["day"], END["hour"], 0, tzinfo=TIMEZONE)
         time_range = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
-        date_index = pd.date_range(start=start_datetime, end=end_datetime, freq='h', inclusive='left')
+        date_index = pd.date_range(start=start_datetime, periods=time_range[-1], freq='h', inclusive='left')
     except Exception as e:
         log_messages.append(f"❌ Failed to generate time range for {year_range[0]}-{year_range[-1]}: {e}")
         print(f"❌ Failed to generate time range for {year_range[0]}-{year_range[-1]}: {e}")
@@ -1135,7 +1135,7 @@ def get_hour_range(YEAR_START, YEAR_END, TIMEZONE, start, end):
 
     # Beregn timeindeks
     start_hour_index = int((start_datetime - start_time).total_seconds() / 3600)
-    end_hour_index = int((end_datetime - start_time).total_seconds() / 3600) +1
+    end_hour_index = int((end_datetime - start_time).total_seconds() / 3600) + 1
 
     print(f"Start hour index: {start_hour_index}")
     print(f"End hour index: {end_hour_index}")
@@ -1169,7 +1169,7 @@ def GetProductionAtSpecificNodes(Nodes, data: GridData, database: Database, star
     print(f'🔄 Samler produksjon fra {len(Nodes)} noder...')
 
     # === 1. Lag mappings og samle alle generatorer ===
-    node_idx = [int(data.node[data.node['id'] == node].index[0]) for node in Nodes]
+    node_idx = data.node[data.node['id'].isin(Nodes)].index.tolist()
     gen_idx = [[gen for gen in data.getGeneratorsAtNode(idx)] for idx in node_idx]
     gen_type = [[data.generator.loc[gen, "type"] for gen in gens] for gens in gen_idx]
 
@@ -1424,7 +1424,7 @@ def GetConsumptionAtSpecificNodes(Nodes, data: GridData, database: Database, sta
     print(f'Collecting Consumption at Nodes {", ".join(Nodes)}')
 
     # === FINN INDEKSENE FOR NODENE ===
-    node_idx = [int(data.node[data.node['id'] == node].index[0]) for node in Nodes]
+    node_idx = data.node[data.node['id'].isin(Nodes)].index.tolist()
 
     # === HENT FORBRUKSDATA FOR HVER NODE ===
     consumption_per_node = {node: {} for node in Nodes}

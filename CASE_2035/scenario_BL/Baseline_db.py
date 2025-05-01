@@ -8,10 +8,10 @@ import pandas as pd
 
 # === General Configurations ===
 SIM_YEAR_START = 1991           # Start year for the main simulation  (SQL-file)
-SIM_YEAR_END = 2020             # End year for the main simulation  (SQL-file)
+SIM_YEAR_END = 1991             # End year for the main simulation  (SQL-file)
 CASE_YEAR = 2035
 SCENARIO = 'BL'
-VERSION = 'v25'
+VERSION = 'v27'
 TIMEZONE = ZoneInfo("UTC")  # Definerer UTC tidssone
 
 ####  PASS PÅ HARD KODING I SQL FIL
@@ -121,28 +121,33 @@ plotZonePriceMatrix(price_matrix, save_fig=True, OUTPUT_PATH_PLOTS=OUTPUT_PATH_P
 
 energyBalance = {}
 
-# for i in range(0, 30):
-#     year = 1991 + i
-#     print(year)
+for i in range(0, 30):
+    year = 1991 + i
+    print(year)
 
-START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1991, "month": 12, "day": 31, "hour": 23}
-time_EB = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
-all_nodes = data.node.id
+    START = {"year": year, "month": 1, "day": 1, "hour": 0}
+    END = {"year": year, "month": 12, "day": 31, "hour": 23}
+    time_EB = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
+    all_nodes = data.node.id
 
-flow_data = getFlowDataOnALLBranches(data, database, time_EB)       # TAR LANG TID
-totalDemand = getDemandForAllNodesFromDB(data, database, time_EB)
-totalProduction = getProductionForAllNodesFromDB(data, database, time_EB)   # TAR LANG TID
-totalLoadShedding = database.getResultLoadheddingSum(timeMaxMin=time_EB)
+    totalProduction = getProductionForAllNodesFromDBTest(data, database, time_EB)
+    flow_data = getFlowDataOnALLBranchesTest(data, database, time_EB)
 
-# Calculate energy balance at node and zone levels
-node_energyBalance = getEnergyBalanceNodeLevel(all_nodes, totalDemand, totalProduction, totalLoadShedding, flow_data, OUTPUT_PATH, VERSION, START)
-zone_energyBalance = getEnergyBalanceZoneLevel(all_nodes, totalDemand, totalProduction, totalLoadShedding, flow_data, OUTPUT_PATH, VERSION, START)
-# Store energy balance results in the dictionary
-# energyBalance[2020] = {
-#     "node_level": node_energyBalance,
-#     "zone_level": zone_energyBalance
-# }
+
+
+    #flow_data = getFlowDataOnALLBranches(data, database, time_EB)       # TAR LANG TID
+    totalDemand = getDemandForAllNodesFromDB(data, database, time_EB)
+    #totalProduction = getProductionForAllNodesFromDB(data, database, time_EB)   # TAR LANG TID
+    totalLoadShedding = database.getResultLoadheddingSum(timeMaxMin=time_EB)
+
+    # Calculate energy balance at node and zone levels
+    node_energyBalance = getEnergyBalanceNodeLevel(all_nodes, totalDemand, totalProduction, totalLoadShedding, flow_data, OUTPUT_PATH, VERSION, START)
+    zone_energyBalance = getEnergyBalanceZoneLevel(all_nodes, totalDemand, totalProduction, totalLoadShedding, flow_data, OUTPUT_PATH, VERSION, START)
+    # Store energy balance results in the dictionary
+    energyBalance[year] = {
+        "node_level": node_energyBalance,
+        "zone_level": zone_energyBalance
+    }
 
 # df_importexport = getImportExportFromDB(data, database, timeMaxMin=time_EB) # Import/Export data for all AREAS
 
@@ -282,8 +287,6 @@ nordic_grid_map_fromDB(data, database, time_range = get_hour_range(SIM_YEAR_STAR
 # TODO: legg til mulighet for å ha øre/kwh
 zones = ['NO1', 'NO2', 'NO3', 'NO4', 'NO5', 'SE1', 'SE2', 'SE3', 'SE4',
          'DK1', 'DK2', 'FI', 'DE', 'GB', 'NL', 'LT', 'PL', 'EE']
-START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1991, "month": 12, "day": 31, "hour": 23}
 year_range = list(range(SIM_YEAR_START, SIM_YEAR_END + 1))
 price_matrix, log = createZonePriceMatrix(data, database, zones, year_range, TIMEZONE, SIM_YEAR_START, SIM_YEAR_END)
 
@@ -328,8 +331,13 @@ plot_config = {
     'relative': True,           # Relative storage filling, True gives percentage
     "plot_by_year": True,       # True: One curve for each year in same plot, or False:all years collected in one plot over the whole simulation period
     "duration_curve": False,    # True: Plot duration curve, or False: Plot storage filling over time
-    "save_fig": False,          # True: Save plot as pdf
-    "interval": 1,               # Number of months on x-axis. 1 = Step is one month, 12 = Step is 12 months
+    "save_fig": False,           # True: Save plot as pdf
+    "interval": 1,              # Number of months on x-axis. 1 = Step is one month, 12 = Step is 12 months
+    'empty_threshold': 1e-6,    # If relative (True), empty_threshold is in percentage, if not, it is in MWh
+    'include_legend': False,     # Include legend in the plot
+    'fig_size': (10, 6),        # Figure size in inches
+    'tex_font': True,          # Keep false unless tex packages are installed.
+                                # Kan hende må kjøres et par ganger for å få det til å funke med texfont.
 }
 
 # === COMPUTE TIMERANGE AND PLOT FLOW ===
@@ -340,20 +348,22 @@ plot_SF_Areas_FromDB(data, database, time_SF, OUTPUT_PATH_PLOTS, DATE_START, plo
 # Todo: Trengs det fortsatt litt jobb med scaleringen av selve plottet, men det er ikke krise enda.
 # Todo: Må OGSÅ ha mulighet til å plotte storage filling ned på node nivå.
 
-
-# TODO: ENDRE FARGE NYANSEN TIL Å JUSTERE FARGEN LITT FOR HVERT ÅR SOM GÅR, EKS LYSERE OG LYSERE
 # === INITIALIZATIONS ===
 START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
 END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
 
 # === PLOT CONFIGURATIONS ===
 plot_config = {
-    'zones': ['NO3'],                     # When plotting multiple years in one year, recommend to only use one zone
-    'relative': True,                            # Relative storage filling, True gives percentage
-    "plot_by_year": 3,                           # (1) Each year in individual plot, (2) Entire Timeline, (3) Each year show over 1 year timeline.
-    "duration_curve": False,                     # True: Plot duration curve, or False: Plot storage filling over time
-    "save_fig": False,                           # True: Save plot as pdf
-    "interval": 1                                # Number of months on x-axis. 1 = Step is one month, 12 = Step is 12 months
+    'zones': ['FI'],               # When plotting multiple years in one year, recommend to only use one zone
+    'relative': True,               # Relative storage filling, True gives percentage
+    "plot_by_year": 3,              # (1) Each year in individual plot, (2) Entire Timeline, (3) Each year show over 1 year timeline.
+    "duration_curve": False,        # True: Plot duration curve, or False: Plot storage filling over time
+    "save_fig": False,              # True: Save plot as pdf
+    "interval": 1,                  # Number of months on x-axis. 1 = Step is one month, 12 = Step is 12 months
+    'empty_threshold': 1e-6,        # If relative (True), empty_threshold is in percentage, if not, it is in MWh
+    'include_legend': False,        # Include legend in the plot
+    'fig_size': (10, 6),            # Figure size in inches
+    'tex_font': True,              # Keep false unless tex packages are installed
 }
 
 # If you want to go in and change title, follow the function from here to its source location and change it there.
@@ -468,6 +478,37 @@ if area is not None:
 if zone is not None:
     nodes_in_zone_prod = getProductionNodesInZone(data, database, zone, time_Prod, OUTPUT_PATH, correct_date_start_Prod, week=True)
     energyBalanceNodes = nodes_in_zone_prod.sum(axis=0)
+
+
+
+#%% Excel ###
+"""
+Production, consumption, and price data for specific nodes within a given time period.
+
+Main Features:
+- Handles time using Python's built-in datetime objects.
+- Retrieves simulated production, consumption, and price data from a given SQL file for selected nodes within a specified timeframe.
+- Organizes data and exports it to an Excel file for further analysis.
+"""
+
+# === INITIALIZATIONS ===
+START = {"year": 1991, "month": 3, "day": 1, "hour": 0}
+END = {"year": 1991, "month": 8, "day": 31, "hour": 23}
+Nodes = ["FI_10", "FI_12", "SE3_3", "SE3_6"]
+SELECTED_BRANCHES  = [['SE3_1','FI_10'], ['SE3_3', 'FI_10']]
+# ======================================================================================================================
+
+start_hour, end_hour = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
+production_per_node, gen_idx, gen_type = GetProductionAtSpecificNodes(Nodes, data, database, start_hour, end_hour)
+
+
+consumption_per_node = GetConsumptionAtSpecificNodes(Nodes, data, database, start_hour, end_hour)
+nodal_prices_per_node = GetPriceAtSpecificNodes(Nodes, data, database, start_hour, end_hour)
+reservoir_filling_per_node, storage_cap = GetReservoirFillingAtSpecificNodes(Nodes, data, database, start_hour, end_hour)
+flow_data = getFlowDataOnBranches(data, database, [start_hour, end_hour], SELECTED_BRANCHES)
+excel_filename = ExportToExcel(Nodes, production_per_node, consumption_per_node, nodal_prices_per_node, reservoir_filling_per_node, storage_cap, flow_data, START, END, SCENARIO, VERSION, OUTPUT_PATH)
+
+
 
 
 # %% === PDF HANDLING ===

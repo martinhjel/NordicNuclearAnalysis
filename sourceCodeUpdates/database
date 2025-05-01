@@ -1219,3 +1219,77 @@ class Database(DatabaseBaseClass):
             )
             rows = cur.fetchall()
             return rows
+
+    def getResultBranchFlowAllTest(self, timeMaxMin, branch_indices=None, acdc="ac"):
+        """
+        Get branch flow for specified branches (or all branches) in a single query.
+
+        Parameters
+        ----------
+        timeMaxMin : list
+            [min, max] - lower and upper time interval (inclusive).
+        branch_indices : list, optional
+            List of branch indices to query. If None, fetch all branches.
+        acdc : str
+            Branch type: 'ac' for AC branches, 'dc' for DC branches.
+
+        Returns
+        -------
+        list
+            List of tuples (timestep, index, flow) sorted by timestep and index.
+        """
+        valid_tables = {"ac": "Res_Branches", "dc": "Res_DcBranches"}
+        if acdc not in valid_tables:
+            raise Exception('branch type must be "ac" or "dc"')
+        table = valid_tables[acdc]
+
+        con = db.connect(self.filename)
+        with con:
+            cur = con.cursor()
+            if branch_indices is None:
+                query = f"SELECT timestep, indx, flow FROM {table} WHERE timestep>=? AND timestep<=? ORDER BY timestep, indx"
+                params = (timeMaxMin[0], timeMaxMin[-1] - 1)
+            else:
+                str_bind = ",".join("?" for _ in branch_indices)
+                query = f"SELECT timestep, indx, flow FROM {table} WHERE timestep>=? AND timestep<=? AND indx IN ({str_bind}) ORDER BY timestep, indx"
+                params = (timeMaxMin[0], timeMaxMin[-1] - 1) + tuple(branch_indices)
+            cur.execute(query, params)
+            rows = cur.fetchall()
+        return rows
+
+
+    def getAllGeneratorPowerTest(self, timeMaxMin, generator_indices=None):
+        """
+        Query the database for power output of all specified generators in a single query.
+
+        Parameters
+        ----------
+        timeMaxMin : list
+            [min, max] - lower and upper time interval (inclusive).
+        generator_indices : list, optional
+            List of generator indices to query. If None, fetch all generators.
+
+        Returns
+        -------
+        list
+            List of tuples (timestep, index, output) sorted by timestep and index.
+        """
+        con = db.connect(self.filename)
+        with con:
+            cur = con.cursor()
+            if generator_indices is None:
+                query = """SELECT timestep, indx, output
+                           FROM Res_Generators
+                           WHERE timestep>=? AND timestep<=?
+                           ORDER BY timestep, indx"""
+                params = (timeMaxMin[0], timeMaxMin[-1] - 1)
+            else:
+                str_bind = ",".join("?" for _ in generator_indices)
+                query = f"""SELECT timestep, indx, output
+                            FROM Res_Generators
+                            WHERE timestep>=? AND timestep<=? AND indx IN ({str_bind})
+                            ORDER BY timestep, indx"""
+                params = (timeMaxMin[0], timeMaxMin[-1] - 1) + tuple(generator_indices)
+            cur.execute(query, params)
+            rows = cur.fetchall()
+        return rows

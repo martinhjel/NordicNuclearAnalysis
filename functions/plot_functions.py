@@ -128,8 +128,14 @@ def configure_axes(ax, relative, x_label):
         ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda x, _: f'{x / 1e6:.1f}'))
 
 
+from matplotlib.colors import Normalize
+import matplotlib.cm as cm
+from matplotlib.lines import Line2D
+import subprocess
+
 def plot_storage_filling_area(storfilling, DATE_START, DATE_END, areas, interval, title, OUTPUT_PATH_PLOTS,
-                              relative, plot_by_year, save_plot, duration_curve, plot_type=None, tex_font=False):
+                              relative, plot_by_year, save_plot, duration_curve, tex_font,
+                              legend=True, fig_size=(10, 6), plot_type=None):
     """
     Plots the storage filling levels for specified areas over a given date range.
 
@@ -149,8 +155,37 @@ def plot_storage_filling_area(storfilling, DATE_START, DATE_END, areas, interval
     Raises:
         ValueError: If an area is not found in the storfilling DataFrame columns.
     """
-    fig, ax = plt.subplots(figsize=(10, 6))
+    fig, ax = plt.subplots(figsize=fig_size)
     cmap = plt.get_cmap('Blues')
+    # Define linestyles to differentiate areas
+    linestyles = ['-', '--', ':', '-.'][:len(areas)]  # Cycle through linestyles for areas
+    # Check LaTeX availability if tex_font is True
+    if tex_font:
+        try:
+            subprocess.run(["pdflatex", "--version"], check=True, capture_output=True, text=True)
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            # tex_font = False
+            raise RuntimeError("LaTeX is not installed or not found in the system path. Please install LaTeX to use tex_font=True.")
+
+    if tex_font:
+        plt.rcParams.update({
+            "text.usetex": True,
+            "font.family": "serif",
+            "font.serif": ['cmr10'],
+            "axes.formatter.use_mathtext": True,  # Fix cmr10 warning
+            "axes.unicode_minus": False  # Fix minus sign rendering
+        })
+        print("Configured Matplotlib to use LaTeX with cmr10 font.")
+    else:
+        plt.rcParams.update({
+            "text.usetex": False,
+            "font.family": "serif",
+            "font.serif": ["DejaVu Serif"]
+        })
+        print("Using default serif font (DejaVu Serif).")
+
+
+
     # Plot logic
     if not plot_by_year:
         for area in areas:
@@ -166,70 +201,66 @@ def plot_storage_filling_area(storfilling, DATE_START, DATE_END, areas, interval
         plt.setp(ax.xaxis.get_majorticklabels(), rotation=45)
         ax.set_xlim(pd.to_datetime(DATE_START), pd.to_datetime(DATE_END))
 
-        if relative:
-            ax.set_yticks([0, 20, 40, 60, 80, 100])
-            ax.set_yticklabels(['0%', '20%', '40%', '60%', '80%', '100%'])
-            ax.set_ylim(0, 100)
+        # Add legend for areas
+        if legend:
+            ax.legend(loc='upper left')
 
-        # Add legend and title
-        lines, labels = ax.get_legend_handles_labels()
-        ax.legend(lines, labels, loc='upper left')
 
 
     else:
-        from matplotlib.colors import Normalize
         years = sorted(storfilling['year'].unique())
-        norm = Normalize(vmin=0, vmax=len(years)-1)
+        norm = Normalize(vmin=min(years), vmax=max(years))
 
-        for idx, year in enumerate(years):
-            color = cmap(norm(idx))
-            for area in areas:
-                if area in storfilling.columns:
-                    group = storfilling[storfilling['year'] == year]
-                    # ax.plot(group.index.dayofyear, group[area], label=f"{year}")
-                    if duration_curve:
-                        # Duration curve: sort values in descending order
-                        sorted_values = group[area].sort_values(ascending=False).reset_index(drop=True)
-                        label = f"{year} (Duration Curve)" if not area[-1].isdigit() else f"{area} (Duration Curve)"
-                        ax.plot(sorted_values, label=label, color=color)
-                    else:
-                        ax.plot(group.index.dayofyear, group[area], label=f"{year}", color=color)
+        for idx, area in enumerate(areas):
+            if area not in storfilling.columns:
+                raise ValueError(f"{area} not found in storfilling DataFrame columns")
+            for year in years:
+                group = storfilling[storfilling['year'] == year]
+                color = cmap(norm(year))
+                if duration_curve:
+                    sorted_values = group[area].sort_values(ascending=False).reset_index(drop=True)
+                    ax.plot(sorted_values, label=None, color=color, linestyle=linestyles[idx])
                 else:
-                    raise ValueError(f"{area} not found in storfilling DataFrame columns")
+                    ax.plot(group.index.dayofyear, group[area], label=None, color=color, linestyle=linestyles[idx])
 
         # Configure axes for yearly or duration curve plotting
-        configure_axes(ax, relative, x_label='Date' if not duration_curve else 'Hours')
         if not duration_curve:
             ax.xaxis.set_major_locator(mdates.MonthLocator(interval=1))
             ax.xaxis.set_major_formatter(mdates.DateFormatter('%b'))
             plt.setp(ax.xaxis.get_majorticklabels(), rotation=45)
             ax.set_xlim(0, 364)
 
-        if relative:
-            ax.set_yticks([0, 20, 40, 60, 80, 100])
+        # Add colorbar for years
+        sm = cm.ScalarMappable(cmap=cmap, norm=norm)
+        cbar = plt.colorbar(sm, ax=ax, label='Year')
+        cbar.set_ticks(years)  # Show only the years in the dataset
+        cbar.set_label('Year', fontsize=10)
+
+        # Add legend for areas (based on linestyles)
+        area_legend = [Line2D([0], [0], color='black', linestyle=ls, label=area)
+                       for area, ls in zip(areas, linestyles)]
+        if legend:
+            ax.legend(handles=area_legend, loc='upper left', title='Areas')
+
+    # Configure axes
+    ax.set_xlabel('Date' if not duration_curve else 'Hours')
+    if tex_font:
+        ax.set_ylabel('Storage Filling (\%)' if relative else 'Storage Filling (MWh)')
+    else:
+        ax.set_ylabel('Storage Filling (%)' if relative else 'Storage Filling (MWh)')
+    if relative:
+        ax.set_yticks([0, 20, 40, 60, 80, 100])
+        if tex_font:
+            ax.set_yticklabels(['0\%', '20\%', '40\%', '60\%', '80\%', '100\%'])
+        else:
             ax.set_yticklabels(['0%', '20%', '40%', '60%', '80%', '100%'])
-            ax.set_ylim(0, 100)
-
-        # Add legend and title
-        lines, labels = ax.get_legend_handles_labels()
-        # print("Lines:", lines)
-        # print("Labels:", labels)
-
-        # Place legend below the plot
-        ax.legend(lines, labels,
-                  loc='upper center', bbox_to_anchor=(0.5, -0.15),
-                  ncol=8, frameon=False)  # Adjust ncol as needed to fit all items
-        # plt.subplots_adjust(bottom=0.2)  # Make space for the legend below the plot
+        ax.set_ylim(0, 100)
 
     plt.title(title)
     plt.grid(True)
     plt.tight_layout()
-    plt.subplots_adjust(bottom=0.3)  # Reserve space for legend
-    if tex_font is not False:
-        plt.rcParams.update({
-            "text.usetex": True,
-            "font.family": "serif",
-            "font.serif": ['cmr10']})
+    # plt.subplots_adjust(bottom=0.3)  # Reserve space for legend
+
 
     # Show and/or save the plot
     if save_plot:
@@ -237,7 +268,7 @@ def plot_storage_filling_area(storfilling, DATE_START, DATE_END, areas, interval
             plot_path = f'reservoir_filling_{DATE_START.year}_{DATE_START.month}_{DATE_START.day}_{DATE_START.hour}_to_{DATE_END.year}_{DATE_END.month}_{DATE_END.day}_{DATE_END.hour}_{"_".join(areas)}.pdf'
         else:
             plot_path = f'reservoir_filling_{DATE_START.year}_{DATE_START.month}_{DATE_START.day}_{DATE_START.hour}_to_{DATE_END.year}_{DATE_END.month}_{DATE_END.day}_{DATE_END.hour}_{"_".join(areas)}_type{plot_type}.svg'
-        plt.savefig(OUTPUT_PATH_PLOTS / plot_path)
+        plt.savefig(OUTPUT_PATH_PLOTS / plot_path,  dpi=300, bbox_inches='tight')
         return plot_path
     plt.show()
 

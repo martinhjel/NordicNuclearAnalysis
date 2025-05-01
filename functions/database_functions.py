@@ -196,14 +196,54 @@ def getAreaPricesAverageFromDB(data: GridData, db: Database, areas=None, timeMax
     return avg_area_price
 
 
-def getStorageFillingInAreasFromDB(data: GridData, db: Database, areas, generator_type, relative_storage, timeMaxMin):
+# def getStorageFillingInAreasFromDB(data: GridData, db: Database, areas, generator_type, relative_storage, timeMaxMin):
+#     """
+#     Get the storage filling in areas from the database.
+#
+#     Parameters
+#     ----------
+#     data : dict
+#         The data dictionary.
+#     db : Database
+#         The database object.
+#     areas : list
+#         List of areas.
+#     generator_type : str
+#         The generator type.
+#     relative_storage : bool
+#         If True, the relative storage is returned.
+#     timeMaxMin : list (default = None)
+#         [min, max] - lower and upper time interval
+#
+#     Returns
+#     -------
+#     filling : dict
+#         The storage filling.
+#     """
+#     storageGen = data.getIdxGeneratorsWithStorage()
+#     storageTypes = data.generator.type
+#     nodeNames = data.generator.node
+#     nodeAreas = data.node.area
+#     storCapacities = data.generator.storage_cap
+#     generators = []
+#     capacity = 0
+#     for gen in storageGen:
+#         area = nodeAreas[data.node.id.tolist().index(nodeNames[gen])]
+#         if area in areas and storageTypes[gen] == generator_type:
+#             generators.append(gen)
+#             if relative_storage:
+#                 capacity += storCapacities[gen]
+#         filling = db.getResultStorageFillingMultiple(generators, timeMaxMin, capacity)
+#     return filling
+
+def getStorageFillingInAreaFromDB(data: GridData, db: Database, areas, generator_type, relative_storage, timeMaxMin):
     """
-    Get the storage filling in areas from the database.
+    Get the storage filling in areas from the database using a single query.
 
     Parameters
     ----------
-    data : dict
-        The data dictionary.
+    data : GridData
+        The data object containing generator and node information.
     db : Database
         The database object.
     areas : list
@@ -212,69 +252,141 @@ def getStorageFillingInAreasFromDB(data: GridData, db: Database, areas, generato
         The generator type.
     relative_storage : bool
         If True, the relative storage is returned.
-    timeMaxMin : list (default = None)
-        [min, max] - lower and upper time interval
+    timeMaxMin : list
+        [min, max] - lower and upper time interval.
 
     Returns
     -------
     filling : dict
-        The storage filling.
+        The storage filling, aggregated by timestep.
     """
+    # Get storage generators and their properties
     storageGen = data.getIdxGeneratorsWithStorage()
     storageTypes = data.generator.type
     nodeNames = data.generator.node
     nodeAreas = data.node.area
     storCapacities = data.generator.storage_cap
+
+    # Filter generators by area and type
     generators = []
-    capacity = 0
+    total_capacity = 0
     for gen in storageGen:
         area = nodeAreas[data.node.id.tolist().index(nodeNames[gen])]
-        if area in areas and storageTypes[gen] == generator_type:
+        if area in areas and storageTypes[gen] in generator_type:
             generators.append(gen)
             if relative_storage:
-                capacity += storCapacities[gen]
-        filling = db.getResultStorageFillingMultiple(generators, timeMaxMin, capacity)
+                total_capacity += storCapacities[gen]
+
+    if not generators:
+        return {}  # Return empty dict if no generators match
+
+    # Query the database
+    rows = db.getStorageFillingForGenerators(generators, timeMaxMin)
+
+    # Process results
+    filling = {}
+    for row in rows:
+        timestep, storage = row
+        value = storage / total_capacity if relative_storage and total_capacity > 0 else storage
+        filling[timestep] = value
+
     return filling
 
 
-def getStorageFillingInZonesFromDB(data: GridData, db: Database, zones, generator_type, relative_storage, timeMaxMin):
+# def getStorageFillingInZoneFromDB(data: GridData, db: Database, zones, generator_type, relative_storage, timeMaxMin):
+#     """
+#     Get the storage filling in areas from the database.
+#
+#     Parameters
+#     ----------
+#     data : dict
+#         The data dictionary.
+#     db : Database
+#         The database object.
+#     zones : list
+#         List of zones.
+#     generator_type : str
+#         The generator type.
+#     relative_storage : bool
+#         If True, the relative storage is returned.
+#     timeMaxMin : list (default = None)
+#         [min, max] - lower and upper time interval
+#
+#     Returns
+#     -------
+#     filling : dict
+#         The storage filling.
+#     """
+#     storageGen = data.getIdxGeneratorsWithStorage()
+#     storageTypes = data.generator.type
+#     nodeNames = data.generator.node
+#     nodeZones = data.node.zone
+#     storCapacities = data.generator.storage_cap
+#     generators = []
+#     capacity = 0
+#     for gen in storageGen:
+#         zone = nodeZones[data.node.id.tolist().index(nodeNames[gen])]
+#         if zone in zones and storageTypes[gen] == generator_type:
+#             generators.append(gen)
+#             if relative_storage:
+#                 capacity += storCapacities[gen]
+#         filling = db.getResultStorageFillingMultiple(generators, timeMaxMin, capacity)
+#     return filling
+
+def getStorageFillingInZoneFromDB(data: GridData, db: Database, zones, generator_type, relative_storage, timeMaxMin):
     """
-    Get the storage filling in areas from the database.
+    Get the storage filling in areas from the database using a single query.
 
     Parameters
     ----------
-    data : dict
-        The data dictionary.
+    data : GridData
+        The data object containing generator and node information.
     db : Database
         The database object.
     zones : list
-        List of zones.
+        List of areas.
     generator_type : str
         The generator type.
     relative_storage : bool
         If True, the relative storage is returned.
-    timeMaxMin : list (default = None)
-        [min, max] - lower and upper time interval
+    timeMaxMin : list
+        [min, max] - lower and upper time interval.
 
     Returns
     -------
     filling : dict
-        The storage filling.
+        The storage filling, aggregated by timestep.
     """
+    # Get storage generators and their properties
     storageGen = data.getIdxGeneratorsWithStorage()
     storageTypes = data.generator.type
     nodeNames = data.generator.node
     nodeZones = data.node.zone
     storCapacities = data.generator.storage_cap
+
+    # Filter generators by area and type
     generators = []
-    capacity = 0
+    total_capacity = 0
     for gen in storageGen:
         zone = nodeZones[data.node.id.tolist().index(nodeNames[gen])]
-        if zone in zones and storageTypes[gen] == generator_type:
+        if zone in zones and storageTypes[gen] in generator_type:
             generators.append(gen)
             if relative_storage:
-                capacity += storCapacities[gen]
-        filling = db.getResultStorageFillingMultiple(generators, timeMaxMin, capacity)
+                total_capacity += storCapacities[gen]
+
+    if not generators:
+        return {}  # Return empty dict if no generators match
+
+    # Query the database
+    rows = db.getStorageFillingForGenerators(generators, timeMaxMin)
+
+    # Process results
+    filling = {}
+    for row in rows:
+        timestep, storage = row
+        value = storage / total_capacity if relative_storage and total_capacity > 0 else storage
+        filling[timestep] = value
+
     return filling
 
 
@@ -332,6 +444,63 @@ def getProductionForAllNodesFromDB(data: GridData, database: Database, time_Prod
         series = database.getResultGeneratorPower(gens, time_Prod)
         prod_per_node[node] = sum(series) if series else 0.0
     return prod_per_node
+
+
+def getProductionForAllNodesFromDBTest(data: GridData, database: Database, time_Prod):
+    """
+    Returns total production per node over the given time range using a single query.
+
+    Parameters
+    ----------
+    data : GridData
+        Contains node list & generator-to-node mapping.
+    database : Database
+        Database object with getAllGeneratorPower method.
+    time_Prod : list
+        [min, max] time window for which to fetch generation.
+
+    Returns
+    -------
+    prod_per_node : dict[int, float]
+        Maps each node ID to total produced energy in that window.
+    """
+    # Get generator-to-node mapping
+    gen_to_node = dict(zip(data.generator.index, data.generator['node']))
+    generator_indices = list(data.generator.index)
+
+    # Fetch all generator power in one query
+    print("Fetching power data for all generators...")
+    power_rows = database.getAllGeneratorPowerTest(time_Prod, generator_indices)
+
+    # Initialize production dictionary for all nodes
+    prod_per_node = {node_id: 0.0 for node_id in data.node['id']}
+
+    # Expected timesteps
+    expected_timesteps = range(time_Prod[0], time_Prod[-1])
+    num_timesteps = len(expected_timesteps)
+
+    # Group power by generator index
+    power_dict = {}
+    for timestep, gen_index, output in power_rows:
+        if gen_index not in power_dict:
+            power_dict[gen_index] = [float('nan')] * num_timesteps
+        if time_Prod[0] <= timestep < time_Prod[-1]:
+            power_dict[gen_index][timestep - time_Prod[0]] = output
+
+    # Allocate power to nodes
+    for gen_index in generator_indices:
+        node_id = gen_to_node.get(gen_index)
+        if node_id is None:
+            print(f"Generator {gen_index} not mapped to any node.")
+            continue
+        power = power_dict.get(gen_index, [float('nan')] * num_timesteps)
+        total_power = sum(p for p in power if not pd.isna(p))
+        prod_per_node[node_id] = prod_per_node.get(node_id, 0.0) + total_power
+        print(f"Allocated {total_power} MW to node {node_id} from generator {gen_index}")
+
+    return prod_per_node
+
+
 
 
 def getDemandPerAreaFromDB(data: GridData, db: Database, area, timeMaxMin):
@@ -961,6 +1130,123 @@ def getFlowDataOnALLBranches(data: GridData, db: Database, time_max_min):
     ], ignore_index=True)
 
     return flow_df
+
+########
+def getFlowDataOnALLBranchesTest(data: GridData, db: Database, time_max_min):
+    """
+    Collect flow on ALL connections using a single database query per branch type.
+
+    Parameters
+    ----------
+    data : GridData
+        Grid data containing branch information.
+    db : Database
+        Database object.
+    time_max_min : list
+        [min, max] - lower and upper time interval.
+
+    Returns
+    -------
+    flow_df : pd.DataFrame
+        DataFrame with flow data for all branches.
+    """
+    # Get AC and DC branch data
+    AC_interconnections = data.branch
+    DC_interconnections = data.dcbranch
+    AC_interconnections_capacity = AC_interconnections['capacity']
+    DC_interconnections_capacity = DC_interconnections['capacity']
+
+    # Create dictionaries for branch metadata
+    AC_dict = {
+        i: (row['node_from'], row['node_to'])
+        for i, row in AC_interconnections.iterrows()
+    }
+    DC_dict = {
+        i: (row['node_from'], row['node_to'])
+        for i, row in DC_interconnections.iterrows()
+    }
+
+    # Get all branch indices
+    AC_indices = list(AC_dict.keys())
+    DC_indices = list(DC_dict.keys())
+
+    # Query all flow data at once
+    print("Fetching flow data for all AC branches...")
+    AC_flows = db.getResultBranchFlowAllTest(time_max_min, branch_indices=AC_indices, acdc="ac")
+    print("Fetching flow data for all DC branches...")
+    DC_flows = db.getResultBranchFlowAllTest(time_max_min, branch_indices=DC_indices, acdc="dc")
+
+    # Process AC and DC flows
+    flow_data_AC = collect_flow_dataTest(AC_flows, AC_dict, AC_interconnections_capacity, time_max_min, ac=True)
+    flow_data_DC = collect_flow_dataTest(DC_flows, DC_dict, DC_interconnections_capacity, time_max_min, ac=False)
+
+    # Combine into a single DataFrame
+    flow_df = pd.concat([
+        pd.DataFrame(flow_data_AC),
+        pd.DataFrame(flow_data_DC)
+    ], ignore_index=True)
+
+    return flow_df
+
+def collect_flow_dataTest(flow_rows, cross_country_dict, interconnections_capacity, time_max_min, ac=True):
+    """
+    Process flow data from a single query into a structured format.
+
+    Parameters
+    ----------
+    flow_rows : list
+        List of tuples (timestep, index, flow) from the database.
+    cross_country_dict : dict
+        Dictionary mapping branch indices to (node_from, node_to).
+    interconnections_capacity : pd.Series
+        Series of branch capacities.
+    time_max_min : list
+        [min, max] - time interval for expected timesteps.
+    ac : bool
+        True for AC branches, False for DC branches.
+
+    Returns
+    -------
+    flow_data : list
+        List of dictionaries with branch flow data.
+    """
+    branch_type = "AC" if ac else "DC"
+    flow_data = []
+
+    # Create a dictionary to group flows by branch index
+    flow_dict = {}
+    for timestep, branch_index, flow in flow_rows:
+        if branch_index not in flow_dict:
+            flow_dict[branch_index] = {}
+        flow_dict[branch_index][timestep] = flow
+
+    # Expected timesteps
+    expected_timesteps = range(time_max_min[0], time_max_min[-1])
+    num_timesteps = len(expected_timesteps)
+
+    # Process each branch
+    for branch_index, (node_from, node_to) in cross_country_dict.items():
+        print(f"Processing {branch_type} branch {branch_index} from {node_from} to {node_to}")
+        # Initialize flow list with NaN for all expected timesteps
+        branch_flows = [float('nan')] * num_timesteps
+        # Fill in available flow data
+        if branch_index in flow_dict:
+            for timestep, flow in flow_dict[branch_index].items():
+                if time_max_min[0] <= timestep < time_max_min[-1]:
+                    branch_flows[timestep - time_max_min[0]] = flow
+        max_capacity = interconnections_capacity[branch_index]
+        flow_data.append({
+            'index': branch_index,
+            'type': branch_type,
+            'from': node_from,
+            'to': node_to,
+            'load [MW]': branch_flows,
+            'capacity [MW]': max_capacity,
+        })
+
+    return flow_data
+
+############
 
 
 def getImportExportFromDB(data: GridData, database: Database, areas=None, timeMaxMin=None, acdc=["ac", "dc"]):

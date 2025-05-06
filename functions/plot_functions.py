@@ -135,7 +135,7 @@ import subprocess
 
 def plot_storage_filling_area(storfilling, DATE_START, DATE_END, areas, interval, title, OUTPUT_PATH_PLOTS,
                               relative, plot_by_year, save_plot, duration_curve, tex_font,
-                              legend=True, fig_size=(10, 6), plot_type=None):
+                              legend=True, fig_size=(10, 6), plot_type=None, START=None, END=None):
     """
     Plots the storage filling levels for specified areas over a given date range.
 
@@ -265,9 +265,9 @@ def plot_storage_filling_area(storfilling, DATE_START, DATE_END, areas, interval
     # Show and/or save the plot
     if save_plot:
         if plot_type is None:
-            plot_path = f'reservoir_filling_{DATE_START.year}_{DATE_START.month}_{DATE_START.day}_{DATE_START.hour}_to_{DATE_END.year}_{DATE_END.month}_{DATE_END.day}_{DATE_END.hour}_{"_".join(areas)}.pdf'
+            plot_path = f'reservoir_filling_{START["year"]}-{END["year"]}_{"_".join(areas)}.pdf'
         else:
-            plot_path = f'reservoir_filling_{DATE_START.year}_{DATE_START.month}_{DATE_START.day}_{DATE_START.hour}_to_{DATE_END.year}_{DATE_END.month}_{DATE_END.day}_{DATE_END.hour}_{"_".join(areas)}_type{plot_type}.svg'
+            plot_path = f'reservoir_filling_{START["year"]}-{END["year"]}_{"_".join(areas)}_type{plot_type}.svg'
         plt.savefig(OUTPUT_PATH_PLOTS / plot_path,  dpi=300, bbox_inches='tight')
         return plot_path
     plt.show()

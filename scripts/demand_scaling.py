@@ -1,9 +1,9 @@
 import pandas as pd
 import pathlib
 
-CASE_YEAR = '2025'
-SCENARIO = 'BM'
-VERSION = 'v100'
+CASE_YEAR = '2035'
+SCENARIO = 'BL'
+VERSION = 'v0'
 
 # Get the base directory
 try:
@@ -13,7 +13,7 @@ except NameError:
     # For notebooks or interactive shells
     BASE_DIR = pathlib.Path().cwd()
 
-DATA_PATH = BASE_DIR / f'CASE_{CASE_YEAR}' / f'scenario_{SCENARIO}' / 'data' / 'system' / f'consumer_{SCENARIO}_{VERSION}.csv'
+DATA_PATH = BASE_DIR / f'CASE_{CASE_YEAR}' / f'scenario_{SCENARIO}' / 'data' / 'system' / 'OLD' / f'consumer_{SCENARIO}_{VERSION}.csv'
 
 # Henter ut consumer data fra Benchmark data
 consumer_data = pd.read_csv(DATA_PATH)
@@ -65,15 +65,15 @@ for zone in zones:
     demand_zones[zone]['Factor'] = demand_zones[zone]['OldDemandAvg'] / demand_zones[zone]['OldMax']
 
 # New demand added to the max demand of each zone
-newDemand = {'DK1' : 3000,
-             'DK2' : 2000,
-             'FI'  : 8000,
+newDemand = {'DK1' : 2300,
+             'DK2' : 1300,
+             'FI'  : 6750,
              'NO1' : 500,
              'NO2' : 3300,
              'NO3' : 900,
              'NO4' : 2300,
              'NO5' : 580,
-             'SE1' : 11700,
+             'SE1' : 8750,
              'SE2' : 3000,
              'SE3' : 3100,
              'SE4' : 0,
@@ -101,7 +101,7 @@ for zone in zones:
 demand_nodes = {}
 for node in consumer_data['node'].unique():
     zone = node.split('_')[0]
-    zone_demand = demand_zones[zone]['OldMax']
+    zone_demand = demand_zones[zone]['OldDemandAvg']
     node_demand = consumer_data.loc[consumer_data['node'] == node, 'demand_avg'].iloc[0]
     demand_nodes[node] = (node_demand / zone_demand)
 

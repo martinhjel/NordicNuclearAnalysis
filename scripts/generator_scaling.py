@@ -3,7 +3,7 @@ import pathlib
 
 case = '2035'
 scenario = 'BL'
-version = 'v12'
+version = 'v30'
 
 # Get the base directory
 try:
@@ -24,9 +24,9 @@ generator_data_updated = generator_data.copy()
 
 solar_scaling = {
     'DK' : 1.0,
-    'FI' : 1.0,
-    'NO' : 53.398,
-    'SE' : 1.0,
+    'FI' : 1.79176,
+    'NO' : 1.0,
+    'SE' : 1.28534,
 }
 
 

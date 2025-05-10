@@ -11,7 +11,7 @@ SIM_YEAR_START = 1991           # Start year for the main simulation  (SQL-file)
 SIM_YEAR_END = 2020             # End year for the main simulation  (SQL-file)
 CASE_YEAR = 2035
 SCENARIO = 'BL'
-VERSION = 'v31'
+VERSION = 'v35'
 TIMEZONE = ZoneInfo("UTC")  # Definerer UTC tidssone
 
 ####  PASS PÅ HARD KODING I SQL FIL
@@ -42,277 +42,150 @@ data, time_max_min = setup_grid(VERSION, DATE_START, DATE_END, DATA_PATH, SCENAR
 database = Database(SQL_FILE)
 
 
+# %% === ZONAL PRICE MAP ===
+
+# TODO: legg til mulighet for å ha øre/kwh
+zones = ['NO1', 'NO2', 'NO3', 'NO4', 'NO5', 'SE1', 'SE2', 'SE3', 'SE4',
+         'DK1', 'DK2', 'FI', 'DE', 'GB', 'NL', 'LT', 'PL', 'EE']
+year_range = list(range(SIM_YEAR_START, SIM_YEAR_END + 1))
+price_matrix, log = createZonePriceMatrix(data, database, zones, year_range, TIMEZONE, SIM_YEAR_START, SIM_YEAR_END)
+
+# Plot Zonal Price Matrix
+plotZonePriceMatrix(price_matrix, save_fig=True, OUTPUT_PATH_PLOTS=OUTPUT_PATH_PLOTS, start=SIM_YEAR_START, end=SIM_YEAR_END, version=VERSION)
 
 
 # %%
 
-def plotInflowInArea(data: GridData, area, date_start, date_end):
-
-    genTypeIdx = data.getGeneratorsPerAreaAndType()[area]['hydro']
-    if area in ['SE', 'FI']:
-        genTypeIdx.extend(data.getGeneratorsPerAreaAndType()[area].get('ror', []))
-    # Inflow
-    inflowFactor = data.generator["inflow_fac"][
-        genTypeIdx[0]]  # Assuming all generators have the same inflow factor
-    inflowProfile = data.generator["inflow_ref"][
-        genTypeIdx]  # All generators have different inflow profiles, zone-based
-    inflow_df = pd.DataFrame()
-
-    for gen in genTypeIdx:
-        prodCap = data.generator['pmax'][gen]  # MW
-        inflow_value = data.profiles[inflowProfile[gen]]
-        inflow_df[gen] = [i * prodCap * inflowFactor for i in inflow_value]
-    inflow = inflow_df.sum(axis=1)
-    # Slice the inflow series using index-based selection
-    # inflow = inflow.iloc[time_max_min[0]:time_max_min[1]]  # +1 to include the max index
-    print(f"Total inflow: {sum(inflow) / 1e6:.2f} TWh")
-
-    # Plot inflow
-    # Plot setup
-    import matplotlib
-    matplotlib.rcParams['text.usetex'] = True
-    matplotlib.rcParams['font.family'] = 'serif'
-    matplotlib.rcParams['font.serif'] = ['cmr10']  # Computer Modern Roman
-    matplotlib.rcParams['axes.formatter.use_mathtext'] = True  # Fix cmr10 warning
-    matplotlib.rcParams['axes.unicode_minus'] = False  # Fix minus sign rendering
-    fig, ax = plt.subplots(figsize=(10, 5))
-    ax.plot(inflow.index, inflow.values, label='Inflow', color='blue')
-    plt.title('Inflow over Time (NO)')
-    plt.xlabel('Year')
-    plt.ylabel('Inflow (MWh/h)')
-    plt.legend()
-    plt.tight_layout()
-    plt.grid()
-    plt.show()
-    return inflow
+import pandas as pd
+from datetime import datetime
 
 
-def plotInflowInZone(data: GridData, zone, date_start, date_end):
+def get_zone_production_summary_full_period(data, database, time_Prod, START, END, OUTPUT_PATH):
+    '''
+    Retrieves production data for the selected nodes over the specified time period,
+    returns production by zone and by type for each timestep, converts the results to TWh,
+    and merges selected production types into broader categories.
 
-    genTypeIdx = data.getGeneratorsPerZoneAndType()[zone]['hydro']
-    if zone in ['SE1','SE2','SE3','SE4','FI']:
-        genTypeIdx.extend(data.getGeneratorsPerZoneAndType()[zone].get('ror', []))
-    # Inflow
-    inflowFactor = data.generator["inflow_fac"][
-        genTypeIdx[0]]  # Assuming all generators have the same inflow factor
-    inflowProfile = data.generator["inflow_ref"][
-        genTypeIdx]  # All generators have different inflow profiles, zone-based
-    inflow_df = pd.DataFrame()
+    Parameters:
+        SELECTED_NODES (list or str): List of node IDs to include or "ALL" to select all nodes.
+        START (dict): Dictionary defining the start time with keys "year", "month", "day", "hour".
+        END (dict): Dictionary defining the end time with keys "year", "month", "day", "hour".
+        TIMEZONE (str): Timezone name.
+        SIM_YEAR_START (datetime): Start of simulation year.
+        SIM_YEAR_END (datetime): End of simulation year.
+        data (object): Data object containing node information.
+        database (object): Database connection or access object for production data.
 
-    for gen in genTypeIdx:
-        prodCap = data.generator['pmax'][gen]  # MW
-        inflow_value = data.profiles[inflowProfile[gen]]
-        inflow_df[gen] = [i * prodCap * inflowFactor for i in inflow_value]
-    inflow = inflow_df.sum(axis=1)
-    # Slice the inflow series using index-based selection
-    # inflow = inflow.iloc[time_max_min[0]:time_max_min[1]]  # +1 to include the max index
-    print(f"Total inflow: {sum(inflow) / 1e6:.2f} TWh")
+    Returns:
+        zone_summed_df (pd.DataFrame): Production per original production type for each zone, in TWh, with time index.
+        zone_summed_merged_df (pd.DataFrame): Production per merged production type for each zone, with total, in TWh, with time index.
+    '''
+    # Get list of nodes
+    Nodes = data.node["id"].dropna().unique().tolist()
 
-    # Ensure the index is datetime
-    inflow.index = pd.date_range(
-        start=f"{date_start['year']}-{date_start['month']}-{date_start['day']} {date_start['hour']}:00",
-        end=f"{date_end['year']}-{date_end['month']}-{date_end['day']} {date_end['hour']}:00",
-        freq='h')
+    # Get production data
+    production_per_node, gen_idx, gen_type = GetProductionAtSpecificNodes(Nodes, data, database, time_Prod[0], time_Prod[1])
 
-    # Resample to yearly data (sum or mean, depending on your preference)
-    # inflow_yearly = inflow.resample('Y').sum()  # Use 'Y' for year-end frequency, sums hourly inflow for each year
+    # Create time index
+    start_time = pd.Timestamp(datetime(**START))
+    end_time = pd.Timestamp(datetime(**END))
+    time_index = pd.date_range(start=start_time, end=end_time, freq='h')
+    num_timesteps = len(time_index)
 
-    # Plot inflow
-    # Plot setup
-    import matplotlib
-    matplotlib.rcParams['text.usetex'] = True
-    matplotlib.rcParams['font.family'] = 'serif'
-    matplotlib.rcParams['font.serif'] = ['cmr10']  # Computer Modern Roman
-    matplotlib.rcParams['axes.formatter.use_mathtext'] = True  # Fix cmr10 warning
-    matplotlib.rcParams['axes.unicode_minus'] = False  # Fix minus sign rendering
-    fig, ax = plt.subplots(figsize=(10, 5))
-    ax.plot(inflow.index.year, inflow.values, label='Inflow', color='blue')
-    plt.title('Inflow over Time (NO)')
-    plt.xlabel('hours')
-    plt.ylabel('Inflow (MWh/h)')
-    plt.legend()
-    plt.tight_layout()
-    plt.grid()
+    # Initialize dictionary to store time-series data by zone and production type
+    zone_production = {}
 
-    # Set x-axis to show integer years
-    ax.set_xticks(range(date_start['year'], date_end['year'] + 1, 1))  # Show every year
-    ax.set_xticklabels(range(date_start['year'], date_end['year'] + 1, 1), rotation=45)
+    # Process production data
+    for node, prodtypes in production_per_node.items():
+        zone = node.split("_")[0]  # Extract zone from node ID (e.g., 'SE1' from 'SE1_hydro_1')
+        if zone not in zone_production:
+            zone_production[zone] = {}
 
-    plt.show()
-    return inflow
+        for prodtype, values_list in prodtypes.items():
+            # Handle empty or null values
+            if not values_list or not values_list[0]:
+                values = [0] * num_timesteps
+            else:
+                values = values_list[0]  # Assume values_list[0] contains the time-series data
+                if len(values) != num_timesteps:
+                    raise ValueError(
+                        f"Production data for node {node}, type {prodtype} has incorrect length: {len(values)} vs {num_timesteps}")
 
-START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
-time_EB = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
-zones = 'NO1'
-inflow = plotInflowInZone(data, zones, OUTPUT_PATH_PLOTS, START, END)
+            # Store time-series data
+            if prodtype not in zone_production[zone]:
+                zone_production[zone][prodtype] = values
+            else:
+                # Sum production for the same production type in the same zone
+                zone_production[zone][prodtype] = [sum(x) for x in zip(zone_production[zone][prodtype], values)]
+
+    # Convert to DataFrame with multi-level columns (zone, prodtype)
+    columns = pd.MultiIndex.from_tuples(
+        [(zone, prodtype) for zone in zone_production for prodtype in zone_production[zone]],
+        names=['Zone', 'Production Type']
+    )
+    zone_summed_df = pd.DataFrame(
+        data=[[zone_production[zone][prodtype][t] for zone in zone_production for prodtype in zone_production[zone]]
+              for t in range(num_timesteps)],
+        index=time_index,
+        columns=columns
+    )
+
+    # Convert from MWh to TWh
+    # zone_summed_df = zone_summed_df / 1e6
+
+    # Merge production types
+    merge_mapping = {
+        "Hydro": ["hydro", "ror"],
+        "Nuclear": ["nuclear"],
+        "Solar": ["solar"],
+        "Thermal": ["fossil_gas", "fossil_other", "biomass"],
+        "Wind Onshore": ["wind_on"],
+        "Wind Offshore": ["wind_off"]
+    }
+
+    # Initialize merged DataFrame
+    merged_data = {}
+    for zone in zone_production:
+        for new_type, old_types in merge_mapping.items():
+            # Sum the relevant production types for this zone
+            valid_types = [t for t in old_types if t in zone_production[zone]]
+            if valid_types:
+                merged_data[(zone, new_type)] = zone_summed_df[zone][valid_types].sum(axis=1, skipna=True)
+            else:
+                merged_data[(zone, new_type)] = pd.Series(0, index=time_index)
+
+        # Add total production for the zone
+        merged_data[(zone, "Production total")] = zone_summed_df[zone].sum(axis=1, skipna=True)
+
+    # Create merged DataFrame
+    merged_columns = pd.MultiIndex.from_tuples(
+        [(zone, col) for zone in zone_production for col in ["Production total"] + list(merge_mapping.keys())],
+        names=['Zone', 'Production Type']
+    )
+    zone_summed_merged_df = pd.DataFrame(
+        data={col: merged_data[col] for col in merged_columns},
+        index=time_index
+    )
+
+    zone_summed_df.to_csv(OUTPUT_PATH / f'zone_summed_df_{start_time.year}_{end_time.year}.csv')
+    zone_summed_merged_df.to_csv(OUTPUT_PATH / f'zone_summed_merged_df_{start_time.year}_{end_time.year}.csv')
+
+    return zone_summed_df, zone_summed_merged_df
+
+START = {"year": 1992, "month": 10, "day": 1, "hour": 0}
+END = {"year": 1992, "month": 12, "day": 31, "hour": 23}
+time_Prod = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
+# ======================================================================================================================
+zone_summed_df, zone_summed_merged_df = get_zone_production_summary_full_period(data, database, time_Prod, START, END, OUTPUT_PATH / 'data_files')
+
 
 # %%
-def plotInflowValueBox(data: GridData, zone, OUTPUT_PATH_PLOTS, date_start, date_end):
-    # Extract inflow value and time index for the specific zone
-    inflow_value = data.profiles[f'inflow_{zone}']  # e.g., 'inflow_NO1'
-    time_index = data.profiles['time']
-
-    # inflow_series = pd.Series(inflow_value, index=time_index)
-
-    # Debugging: Verify data
-    # print(f"Length of inflow_{zone}: {len(inflow_value)}")
-    # print(f"Length of time_index: {len(time_index)}")
-    # print(f"Sample inflow values (first 5): {inflow_value[:5]}")
-    # print(f"Time index range: {time_index.min()} to {time_index.max()}")
-
-    # Check for non-numeric or NaN values in inflow_value
-    inflow_array = np.array(inflow_value, dtype=object)  # Avoid premature type coercion
-    non_numeric = [x for x in inflow_array if not isinstance(x, (int, float)) and x is not None]
-    print(f"Non-numeric values (first 5, if any): {non_numeric[:5] if non_numeric else 'None'}")
-
-    # Ensure time_index is a DatetimeIndex
-    if not isinstance(time_index, pd.DatetimeIndex):
-        print("Converting time_index to DatetimeIndex")
-        time_index = pd.to_datetime(time_index, errors='coerce')
-        if time_index.isna().any():
-            print("Error: Some timestamps are invalid")
-            return None
-
-    # Create pandas Series
-    try:
-        inflow_series = pd.Series(inflow_array, index=time_index)
-    except Exception as e:
-        print(f"Error creating Series: {e}")
-        return None
-
-    # Check for NaN in inflow_series
-    nan_series_count = inflow_series.isna().sum()
-    # Handle NaN values (if any)
-    if nan_series_count > 0:
-        print("Handling NaN values with linear interpolation")
-        inflow_series = inflow_series.interpolate(method='linear')
-        inflow_series = inflow_series.fillna(0)  # Fill remaining NaN (e.g., at start/end)
-        print(f"Number of NaN values after handling: {inflow_series.isna().sum()}")
-
-    # Verify 30-year average
-    mean_inflow = inflow_series.mean()
-    print(f"30-year average inflow: {mean_inflow:.4f} (should be ~1)")
-
-    # Calculate percentage deviation from the 30-year average (1)
-    percentage_deviation = ((inflow_series - 1) / 1) * 100  # in %
-    # Group deviations by year for box plot
-    # Create a DataFrame with percentage deviations and year as a column
-    deviation_df = pd.DataFrame({
-        'deviation': percentage_deviation,
-        'year': inflow_series.index.year
-    })
-
-    # Prepare data for box plot: group deviations by year
-    boxplot_data = [deviation_df[deviation_df['year'] == year]['deviation'].values
-                    for year in range(date_start['year'], date_end['year'] + 1)]
-
-    # Plot setup
-    import matplotlib
-    matplotlib.rcParams['text.usetex'] = True
-    matplotlib.rcParams['font.family'] = 'serif'
-    matplotlib.rcParams['font.serif'] = ['cmr10']  # Computer Modern Roman
-    matplotlib.rcParams['axes.formatter.use_mathtext'] = True
-    matplotlib.rcParams['axes.unicode_minus'] = False
-    fig, ax = plt.subplots(figsize=(15, 6))
-
-    # # Plot yearly inflow
-    # ax.plot(time_index, inflow_value, label=f'Inflow ({zone})', color='blue')
-    # plt.title(f'Inflow over Time ({zone})')
-    # plt.xlabel('Year')
-    # plt.ylabel('Normalized Inflow')  # Reflects yearly aggregation
-    # plt.legend()
-    # plt.tight_layout()
-    # plt.grid()
-    #
-    # # Set x-axis to show every year with 45-degree rotation
-    # import matplotlib.dates as mdates
-    # ax.xaxis.set_major_locator(mdates.YearLocator(1))  # Every year
-    # ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y'))  # Year format
-    # plt.setp(ax.get_xticklabels(), rotation=45)
-    # filename = f'InflowProfile_{zone}.pdf'
-    # plt.savefig(OUTPUT_PATH_PLOTS / filename)
-    # plt.show()
-    # Create box plot
-    ax.boxplot(boxplot_data, labels=range(date_start['year'], date_end['year'] + 1))
-    plt.title(f'Yearly Inflow Deviation from 30-Year Average ({zone})')
-    plt.xlabel('Year')
-    plt.ylabel('Percentage Deviation (\%)')
-    plt.grid(True, axis='y')
-
-    # Rotate x-axis labels by 45 degrees
-    plt.setp(ax.get_xticklabels(), rotation=45)
-
-    # Tight layout to prevent label cutoff
-    plt.tight_layout()
-    plt.show()
-
-    # Calculate and print yearly averages for reference
-    yearly_averages = inflow_series.resample('Y').mean()
-    yearly_deviations = ((yearly_averages - 1) / 1) * 100
-    print("\nYearly Average Inflow and Percentage Deviation from 1:")
-    for year, avg, dev in zip(yearly_averages.index.year, yearly_averages, yearly_deviations):
-        print(f"{year}: Avg = {avg:.4f}, Deviation = {dev:.2f}%")
+START = {"year": 1992, "month": 10, "day": 1, "hour": 0}
+END = {"year": 1992, "month": 12, "day": 31, "hour": 23}
+time_Demand = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
+zone_demand_df = getDemandInAllZonesFromDB(data, database, time_Demand, START, END, TIMEZONE, OUTPUT_PATH / 'data_files')
 
 
-
-
-def plotInflowValuePlot(data: GridData, zones, OUTPUT_PATH_PLOTS, start, end):
-    # Plot setup
-    import matplotlib
-    matplotlib.rcParams['text.usetex'] = True
-    matplotlib.rcParams['font.family'] = 'serif'
-    matplotlib.rcParams['font.serif'] = ['cmr10']  # Computer Modern Roman
-    matplotlib.rcParams['axes.formatter.use_mathtext'] = True
-    matplotlib.rcParams['axes.unicode_minus'] = False
-
-    start_date = pd.Timestamp(f"{start['year']}-{start['month']}-{start['day']} {start['hour']}:00",
-                              tz='UTC')
-    end_date = pd.Timestamp(f"{end['year']}-{end['month']}-{end['day']} {end['hour']}:00", tz='UTC')
-
-    # Create a figure with 5 subplots (one for each zone), stacked vertically
-    fig, axes = plt.subplots(nrows=5, ncols=1, figsize=(12.405, 17.535), sharex=True)
-
-
-    # Plot inflow for each zone in its respective subplot
-    for i, zone in enumerate(zones):
-        # Extract inflow value and time index for the specific zone
-        inflow_value = data.profiles[f'inflow_{zone}']  # e.g., 'inflow_NO1'
-        time_index = data.profiles['time']
-
-        # Plot in the corresponding subplot
-        ax = axes[i]
-        ax.plot(time_index, inflow_value, label=f'Inflow ({zone})', color='blue', linewidth=1)
-        ax.set_title(f'Inflow over Time ({zone})', fontsize=10)
-        ax.set_ylabel('Normalized Inflow', fontsize=8)
-        ax.legend(fontsize=8)
-        ax.grid(True)
-
-        # Set x-axis for the bottom subplot (shared across all subplots)
-        ax.set_xlabel('Year', fontsize=10)
-        import matplotlib.dates as mdates
-        ax.xaxis.set_major_locator(mdates.YearLocator(1))  # Every year
-        ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y'))  # Year format
-        plt.setp(ax.get_xticklabels(), rotation=45)
-
-        # Set x-axis limits to exactly the start and end dates
-        ax.set_xlim(start_date, end_date)
-
-    # Adjust layout to prevent overlap
-    plt.tight_layout()
-
-    # Save the plot (commented out as in your original code)
-    filename = 'InflowProfiles_AllZones.pdf'
-    plt.savefig(OUTPUT_PATH_PLOTS / filename, dpi=600)
-    plt.show()
-
-# === INITIALIZATIONS ===
-START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
-time_EB = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
-zones = ['NO1', 'NO2', 'NO3', 'NO4', 'NO5']
-# inflow = plotInflowValueBox(data, zone, OUTPUT_PATH_PLOTS, START, END)
-inflow = plotInflowValuePlot(data, zones, OUTPUT_PATH_PLOTS, START, END)
 
 
 # %% === ZONAL PRICE MAP ===
@@ -353,19 +226,19 @@ for i in range(0, 30):
     time_EB = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
     all_nodes = data.node.id
 
-    totalProduction = getProductionForAllNodesFromDBTest(data, database, time_EB)
-    flow_data = getFlowDataOnALLBranchesTest(data, database, time_EB)
+    totalProduction = collectProductionForAllNodesFromDB(data, database, time_EB)
+    flow_data = collectFlowDataOnALLBranches(data, database, time_EB)
 
 
 
     #flow_data = getFlowDataOnALLBranches(data, database, time_EB)       # TAR LANG TID
-    totalDemand = getDemandForAllNodesFromDB(data, database, time_EB)
+    totalDemand = collectDemandForAllNodesFromDB(data, database, time_EB)
     #totalProduction = getProductionForAllNodesFromDB(data, database, time_EB)   # TAR LANG TID
     totalLoadShedding = database.getResultLoadheddingSum(timeMaxMin=time_EB)
 
     # Calculate energy balance at node and zone levels
-    node_energyBalance = getEnergyBalanceNodeLevel(all_nodes, totalDemand, totalProduction, totalLoadShedding, flow_data, OUTPUT_PATH, VERSION, START)
-    zone_energyBalance = getEnergyBalanceZoneLevel(all_nodes, totalDemand, totalProduction, totalLoadShedding, flow_data, OUTPUT_PATH, VERSION, START)
+    node_energyBalance = getEnergyBalanceNodeLevel(all_nodes, totalDemand, totalProduction, totalLoadShedding, flow_data, OUTPUT_PATH / 'data_files/energy_balance', VERSION, START)
+    zone_energyBalance = getEnergyBalanceZoneLevel(all_nodes, totalDemand, totalProduction, totalLoadShedding, flow_data, OUTPUT_PATH / 'data_files/energy_balance', VERSION, START)
     # Store energy balance results in the dictionary
     energyBalance[year] = {
         "node_level": node_energyBalance,
@@ -437,20 +310,31 @@ Based on idealyears over the 30-year climate periode so that each year has same 
 Overview:
 
 """
-
+areas = data.node.area.unique().tolist()  # List of areas in the system
+areas = areas[0:4]
 # === INITIALIZATIONS ===
-country = "FI"  # Country code
+country = "SE"  # Country code
+gen_dict = {}
 
 n_ideal_years = 30
 n_timesteps = int(8766.4 * n_ideal_years) # Ved full 30-års simuleringsperiode
 # n_timesteps=8760
 
 df_gen, df_prices, total_production, df_gen_per_year = get_production_by_type_ideal_timestep(
-    data=data,
-    db=database,
-    area_OP=country,
-    n_timesteps=n_timesteps
-)
+        data=data,
+        db=database,
+        area_OP=country,
+        n_timesteps=n_timesteps
+    )
+# %%
+for area in areas:
+    df_gen, df_prices, total_production, df_gen_per_year = get_production_by_type_ideal_timestep(
+        data=data,
+        db=database,
+        area_OP=area,
+        n_timesteps=n_timesteps
+    )
+    gen_dict[area] = df_gen_per_year
 
 
 # %% === Get production by type aggregate by zone ===
@@ -464,19 +348,18 @@ Input:
 '''
 # === INITIALIZATIONS ===
 START = {"year": 1993, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1993, "month": 12, "day": 31, "hour": 23}
+END = {"year": 1996, "month": 12, "day": 31, "hour": 23}
 SELECTED_NODES = "ALL"
 # SELECTED_NODES = ["SE4_1", "SE4_2", "SE3_1", "SE2_1", "SE2_2"]
 # ======================================================================================================================
 zone_summed_df, zone_summed_merged_df = get_zone_production_summary(SELECTED_NODES, START, END, TIMEZONE, SIM_YEAR_START, SIM_YEAR_END, data, database)
 
 
-
 # %% === CHECK SPILLED VS PRODUCED ===
-START = {"year": 2020, "month": 1, "day": 1, "hour": 0}
-END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
+START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
+END = {"year": 1993, "month": 12, "day": 31, "hour": 23}
 time_EB = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
-gen_idx = [385]
+gen_idx = [381]
 sum_spilled, sum_produced = checkSpilled_vs_ProducedAtGen(database, gen_idx, time_EB)
 
 
@@ -500,7 +383,7 @@ for (importer, exporter), total in zone_imports.items():
 
 # === INITIALIZATIONS ===
 START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
+END = {"year": 1993, "month": 12, "day": 31, "hour": 23}
 
 nordic_grid_map_fromDB(data, database, time_range = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END),
                        OUTPUT_PATH = OUTPUT_PATH / 'maps', version = VERSION, START = START, END = END, exchange_rate_NOK_EUR = 11.38)
@@ -547,7 +430,7 @@ print(total_Production)
 
 # === INITIALIZATIONS ===
 START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1993, "month": 12, "day": 31, "hour": 23}
+END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
 
 # For at TEX-fonts skal kjøre, må du kjøre en test run først for å initialisere tex-fontene.
 # === PLOT CONFIGURATIONS ===
@@ -556,7 +439,7 @@ plot_config = {
     'relative': True,           # Relative storage filling, True gives percentage
     "plot_by_year": True,       # True: One curve for each year in same plot, or False:all years collected in one plot over the whole simulation period
     "duration_curve": False,    # True: Plot duration curve, or False: Plot storage filling over time
-    "save_fig": False,           # True: Save plot as pdf
+    "save_fig": True,           # True: Save plot as pdf
     "interval": 1,              # Number of months on x-axis. 1 = Step is one month, 12 = Step is 12 months
     'empty_threshold': 1e-6,    # If relative (True), empty_threshold is in percentage, if not, it is in MWh
     'include_legend': False,     # Include legend in the plot
@@ -576,7 +459,7 @@ plot_SF_Areas_FromDB(data, database, time_SF, OUTPUT_PATH_PLOTS_RESERVOIR, DATE_
 
 # === INITIALIZATIONS ===
 START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1993, "month": 12, "day": 31, "hour": 23}
+END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
 
 # === PLOT CONFIGURATIONS ===
 plot_config = {
@@ -584,7 +467,7 @@ plot_config = {
     'relative': True,               # Relative storage filling, True gives percentage
     "plot_by_year": 3,              # (1) Each year in individual plot, (2) Entire Timeline, (3) Each year show over 1 year timeline.
     "duration_curve": False,        # True: Plot duration curve, or False: Plot storage filling over time
-    "save_fig": False,              # True: Save plot as pdf
+    "save_fig": True,              # True: Save plot as pdf
     "interval": 1,                  # Number of months on x-axis. 1 = Step is one month, 12 = Step is 12 months
     'empty_threshold': 1e-6,        # If relative (True), empty_threshold is in percentage, if not, it is in MWh
     'include_legend': False,        # Include legend in the plot
@@ -607,7 +490,7 @@ plot_SF_Zones_FromDB(data, database, time_SF, OUTPUT_PATH_PLOTS_RESERVOIR, DATE_
 
 # === INITIALIZATIONS ===
 START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
+END = {"year": 1993, "month": 12, "day": 31, "hour": 23}
 
 # === PLOT CONFIGURATIONS ===
 
@@ -626,9 +509,9 @@ plot_config = {
 # SELECTED_BRANCHES  = [['NL','NO2_4'],['NO2_4','DE'], ['NO2_1','GB'], ['DK1_1','NO2_5']] # See branch CSV files for correct connections
 # SELECTED_BRANCHES  = [['SE2_3','SE3_1'],['SE3_1','SE2_7'], ['SE3_1','SE2_6'], ['SE3_5','SE2_5'], ['SE2_6','SE3_2']]
 # SELECTED_BRANCHES  = [['SE1_2','SE2_2'],['SE1_3','SE2_2'], ['FI_3','SE1_2'], ['FI_3','SE1_3'], ['NO4_1','SE1_1']]
-SELECTED_BRANCHES = [['NL','NO2_4'],['NO2_4','DE'], ['NO2_1','GB'], ['DK1_1','NO2_5']] # NO
+# SELECTED_BRANCHES = [['NL','NO2_4'],['NO2_4','DE'], ['NO2_1','GB'], ['DK1_1','NO2_5']] # NO
 # SELECTED_BRANCHES = [['SE4_2','DE'], ['SE3_10','LT'], ['SE4_1','PL'], ['DK2_2','SE4_2'], ['SE3_7','DK1_1'], ['SE3_1','FI_10'], ['SE3_3','FI_10']] # SE
-# SELECTED_BRANCHES = [['DK2_2','DE'], ['DK2_hub','DE'], ['DE','DK1_3']]
+SELECTED_BRANCHES = [['DK2_2','DE'], ['DK2_hub','DE'], ['DK2_hub','DK2_2'], ['DE','DK1_3']]
 
 # SELECTED_BRANCHES = [['SE4_1','PL'],['SE3_10','LT'], ['SE4_2','DE']]
 
@@ -883,3 +766,5 @@ with PdfPages(pdf_filename) as pdf:
         current_height = 0
 
 print(f"PDF generated: {pdf_filename}")
+
+

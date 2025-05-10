@@ -1220,7 +1220,7 @@ class Database(DatabaseBaseClass):
             rows = cur.fetchall()
             return rows
 
-    def getResultBranchFlowAllTest(self, timeMaxMin, branch_indices=None, acdc="ac"):
+    def getResultBranchFlowForAll(self, timeMaxMin, branch_indices=None, acdc="ac"):
         """
         Get branch flow for specified branches (or all branches) in a single query.
 

@@ -79,7 +79,7 @@ def plot_Flow_fromDB(data, db, DATE_START, time_max_min, OUTPUT_PATH_PLOTS, plot
 
 
 # Regular Plotting
-def plot_SF_Areas_FromDB(data: GridData, database: Database, time_SF, OUTPUT_PATH_PLOTS, DATE_START, plot_config):
+def plot_SF_Areas_FromDB(data: GridData, database: Database, time_SF, OUTPUT_PATH_PLOTS, DATE_START, plot_config, START, END):
     """
     Plot the storage filling for given areas
     """
@@ -137,11 +137,13 @@ def plot_SF_Areas_FromDB(data: GridData, database: Database, time_SF, OUTPUT_PAT
                               duration_curve=plot_config['duration_curve'],
                               tex_font=plot_config['tex_font'],
                               legend=plot_config['include_legend'],
-                              fig_size=plot_config['fig_size'])
+                              fig_size=plot_config['fig_size'],
+                              START=START,
+                              END=END)
 
 
 
-def plot_SF_Zones_FromDB(data: GridData, database: Database, time_SF ,OUTPUT_PATH_PLOTS, DATE_START, plot_config):
+def plot_SF_Zones_FromDB(data: GridData, database: Database, time_SF ,OUTPUT_PATH_PLOTS, DATE_START, plot_config, START, END):
     """
     Plot the storage filling for given zones
     """
@@ -203,7 +205,9 @@ def plot_SF_Zones_FromDB(data: GridData, database: Database, time_SF ,OUTPUT_PAT
                                       duration_curve=plot_config['duration_curve'],
                                       tex_font=plot_config['tex_font'],
                                       legend=plot_config['include_legend'],
-                                      fig_size=plot_config['fig_size'])
+                                      fig_size=plot_config['fig_size'],
+                                      START=START,
+                                      END=END)
 
     elif plot_config['plot_by_year'] == 2:
         title_storage_filling = f"Reservoir Filling in {plot_config['zones']} for period {correct_date_start_SF.year}-{correct_date_end_SF.year}"
@@ -220,7 +224,9 @@ def plot_SF_Zones_FromDB(data: GridData, database: Database, time_SF ,OUTPUT_PAT
                                   duration_curve=plot_config['duration_curve'],
                                   tex_font=plot_config['tex_font'],
                                   legend=plot_config['include_legend'],
-                                  fig_size=plot_config['fig_size'])
+                                  fig_size=plot_config['fig_size'],
+                                  START=START,
+                                  END=END)
 
     elif plot_config['plot_by_year'] == 3:
         title_storage_filling = f"Reservoir Filling in {'Zones: ' + ', '.join(plot_config['zones'])}"
@@ -237,7 +243,9 @@ def plot_SF_Zones_FromDB(data: GridData, database: Database, time_SF ,OUTPUT_PAT
                                   duration_curve=plot_config['duration_curve'],
                                   tex_font=plot_config['tex_font'],
                                   legend=plot_config['include_legend'],
-                                  fig_size=plot_config['fig_size'])
+                                  fig_size=plot_config['fig_size'],
+                                  START=START,
+                                  END=END)
 
 
 

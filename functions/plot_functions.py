@@ -135,7 +135,7 @@ import subprocess
 
 def plot_storage_filling_area(storfilling, DATE_START, DATE_END, areas, interval, title, OUTPUT_PATH_PLOTS,
                               relative, plot_by_year, save_plot, duration_curve, tex_font,
-                              legend=True, fig_size=(10, 6), plot_type=None):
+                              legend=True, fig_size=(10, 6), plot_type=None, START=None, END=None):
     """
     Plots the storage filling levels for specified areas over a given date range.
 
@@ -265,9 +265,9 @@ def plot_storage_filling_area(storfilling, DATE_START, DATE_END, areas, interval
     # Show and/or save the plot
     if save_plot:
         if plot_type is None:
-            plot_path = f'reservoir_filling_{DATE_START.year}_{DATE_START.month}_{DATE_START.day}_{DATE_START.hour}_to_{DATE_END.year}_{DATE_END.month}_{DATE_END.day}_{DATE_END.hour}_{"_".join(areas)}.pdf'
+            plot_path = f'reservoir_filling_{START["year"]}-{END["year"]}_{"_".join(areas)}.pdf'
         else:
-            plot_path = f'reservoir_filling_{DATE_START.year}_{DATE_START.month}_{DATE_START.day}_{DATE_START.hour}_to_{DATE_END.year}_{DATE_END.month}_{DATE_END.day}_{DATE_END.hour}_{"_".join(areas)}_type{plot_type}.svg'
+            plot_path = f'reservoir_filling_{START["year"]}-{END["year"]}_{"_".join(areas)}_type{plot_type}.svg'
         plt.savefig(OUTPUT_PATH_PLOTS / plot_path,  dpi=300, bbox_inches='tight')
         return plot_path
     plt.show()
@@ -362,7 +362,18 @@ def plot_nodal_prices(res, node_prices, nodes_in_zone, zone, DATE_START, DATE_EN
         plt.rcParams.update({
             "text.usetex": True,
             "font.family": "serif",
-            "font.serif": ["Computer Modern Roman"]})
+            "font.serif": ['cmr10'],
+            "axes.formatter.use_mathtext": True,  # Fix cmr10 warning
+            "axes.unicode_minus": False  # Fix minus sign rendering
+        })
+        print("Configured Matplotlib to use LaTeX with cmr10 font.")
+    else:
+        plt.rcParams.update({
+            "text.usetex": False,
+            "font.family": "serif",
+            "font.serif": ["DejaVu Serif"]
+        })
+        print("Using default serif font (DejaVu Serif).")
     if save_plot_nodal:
         plt.savefig(OUTPUT_PATH_PLOTS / f'nodal_price_{zone}.pdf')
     plt.show()
@@ -454,7 +465,18 @@ def plot_nodal_prices_FromDB(data: GridData, node_prices, nodes_in_zone, zone, D
         plt.rcParams.update({
             "text.usetex": True,
             "font.family": "serif",
-            "font.serif": ["Computer Modern Roman"]})
+            "font.serif": ['cmr10'],
+            "axes.formatter.use_mathtext": True,  # Fix cmr10 warning
+            "axes.unicode_minus": False  # Fix minus sign rendering
+        })
+        print("Configured Matplotlib to use LaTeX with cmr10 font.")
+    else:
+        plt.rcParams.update({
+            "text.usetex": False,
+            "font.family": "serif",
+            "font.serif": ["DejaVu Serif"]
+        })
+        print("Using default serif font (DejaVu Serif).")
     if save_plot_nodal:
         plt.savefig(OUTPUT_PATH_PLOTS / f'nodal_price_{zone}.pdf')
     plt.show()
@@ -515,7 +537,18 @@ def plot_zonal_prices_FromDB(data: GridData, zone_prices, zones, DATE_START, DAT
         plt.rcParams.update({
             "text.usetex": True,
             "font.family": "serif",
-            "font.serif": ["Computer Modern Roman"]})
+            "font.serif": ['cmr10'],
+            "axes.formatter.use_mathtext": True,  # Fix cmr10 warning
+            "axes.unicode_minus": False  # Fix minus sign rendering
+        })
+        print("Configured Matplotlib to use LaTeX with cmr10 font.")
+    else:
+        plt.rcParams.update({
+            "text.usetex": False,
+            "font.family": "serif",
+            "font.serif": ["DejaVu Serif"]
+        })
+        print("Using default serif font (DejaVu Serif).")
     if save_plot_nodal:
         plt.savefig(OUTPUT_PATH_PLOTS / f"nodal_price_{ ', '.join(zones)}.pdf")
     plt.show()
@@ -772,7 +805,18 @@ def plot_hydro_prod_res_inflow(df, DATE_START, DATE_END, interval, TITLE, OUTPUT
         plt.rcParams.update({
             "text.usetex": True,
             "font.family": "serif",
-            "font.serif": ["Computer Modern Roman"]})
+            "font.serif": ['cmr10'],
+            "axes.formatter.use_mathtext": True,  # Fix cmr10 warning
+            "axes.unicode_minus": False  # Fix minus sign rendering
+        })
+        print("Configured Matplotlib to use LaTeX with cmr10 font.")
+    else:
+        plt.rcParams.update({
+            "text.usetex": False,
+            "font.family": "serif",
+            "font.serif": ["DejaVu Serif"]
+        })
+        print("Using default serif font (DejaVu Serif).")
     if save_plot:
         plt.savefig(OUTPUT_PATH_PLOTS / 'hydro_production.pdf')
     plt.show()
@@ -939,7 +983,18 @@ def plot_hydro_prod_demand_price(df_plp, df_plp_resampled, resample, DATE_START,
         plt.rcParams.update({
             "text.usetex": True,
             "font.family": "serif",
-            "font.serif": ["Computer Modern Roman"]})
+            "font.serif": ['cmr10'],
+            "axes.formatter.use_mathtext": True,  # Fix cmr10 warning
+            "axes.unicode_minus": False  # Fix minus sign rendering
+        })
+        print("Configured Matplotlib to use LaTeX with cmr10 font.")
+    else:
+        plt.rcParams.update({
+            "text.usetex": False,
+            "font.family": "serif",
+            "font.serif": ["DejaVu Serif"]
+        })
+        print("Using default serif font (DejaVu Serif).")
     if save_fig:
         plt.savefig(OUTPUT_PATH_PLOTS / 'nodal_price_demand_hydro_production.pdf')
     plt.show()
@@ -965,7 +1020,18 @@ def check_load_shedding(load_shedding, tex_font):
             plt.rcParams.update({
                 "text.usetex": True,
                 "font.family": "serif",
-                "font.serif": ["Computer Modern Roman"]})
+                "font.serif": ['cmr10'],
+                "axes.formatter.use_mathtext": True,  # Fix cmr10 warning
+                "axes.unicode_minus": False  # Fix minus sign rendering
+            })
+            print("Configured Matplotlib to use LaTeX with cmr10 font.")
+        else:
+            plt.rcParams.update({
+                "text.usetex": False,
+                "font.family": "serif",
+                "font.serif": ["DejaVu Serif"]
+            })
+            print("Using default serif font (DejaVu Serif).")
         plt.show()
 
 
@@ -1073,7 +1139,18 @@ def plot_production(df_gen_resampled, df_prices_resampled, DATE_START, DATE_END,
             plt.rcParams.update({
                 "text.usetex": True,
                 "font.family": "serif",
-                "font.serif": ["Computer Modern Roman"]})
+                "font.serif": ['cmr10'],
+                "axes.formatter.use_mathtext": True,  # Fix cmr10 warning
+                "axes.unicode_minus": False  # Fix minus sign rendering
+            })
+            print("Configured Matplotlib to use LaTeX with cmr10 font.")
+        else:
+            plt.rcParams.update({
+                "text.usetex": False,
+                "font.family": "serif",
+                "font.serif": ["DejaVu Serif"]
+            })
+            print("Using default serif font (DejaVu Serif).")
         if save_fig:
             plt.savefig(OUTPUT_PATH_PLOTS / 'production_prices_full_timeline.pdf', dpi=300, bbox_inches="tight")
         plt.show()
@@ -1133,7 +1210,18 @@ def plot_production(df_gen_resampled, df_prices_resampled, DATE_START, DATE_END,
                 plt.rcParams.update({
                     "text.usetex": True,
                     "font.family": "serif",
-                    "font.serif": ["Computer Modern Roman"]})
+                    "font.serif": ['cmr10'],
+                    "axes.formatter.use_mathtext": True,  # Fix cmr10 warning
+                    "axes.unicode_minus": False  # Fix minus sign rendering
+                })
+                print("Configured Matplotlib to use LaTeX with cmr10 font.")
+            else:
+                plt.rcParams.update({
+                    "text.usetex": False,
+                    "font.family": "serif",
+                    "font.serif": ["DejaVu Serif"]
+                })
+                print("Using default serif font (DejaVu Serif).")
             if save_fig:
                 plt.savefig(
                     OUTPUT_PATH_PLOTS / f'production_prices_{year}{"_duration_curve" if plot_duration_curve else ""}.pdf')
@@ -1196,7 +1284,18 @@ def plot_duration_curve_by_year(row, DATE_START, OUTPUT_PATH_PLOTS, save_fig, du
             plt.rcParams.update({
                 "text.usetex": True,
                 "font.family": "serif",
-                "font.serif": ["Computer Modern Roman"]})
+                "font.serif": ['cmr10'],
+                "axes.formatter.use_mathtext": True,  # Fix cmr10 warning
+                "axes.unicode_minus": False  # Fix minus sign rendering
+            })
+            print("Configured Matplotlib to use LaTeX with cmr10 font.")
+        else:
+            plt.rcParams.update({
+                "text.usetex": False,
+                "font.family": "serif",
+                "font.serif": ["DejaVu Serif"]
+            })
+            print("Using default serif font (DejaVu Serif).")
         if duration_relative:
             plot_file_name = OUTPUT_PATH_PLOTS / f"duration_curve_{row['from']}_{row['to']}_{year}.pdf"
         else:
@@ -1244,7 +1343,18 @@ def plot_by_year(row, DATE_START, OUTPUT_PATH_PLOTS, save_fig, interval, tex_fon
             plt.rcParams.update({
                 "text.usetex": True,
                 "font.family": "serif",
-                "font.serif": ["Computer Modern Roman"]})
+                "font.serif": ['cmr10'],
+                "axes.formatter.use_mathtext": True,  # Fix cmr10 warning
+                "axes.unicode_minus": False  # Fix minus sign rendering
+            })
+            print("Configured Matplotlib to use LaTeX with cmr10 font.")
+        else:
+            plt.rcParams.update({
+                "text.usetex": False,
+                "font.family": "serif",
+                "font.serif": ["DejaVu Serif"]
+            })
+            print("Using default serif font (DejaVu Serif).")
         plot_file_name = OUTPUT_PATH_PLOTS / f"power_flow_{row['from']}_{row['to']}_{year}.pdf"
         if save_fig:
             plt.savefig(plot_file_name)
@@ -1298,7 +1408,18 @@ def plot_duration_curve(row, OUTPUT_PATH_PLOTS, save_fig, duration_relative, tex
         plt.rcParams.update({
             "text.usetex": True,
             "font.family": "serif",
-            "font.serif": ["Computer Modern Roman"]})
+            "font.serif": ['cmr10'],
+            "axes.formatter.use_mathtext": True,  # Fix cmr10 warning
+            "axes.unicode_minus": False  # Fix minus sign rendering
+        })
+        print("Configured Matplotlib to use LaTeX with cmr10 font.")
+    else:
+        plt.rcParams.update({
+            "text.usetex": False,
+            "font.family": "serif",
+            "font.serif": ["DejaVu Serif"]
+        })
+        print("Using default serif font (DejaVu Serif).")
     # Define the plot file name
     if duration_relative:
         plot_file_name = OUTPUT_PATH_PLOTS / f"duration_curve_{row['from']}_{row['to']}.pdf"
@@ -1351,7 +1472,18 @@ def plot_time_series(row, DATE_START, OUTPUT_PATH_PLOTS, save_fig, interval, tex
         plt.rcParams.update({
             "text.usetex": True,
             "font.family": "serif",
-            "font.serif": ["Computer Modern Roman"]})
+            "font.serif": ['cmr10'],
+            "axes.formatter.use_mathtext": True,  # Fix cmr10 warning
+            "axes.unicode_minus": False  # Fix minus sign rendering
+        })
+        print("Configured Matplotlib to use LaTeX with cmr10 font.")
+    else:
+        plt.rcParams.update({
+            "text.usetex": False,
+            "font.family": "serif",
+            "font.serif": ["DejaVu Serif"]
+        })
+        print("Using default serif font (DejaVu Serif).")
     plot_file_name = OUTPUT_PATH_PLOTS / f"power_flow_{row['from']}_{row['to']}.pdf"
     if save_fig:
         plt.savefig(plot_file_name)

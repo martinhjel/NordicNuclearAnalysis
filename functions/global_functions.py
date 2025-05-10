@@ -252,6 +252,8 @@ def createZonePriceMatrix(data, database, zones, year_range, TIMEZONE, SIM_YEAR_
             for zone in zones:
                 try:
                     nodes_in_zone = data.node[data.node['zone'] == zone].index.tolist()
+                    # Exclude nodes ending with 'SINK'
+                    nodes_in_zone = [node for node in nodes_in_zone if not data.node.loc[node, 'id'].endswith('SINK')]
                     if not nodes_in_zone:
                         log_messages.append(f"⚠️ No nodes found for zone {zone} — skipping.")
                         print(f"⚠️ No nodes found for zone {zone} — skipping.")
@@ -1026,7 +1028,7 @@ def getEnergyBalanceZoneLevel(all_nodes, totalDemand, totalProduction, totalLoad
     zone_energyBalance = pd.DataFrame(EBDataZoneLevel)
     zone_energyBalance['Balance'] = zone_energyBalance['Production'] - zone_energyBalance['Demand'] + zone_energyBalance['Load Shedding']
     zone_energyBalance['NetExport'] = zone_energyBalance['Export'] - zone_energyBalance['Import']
-    zone_energyBalance.to_csv(OUTPUT_PATH / 'data_files' / f'zone_energy_balance_{VERSION}_{START['year']}.csv', index=False)
+    zone_energyBalance.to_csv(OUTPUT_PATH / f'zone_energy_balance_{VERSION}_{START['year']}.csv', index=False)
     return zone_energyBalance
 
 
@@ -1093,7 +1095,7 @@ def getEnergyBalanceNodeLevel(all_nodes, totalDemand, totalProduction, totalLoad
     energyBalance['Balance'] = energyBalance['Production'] - energyBalance['Demand'] + energyBalance['Load Shedding']
     energyBalance['NetExport'] = energyBalance['Export'] - energyBalance['Import']
     # Save the DataFrame to a CSV file for reference
-    energyBalance.to_csv(OUTPUT_PATH / 'data_files' / f'node_energy_balance_{VERSION}_{START['year']}.csv', index=False)
+    energyBalance.to_csv(OUTPUT_PATH / f'node_energy_balance_{VERSION}_{START['year']}.csv', index=False)
     return energyBalance
 
 
@@ -1867,74 +1869,17 @@ def get_zone_production_summary(SELECTED_NODES, START, END, TIMEZONE, SIM_YEAR_S
 
 
 
-def get_zone_production_summary(SELECTED_NODES, START, END, TIMEZONE, SIM_YEAR_START, SIM_YEAR_END, data, database):
-    '''
-    Retrieves production data for the selected nodes over the specified time period,
-    aggregates the production by zone and by type, converts the results to TWh,
-    and merges selected production types into broader categories.
-
-    Parameters:
-        SELECTED_NODES (list or str): List of node IDs to include or "ALL" to select all nodes.
-        START (dict): Dictionary defining the start time with keys "year", "month", "day", "hour".
-        END (dict): Dictionary defining the end time with keys "year", "month", "day", "hour".
-        TIMEZONE (str): Timezone name.
-        SIM_YEAR_START (datetime): Start of simulation year.
-        SIM_YEAR_END (datetime): End of simulation year.
-        data (object): Data object containing node information.
-        database (object): Database connection or access object for production data.
-
-    Returns:
-        zone_summed_df (pd.DataFrame): Aggregated production per original production type, in TWh.
-        zone_summed_merged_df (pd.DataFrame): Aggregated production per merged production type, with total, in TWh.
-    '''
-
-    Nodes = data.node["id"].dropna().unique().tolist() if SELECTED_NODES == "ALL" else SELECTED_NODES
-    start_hour, end_hour = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
-    production_per_node, gen_idx, gen_type = GetProductionAtSpecificNodes(Nodes, data, database, start_hour, end_hour)
-
-    zone_sums = {}
-
-    for node, prodtypes in production_per_node.items():
-        zone = node.split("_")[0]
-        if zone not in zone_sums:
-            zone_sums[zone] = {}
-
-        for prodtype, values_list in prodtypes.items():
-            if not values_list or not values_list[0]:
-                prod_sum = 0
-            else:
-                values = values_list[0]
-                prod_sum = sum(values)
-
-            if prodtype not in zone_sums[zone]:
-                zone_sums[zone][prodtype] = prod_sum
-            else:
-                zone_sums[zone][prodtype] += prod_sum
-
-    zone_summed_df = pd.DataFrame(zone_sums).T
-    zone_summed_df = zone_summed_df / 1e6  # Convert from MWh to TWh
-
-    merge_mapping = {
-        "Hydro": ["hydro", "ror"],
-        "Nuclear": ["nuclear"],
-        "Solar": ["solar"],
-        "Thermal": ["fossil_gas", "fossil_other", "biomass"],
-        "Wind Onshore": ["wind_on"],
-        "Wind Offshore": ["wind_off"]
-    }
-
-    zone_summed_merged = {}
-
-    for new_type, old_types in merge_mapping.items():
-        zone_summed_merged[new_type] = zone_summed_df[old_types].sum(axis=1, skipna=True)
-
-    zone_summed_merged_df = pd.DataFrame(zone_summed_merged)
-
-    zone_summed_merged_df["Production total"] = zone_summed_merged_df.sum(axis=1)
-
-    desired_order = ["Production total", "Hydro", "Nuclear", "Solar", "Thermal", "Wind Onshore", "Wind Offshore"]
-    zone_summed_merged_df = zone_summed_merged_df[desired_order]
-
-    return zone_summed_df, zone_summed_merged_df
+def getDemandInAllZonesFromDB(data, database, time_Demand, START, END, TIMEZONE, OUTPUT_PATH):
+    zones = data.node.zone.unique().tolist()
+    demand={}
+    for zone in zones:
+        demand[zone] = getDemandPerZoneFromDB(data, database, area=zone[0:2], zone=zone, timeMaxMin=time_Demand)['sum']
+    # date_range = pd.date_range(start=pd.to_datetime(START), end=pd.to_datetime(END), freq='h')
+    year_start = datetime(START['year'], START['month'], START['day'], START['hour'], 0, tzinfo=TIMEZONE)
+    year_end = datetime(END['year'], END['month'], END['day'], END['hour'], 0, tzinfo=TIMEZONE)
+    df_demand = pd.DataFrame(demand, index=pd.date_range(start=year_start, end=year_end, freq='h'))
+    # df_demand['time'] = pd.date_range(start=year_start, end=year_end, freq='h')
+    df_demand.to_csv(OUTPUT_PATH / f'demand_all_zones_{year_start.year}_{year_end.year}.csv')
+    return df_demand
 
 

@@ -446,7 +446,7 @@ def getProductionForAllNodesFromDB(data: GridData, database: Database, time_Prod
     return prod_per_node
 
 
-def getProductionForAllNodesFromDBTest(data: GridData, database: Database, time_Prod):
+def collectProductionForAllNodesFromDB(data: GridData, database: Database, time_Prod):
     """
     Returns total production per node over the given time range using a single query.
 
@@ -627,7 +627,7 @@ def getDemandPerNodeFromDB(data: GridData, db: Database, area, node, timeMaxMin)
 
 
 
-def getDemandForAllNodesFromDB(data: GridData, db: Database, timeMaxMin):
+def collectDemandForAllNodesFromDB(data: GridData, db: Database, timeMaxMin):
     """
     Returns demand timeseries for given zone, as dictionary fields "fixed", "flex", and "sum"
 
@@ -1131,8 +1131,8 @@ def getFlowDataOnALLBranches(data: GridData, db: Database, time_max_min):
 
     return flow_df
 
-########
-def getFlowDataOnALLBranchesTest(data: GridData, db: Database, time_max_min):
+########    NEW
+def collectFlowDataOnALLBranches(data: GridData, db: Database, time_max_min):
     """
     Collect flow on ALL connections using a single database query per branch type.
 
@@ -1172,13 +1172,13 @@ def getFlowDataOnALLBranchesTest(data: GridData, db: Database, time_max_min):
 
     # Query all flow data at once
     print("Fetching flow data for all AC branches...")
-    AC_flows = db.getResultBranchFlowAllTest(time_max_min, branch_indices=AC_indices, acdc="ac")
+    AC_flows = db.getResultBranchFlowForAll(time_max_min, branch_indices=AC_indices, acdc="ac")
     print("Fetching flow data for all DC branches...")
-    DC_flows = db.getResultBranchFlowAllTest(time_max_min, branch_indices=DC_indices, acdc="dc")
+    DC_flows = db.getResultBranchFlowForAll(time_max_min, branch_indices=DC_indices, acdc="dc")
 
     # Process AC and DC flows
-    flow_data_AC = collect_flow_dataTest(AC_flows, AC_dict, AC_interconnections_capacity, time_max_min, ac=True)
-    flow_data_DC = collect_flow_dataTest(DC_flows, DC_dict, DC_interconnections_capacity, time_max_min, ac=False)
+    flow_data_AC = collectFlowData(AC_flows, AC_dict, AC_interconnections_capacity, time_max_min, ac=True)
+    flow_data_DC = collectFlowData(DC_flows, DC_dict, DC_interconnections_capacity, time_max_min, ac=False)
 
     # Combine into a single DataFrame
     flow_df = pd.concat([
@@ -1188,7 +1188,7 @@ def getFlowDataOnALLBranchesTest(data: GridData, db: Database, time_max_min):
 
     return flow_df
 
-def collect_flow_dataTest(flow_rows, cross_country_dict, interconnections_capacity, time_max_min, ac=True):
+def collectFlowData(flow_rows, cross_country_dict, interconnections_capacity, time_max_min, ac=True):
     """
     Process flow data from a single query into a structured format.
 

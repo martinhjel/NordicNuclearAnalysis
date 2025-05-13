@@ -12,7 +12,7 @@ SIM_YEAR_START = 1991           # Start year for the main simulation  (SQL-file)
 SIM_YEAR_END = 2020             # End year for the main simulation  (SQL-file)
 CASE_YEAR = 2025
 SCENARIO = 'BM'
-VERSION = 'v107_sens'
+VERSION = 'v125_sens'
 TIMEZONE = ZoneInfo("UTC")  # Definerer UTC tidssone
 
 DATE_START = pd.Timestamp(f'{SIM_YEAR_START}-01-01 00:00:00', tz='UTC')
@@ -355,7 +355,7 @@ Overview:
 """
 
 # === INITIALIZATIONS ===
-country = "NO"  # Country code
+country = "FI"  # Country code
 
 n_ideal_years = 30
 n_timesteps = int(8766.4 * n_ideal_years) # Ved full 30-års simuleringsperiode
@@ -462,8 +462,9 @@ Main Features:
 # === INITIALIZATIONS ===
 START = {"year": 2020, "month": 1, "day": 1, "hour": 0}
 END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
-Nodes = ["DK1_2", "DK1_3", "DK2_2"]
-SELECTED_BRANCHES  = [['NO2_1','GB']]
+Nodes = ["FI_10", "FI_12", "SE3_3", "SE3_6", "GB", "NL"]
+
+SELECTED_BRANCHES  = None
 # ======================================================================================================================
 
 start_hour, end_hour = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)

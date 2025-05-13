@@ -8,7 +8,7 @@ import pandas as pd
 
 # === General Configurations ===
 SIM_YEAR_START = 1991           # Start year for the main simulation  (SQL-file)
-SIM_YEAR_END = 2020             # End year for the main simulation  (SQL-file)
+SIM_YEAR_END = 2000             # End year for the main simulation  (SQL-file)
 CASE_YEAR = 2035
 SCENARIO = 'VDT'
 VERSION = 'v1'
@@ -55,15 +55,14 @@ plotZonePriceMatrix(price_matrix, save_fig=True, OUTPUT_PATH_PLOTS=OUTPUT_PATH_P
 
 # %%
 START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
+END = {"year": 1995, "month": 12, "day": 31, "hour": 23}
 time_Shed = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
 dfplot = plotEnergyMix(data=data, database=database, areas=['NO', 'SE', 'FI', 'DK'], timeMaxMin=time_Shed, variable="capacity")
 
 # %% === GET ENERGY BALANCE ON NODAL AND ZONAL LEVEL ===
-
 energyBalance = {}
 
-for i in range(0, 30):
+for i in range(0, 10):
     year = 1991 + i
     print(year)
 
@@ -72,23 +71,25 @@ for i in range(0, 30):
     time_EB = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
     all_nodes = data.node.id
 
-    totalProduction = getProductionForAllNodesFromDBTest(data, database, time_EB)
-    flow_data = getFlowDataOnALLBranchesTest(data, database, time_EB)
+    totalProduction = collectProductionForAllNodesFromDB(data, database, time_EB)
+    flow_data = collectFlowDataOnALLBranches(data, database, time_EB)
+
 
 
     #flow_data = getFlowDataOnALLBranches(data, database, time_EB)       # TAR LANG TID
-    totalDemand = getDemandForAllNodesFromDB(data, database, time_EB)
+    totalDemand = collectDemandForAllNodesFromDB(data, database, time_EB)
     #totalProduction = getProductionForAllNodesFromDB(data, database, time_EB)   # TAR LANG TID
     totalLoadShedding = database.getResultLoadheddingSum(timeMaxMin=time_EB)
 
     # Calculate energy balance at node and zone levels
-    node_energyBalance = getEnergyBalanceNodeLevel(all_nodes, totalDemand, totalProduction, totalLoadShedding, flow_data, OUTPUT_PATH, VERSION, START)
-    zone_energyBalance = getEnergyBalanceZoneLevel(all_nodes, totalDemand, totalProduction, totalLoadShedding, flow_data, OUTPUT_PATH, VERSION, START)
+    node_energyBalance = getEnergyBalanceNodeLevel(all_nodes, totalDemand, totalProduction, totalLoadShedding, flow_data, OUTPUT_PATH / 'data_files/energy_balance', VERSION, START)
+    zone_energyBalance = getEnergyBalanceZoneLevel(all_nodes, totalDemand, totalProduction, totalLoadShedding, flow_data, OUTPUT_PATH / 'data_files/energy_balance', VERSION, START)
     # Store energy balance results in the dictionary
     energyBalance[year] = {
         "node_level": node_energyBalance,
         "zone_level": zone_energyBalance
     }
+
 
 # df_importexport = getImportExportFromDB(data, database, timeMaxMin=time_EB) # Import/Export data for all AREAS
 # %%
@@ -157,9 +158,9 @@ Overview:
 """
 
 # === INITIALIZATIONS ===
-country = "FI"  # Country code
+country = "PL"  # Country code
 
-n_ideal_years = 30
+n_ideal_years = 3
 n_timesteps = int(8766.4 * n_ideal_years) # Ved full 30-års simuleringsperiode
 # n_timesteps=8760
 
@@ -404,9 +405,9 @@ Main Features:
 """
 
 # === INITIALIZATIONS ===
-START = {"year": 1991, "month": 4, "day": 14, "hour": 0}
-END = {"year": 1991, "month": 5, "day": 31, "hour": 23}
-Nodes = ["DK1_2", "DK1_3", "FI_10", "FI_12", "SE3_3", "SE3_6"]
+START = {"year": 1992, "month": 4, "day": 14, "hour": 0}
+END = {"year": 1992, "month": 5, "day": 31, "hour": 23}
+Nodes = ["DK1_2", "DK1_3", "SE3_3", "SE3_9"]
 SELECTED_BRANCHES  = [['SE3_1','FI_10'], ['SE3_3', 'FI_10']]
 # ======================================================================================================================
 

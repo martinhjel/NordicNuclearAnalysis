@@ -1560,4 +1560,49 @@ def plot_imp_exp_cross_border_Flow_NEW(db, DATE_START, time_max_min, grid_data_p
 
 
 
+def plot_inflow_deviation(data):
+    zones = ['NO1', 'NO2', 'NO3', 'NO4', 'NO5']
+    # Initialize an empty dictionary to store inflow data
+    inflow_data = {}
+
+    # Extract inflow values and time index for each zone
+    for zone in zones:
+        inflow_data[zone] = np.array(data.profiles[f'inflow_{zone}'])
+    # Create a DataFrame from the inflow data
+    inflow_df = pd.DataFrame(inflow_data, index=data.profiles['time'])
+    # Ensure the time index is a datetime object
+    inflow_df.index = pd.to_datetime(inflow_df.index)
+    # Add a 'year' column by extracting the year from the time index
+    inflow_df['year'] = inflow_df.index.year
+    # Group by year and calculate the average inflow for each zone
+    average_inflow_per_year = inflow_df.groupby('year').mean()
+    # Display the resulting DataFrame
+    print(average_inflow_per_year)
+
+    # Calculate percentage deviation from 1
+    deviation = (average_inflow_per_year - 1) * 100
+
+    # Create subplots
+    num_zones = deviation.shape[1]
+    fig, axes = plt.subplots(num_zones, 1, figsize=(10, 5 * num_zones), sharex=False)
+
+    # Plot each zone in a separate subplot as a bar plot
+    for i, zone in enumerate(deviation.columns):
+        ax = axes[i] if num_zones > 1 else axes
+        ax.bar(deviation.index, deviation[zone], label=f'{zone}')
+        ax.axhline(0, color='gray', linestyle='--', linewidth=0.8)  # Reference line at 0%
+        ax.set_title(f'Deviation from Normal for Zone: {zone}', fontsize=12)
+        ax.set_ylabel('Deviation (%)', fontsize=10)
+        ax.set_xticks(deviation.index)  # Set x-ticks to the years
+        ax.set_xticklabels(deviation.index, rotation=45, fontsize=8)  # Rotate and format year labels
+        ax.grid()
+        ax.legend()
+
+    # Set common x-axis label
+    plt.xlabel('Year', fontsize=12)
+    plt.tight_layout()
+    plt.show()
+
+    return average_inflow_per_year
+
 

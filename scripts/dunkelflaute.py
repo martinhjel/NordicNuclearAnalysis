@@ -1,3 +1,11 @@
+
+'''
+Description:
+This script allows the user to select regions, technologies, and aggregation periods (e.g., 1–14 days)
+to identify the three lowest average renewable production periods for each interval. Results are saved
+to an Excel file named accordingly.
+'''
+
 import pandas as pd
 
 # === INPUT ===
@@ -37,7 +45,7 @@ result_df["start_date"] = result_df["start_date"].dt.tz_localize(None)
 
 region_label = "_".join(region)
 tech_label = "_".join(tech)
-filename = f"low_output_periods_{region_label}_{tech_label}.xlsx"
+filename = f"low_inflow_periods_{region_label}_{tech_label}.xlsx"
 result_df.to_excel(filename, index=False)
 
 print(f"✅ Lagret til: {filename}")

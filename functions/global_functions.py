@@ -1026,7 +1026,8 @@ def getEnergyBalanceZoneLevel(all_nodes, totalDemand, totalProduction, totalLoad
 
     # Create the zone-level energyBalance DataFrame
     zone_energyBalance = pd.DataFrame(EBDataZoneLevel)
-    zone_energyBalance['Balance'] = zone_energyBalance['Production'] - zone_energyBalance['Demand'] + zone_energyBalance['Load Shedding']
+    zone_energyBalance['Balance_mls'] = zone_energyBalance['Production'] - zone_energyBalance['Demand'] + zone_energyBalance['Load Shedding']
+    zone_energyBalance['Balance_uls'] = zone_energyBalance['Production'] - zone_energyBalance['Demand']
     zone_energyBalance['NetExport'] = zone_energyBalance['Export'] - zone_energyBalance['Import']
     zone_energyBalance.to_csv(OUTPUT_PATH / f'zone_energy_balance_{VERSION}_{START['year']}.csv', index=False)
     return zone_energyBalance
@@ -1092,7 +1093,8 @@ def getEnergyBalanceNodeLevel(all_nodes, totalDemand, totalProduction, totalLoad
 
     # Create the energyBalance DataFrame
     energyBalance = pd.DataFrame(EBData)
-    energyBalance['Balance'] = energyBalance['Production'] - energyBalance['Demand'] + energyBalance['Load Shedding']
+    energyBalance['Balance_mls'] = energyBalance['Production'] - energyBalance['Demand'] + energyBalance['Load Shedding']
+    energyBalance['Balance_uls'] = energyBalance['Production'] - energyBalance['Demand']
     energyBalance['NetExport'] = energyBalance['Export'] - energyBalance['Import']
     # Save the DataFrame to a CSV file for reference
     energyBalance.to_csv(OUTPUT_PATH / f'node_energy_balance_{VERSION}_{START['year']}.csv', index=False)
@@ -1666,7 +1668,7 @@ def GetReservoirFillingAtSpecificNodes(Nodes, data: GridData, database: Database
     storage_data = data.generator[
         (data.generator["node"].isin(Nodes)) &
         (data.generator["storage_cap"] > 0) &
-        (data.generator["type"] == "hydro")
+        (data.generator["type"] in ["hydro", "ror"])
     ][["node", "storage_cap"]]
 
     storage_idx = storage_data.groupby("node").apply(lambda x: list(x.index)).to_dict()

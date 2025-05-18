@@ -555,12 +555,16 @@ def plot_zonal_prices_FromDB(data: GridData, zone_prices, zones, DATE_START, DAT
 
 
 
-def plotZonePriceMatrix(price_matrix, save_fig, OUTPUT_PATH_PLOTS, start, end, version):
+def plotZonePriceMatrix(price_matrix, save_fig, OUTPUT_PATH_PLOTS, start, end, version, colormap):
     plt.figure(figsize=(12, 6))
-    sns.heatmap(price_matrix.astype(float), annot=True,fmt='.0f', cmap="YlOrRd", linewidths=0.5)
+    ax = sns.heatmap(price_matrix.astype(float), annot=True,fmt='.0f', cmap=colormap, linewidths=0.5)
     plt.title("Zonal Average Prices per Year")
     plt.xlabel("Year")
     plt.ylabel("Zone")
+    ax.set_yticklabels(ax.get_yticklabels(), rotation=0, ha='right', va='center')
+    ax.tick_params(axis='y', pad=10)  # Add padding to move labels away from plot
+    # Adjust layout to allocate more space on the left
+    # plt.subplots_adjust(left=0.2)  # Increase left margin
     plt.tight_layout()
     if save_fig:
         filename = f"ZonePriceMatrix_{version}_{start}_{end}.pdf"

@@ -8,10 +8,10 @@ import pandas as pd
 
 # === General Configurations ===
 SIM_YEAR_START = 1991           # Start year for the main simulation  (SQL-file)
-SIM_YEAR_END = 2000             # End year for the main simulation  (SQL-file)
+SIM_YEAR_END = 2020             # End year for the main simulation  (SQL-file)
 CASE_YEAR = 2035
 SCENARIO = 'VDT'
-VERSION = 'v1'
+VERSION = 'v8_sens'
 TIMEZONE = ZoneInfo("UTC")  # Definerer UTC tidssone
 
 ####  PASS PÅ HARD KODING I SQL FIL
@@ -42,100 +42,204 @@ data, time_max_min = setup_grid(VERSION, DATE_START, DATE_END, DATA_PATH, SCENAR
 database = Database(SQL_FILE)
 
 
+
+# %% === GET SENSIBILITY RANKING ===
+
+
+# === INITIALIZATIONS ===
+GEN_TYPE = 'wind_off'
+START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
+END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
+time_period = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
+sensitivity_rank = generatorSensitivityRanking(data, database, GEN_TYPE, time_period)
+
+# %% === GET Sensitivity for All Generators and Rank by Type ===
+
+
+
+def generatorSensitivityRankingALL(data, database, time_period, inflow_weighted=True, save_fig=False, include_fliers=False, area_filter=None):
+    """
+    Computes the normalized sensitivity of generators and ranks them by type.
+    This function retrieves the dual sensitivities for all generators over a specified time period,
+    calculates the normalized sensitivity, and generates a boxplot of the results.
+
+    Parameters:
+    - data: The grid data object containing generator and profile information.
+    - database: The database object to retrieve results from.
+    - gen_type: The type of generator to filter by (e.g., 'wind_off', 'solar').
+    - time_period: The time period for which to compute sensitivities.
+    - inflow_weighted: If True, the sensitivity is weighted by the inflow profile.
+    - save_fig: If True, saves the generated plot to a file.
+
+    """
+    min_time, max_time = time_period
+    # Get all generator indices and types
+    all_gens = data.generator.index.tolist()
+
+    if area_filter is not None:
+        # Filter generator indices based on area (e.g., "NO1")
+        all_gens = data.generator[data.generator.node.str.startswith(area_filter)].index.tolist()
+
+    if len(all_gens) == 0:
+        print(f"No generators found in area '{area_filter}'.")
+        return pd.DataFrame()
+
+    gen_types = data.generator['type']
+
+    # Retrieve dual sensitivities for all generators over the time period
+    df_sens = database.getResultGeneratorSens(time_period, all_gens)
+
+    # Get inflow profile mapping
+    generator_inflow_refs = data.generator.loc[all_gens, 'inflow_ref']
+    gen_to_inflow_map = dict(zip(all_gens, generator_inflow_refs))
+
+    # Load inflow profiles
+    unique_inflows = generator_inflow_refs.unique().tolist()
+    inflow_profiles = data.profiles[unique_inflows].loc[min_time:max_time]
+
+    # Compute normalized sensitivity (R_i) for each generator
+    ranks = []
+    for gen_idx, inflow_ref in gen_to_inflow_map.items():
+        sens = df_sens[gen_idx].abs()
+        inflow = inflow_profiles[inflow_ref]
+
+        numerator = (inflow * sens).sum()
+        denominator = inflow.sum()
+
+        if denominator == 0:
+            rank = np.nan
+            print(f"Warning: Denominator is zero for generator {gen_idx}. Rank set to NaN.")
+        else:
+            if inflow_weighted:
+                # Normalized sensitivity
+                rank = numerator / denominator
+            else:
+                # Non-weighted sensitivity
+                rank = sens.mean()
+
+        ranks.append({
+            'generator_idx': gen_idx,
+            'sens': rank,
+            'type': gen_types.loc[gen_idx],
+            'node': data.generator.loc[gen_idx, 'node']
+        })
+
+    # Create DataFrame of results
+    df_sens_ranked = pd.DataFrame(ranks).dropna(subset=['sens'])
+
+    # Now you can group by type and create a boxplot
+    import seaborn as sns
+    import matplotlib.pyplot as plt
+
+    # Define a color palette that matches the nature of each generator type
+    custom_palette = {
+        'wind_off': '#1f77b4',    # Blue-ish for offshore wind
+        'wind_on': '#1f77b4',     # Same tone for onshore wind
+        'solar': '#ff7f0e',       # Orange for solar
+        'hydro': '#2ca02c',       # Green for hydro
+        'ror': '#17becf',         # Light blue for run-of-river
+        'biomass': '#8c564b',     # Brown/earthy for biomass
+        'fossil_gas': '#7f7f7f',  # Gray for fossil
+        'nuclear': '#9467bd',     # Purple for nuclear
+    }
+
+
+    # Step 1: Calculate the median sensitivity per generator type
+    type_order = (
+        df_sens_ranked.groupby('type')['sens']
+        .median()
+        .abs()                   # In case you've taken absolute values
+        .sort_values(ascending=False)
+        .index.tolist()
+    )
+
+    plt.figure(figsize=(12, 6))
+    plt.rcParams.update({
+                "text.usetex": True,
+                "font.family": "serif",
+                "font.serif": ['cmr10'],
+                "axes.formatter.use_mathtext": True,  # Fix cmr10 warning
+                "axes.unicode_minus": False  # Fix minus sign rendering
+            })
+    sns.boxplot(
+        data=df_sens_ranked,
+        x='type',
+        y='sens',
+        palette=custom_palette,
+        order=type_order,        # Apply the custom order
+        showfliers=include_fliers
+    )
+    title_area = f" ({area_filter})" if area_filter else ""
+    title_weight = "Inflow Weighted" if inflow_weighted else "Not Weighted"
+    plt.title(f'Generator Sensitivities by Type{title_area} ({title_weight})')
+    plt.ylabel('Normalized Sensitivity EUR/MW')
+    plt.xlabel('Generator Type')
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    if save_fig:
+        area_tag = f"_{area_filter}" if area_filter else ""
+        weight_tag = "inflow_weighted" if inflow_weighted else "not_weighted"
+        filename = f'gen_sens_by_type{area_tag}_{weight_tag}_{VERSION}.pdf'
+        plt.savefig(OUTPUT_PATH_PLOTS / filename)
+    plt.show()
+    return df_sens_ranked
+
+START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
+END = {"year": 1991, "month": 12, "day": 31, "hour": 23}
+time_period = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
+sens = generatorSensitivityRankingALL(data,
+                                      database,
+                                      time_period,
+                                      inflow_weighted=True,
+                                      save_fig=True,
+                                      include_fliers=True,
+                                      area_filter=None)
+
+
 # %% === ZONAL PRICE MAP ===
 
 # TODO: legg til mulighet for å ha øre/kwh
 zones = ['NO1', 'NO2', 'NO3', 'NO4', 'NO5', 'SE1', 'SE2', 'SE3', 'SE4',
-         'DK1', 'DK2', 'FI', 'DE', 'GB', 'NL', 'LT', 'PL', 'EE']
+         'DK1', 'DK2', 'FI']# , 'DE', 'GB', 'NL', 'LT', 'PL', 'EE']
 year_range = list(range(SIM_YEAR_START, SIM_YEAR_END + 1))
 price_matrix, log = createZonePriceMatrix(data, database, zones, year_range, TIMEZONE, SIM_YEAR_START, SIM_YEAR_END)
 # Plot Zonal Price Matrix
 plotZonePriceMatrix(price_matrix, save_fig=True, OUTPUT_PATH_PLOTS=OUTPUT_PATH_PLOTS, start=SIM_YEAR_START, end=SIM_YEAR_END, version=VERSION)
 
 
-# %%
+# %% === GET WIND OFFSHORE SENSITIVITY ===
+
+# === INITIALIZATIONS ===
 START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1995, "month": 12, "day": 31, "hour": 23}
+END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
+time_period = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
+df_windoff = process_windoff_sensitivity(data, database, time_period)
+
+
+# %% === GET PRODUCTION (NODE/ZONE LEVEL) AND CONSUMPTION (ZONE LEVEL) DATA ===
+
+START = {"year": 1991, "month": 2, "day": 6, "hour": 0}
+END = {"year": 1991, "month": 2, "day": 16, "hour": 23}
+time_period = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
+
+
+save_production_to_excel(data, database, time_period, START, END, TIMEZONE, OUTPUT_PATH / 'data_files', VERSION)
+
+
+# %% === GET ENERGY MIX ===
+START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
+END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
 time_Shed = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
-dfplot = plotEnergyMix(data=data, database=database, areas=['NO', 'SE', 'FI', 'DK'], timeMaxMin=time_Shed, variable="capacity")
+dfplot = plotEnergyMix(data=data, database=database, areas=['NO', 'SE', 'FI', 'DK'],
+                       timeMaxMin=time_Shed, variable="capacity").fillna(0)
 
 # %% === GET ENERGY BALANCE ON NODAL AND ZONAL LEVEL ===
-energyBalance = {}
+# === INITIALIZATIONS ===
+YEARS = 30          # Number of years to simulate
+# Get energy balance for the specified years
+energyBalance, mean_balance = getEnergyBalance(data, database, SIM_YEAR_START, SIM_YEAR_END,
+                                               TIMEZONE, OUTPUT_PATH, VERSION, YEARS)
 
-for i in range(0, 10):
-    year = 1991 + i
-    print(year)
-
-    START = {"year": year, "month": 1, "day": 1, "hour": 0}
-    END = {"year": year, "month": 12, "day": 31, "hour": 23}
-    time_EB = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
-    all_nodes = data.node.id
-
-    totalProduction = collectProductionForAllNodesFromDB(data, database, time_EB)
-    flow_data = collectFlowDataOnALLBranches(data, database, time_EB)
-
-
-
-    #flow_data = getFlowDataOnALLBranches(data, database, time_EB)       # TAR LANG TID
-    totalDemand = collectDemandForAllNodesFromDB(data, database, time_EB)
-    #totalProduction = getProductionForAllNodesFromDB(data, database, time_EB)   # TAR LANG TID
-    totalLoadShedding = database.getResultLoadheddingSum(timeMaxMin=time_EB)
-
-    # Calculate energy balance at node and zone levels
-    node_energyBalance = getEnergyBalanceNodeLevel(all_nodes, totalDemand, totalProduction, totalLoadShedding, flow_data, OUTPUT_PATH / 'data_files/energy_balance', VERSION, START)
-    zone_energyBalance = getEnergyBalanceZoneLevel(all_nodes, totalDemand, totalProduction, totalLoadShedding, flow_data, OUTPUT_PATH / 'data_files/energy_balance', VERSION, START)
-    # Store energy balance results in the dictionary
-    energyBalance[year] = {
-        "node_level": node_energyBalance,
-        "zone_level": zone_energyBalance
-    }
-
-
-# df_importexport = getImportExportFromDB(data, database, timeMaxMin=time_EB) # Import/Export data for all AREAS
-# %%
-# get average balance in each country
-# Initialize dictionary to store yearly sums for each country and metric
-sumBalance = {
-    'NO': {'Production': [], 'Demand': [], 'Balance': []},
-    'SE': {'Production': [], 'Demand': [], 'Balance': []},
-    'FI': {'Production': [], 'Demand': [], 'Balance': []},
-    'DK': {'Production': [], 'Demand': [], 'Balance': []},
-    'GB': {'Production': [], 'Demand': [], 'Balance': []},
-    'DE': {'Production': [], 'Demand': [], 'Balance': []},
-    'NL': {'Production': [], 'Demand': [], 'Balance': []},
-    'LT': {'Production': [], 'Demand': [], 'Balance': []},
-    'PL': {'Production': [], 'Demand': [], 'Balance': []},
-    'EE': {'Production': [], 'Demand': [], 'Balance': []},
-}
-countries = data.node.area.unique().tolist()
-all_zones = data.node.zone.unique().tolist()
-metrics = {
-    'Balance': 'Balance',
-    'Production': 'Production',
-    'Demand': 'Demand'
-}
-
-# Iterate over years and compute sums
-for year in energyBalance:
-    df = energyBalance[year]['zone_level']  # DataFrame for the year
-    for country in countries:
-        # Filter zones for the country
-        mask = df['Zone'].str.contains(country, na=False)
-        for sum_key, df_col in metrics.items():
-            # Sum the relevant column for filtered zones
-            sumBalance[f'{country}'][sum_key].append(
-                df[mask][df_col].astype(float).fillna(0).sum()
-            )
-
-# Calculate mean for each country and metric
-mean_balance = {
-    f'{country}': {
-        metric: sum(values) / len(values) if values else 0
-        for metric, values in metrics_dict.items()
-    }
-    for country, metrics_dict in sumBalance.items()
-}
-mean_balance = pd.DataFrame(mean_balance).T
 
 # %%
 START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
@@ -149,18 +253,16 @@ production, gen_idx, gen_type = GetProductionAtSpecificNodes(all_nodes, data, da
 # %% TETS - NY APPROACH BASERT PÅ TIDSSTEG OG IKKE DATO! National-level electricity production and consumption
 """
 Retrieves and aggregates electricity production and demand data at the national level.
-
 Based on idealyears over the 30-year climate periode so that each year has same number of hours so it can be comparable to each other.
-
 
 Overview:
 
 """
 
 # === INITIALIZATIONS ===
-country = "PL"  # Country code
+country = "DK"  # Country code
 
-n_ideal_years = 3
+n_ideal_years = 30
 n_timesteps = int(8766.4 * n_ideal_years) # Ved full 30-års simuleringsperiode
 # n_timesteps=8760
 
@@ -170,25 +272,6 @@ df_gen, df_prices, total_production, df_gen_per_year = get_production_by_type_id
     area_OP=country,
     n_timesteps=n_timesteps
 )
-
-
-# %% === Get production by type aggregate by zone ===
-'''
-Aggregates electricity production by zone and production type over a specified time period. 
-Returns two DataFrames: (1) detailed production per type, and (2) production merged into broader categories, in TWh.
-
-Input:
-- SELECTED_NODES = List of node IDs (e.g., ["NO1_1", "NO1_2", "NO1_3"]) 
-  or the string "ALL" to include all nodes in the system.
-'''
-# === INITIALIZATIONS ===
-START = {"year": 1993, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1993, "month": 12, "day": 31, "hour": 23}
-SELECTED_NODES = "ALL"
-# SELECTED_NODES = ["SE4_1", "SE4_2", "SE3_1", "SE2_1", "SE2_2"]
-# ======================================================================================================================
-zone_summed_df, zone_summed_merged_df = get_zone_production_summary(SELECTED_NODES, START, END, TIMEZONE, SIM_YEAR_START, SIM_YEAR_END, data, database)
-
 
 
 # %% === CHECK SPILLED VS PRODUCED ===
@@ -263,7 +346,7 @@ plot_config = {
     'relative': True,           # Relative storage filling, True gives percentage
     "plot_by_year": True,       # True: One curve for each year in same plot, or False:all years collected in one plot over the whole simulation period
     "duration_curve": False,    # True: Plot duration curve, or False: Plot storage filling over time
-    "save_fig": False,           # True: Save plot as pdf
+    "save_fig": True,           # True: Save plot as pdf
     "interval": 1,              # Number of months on x-axis. 1 = Step is one month, 12 = Step is 12 months
     'empty_threshold': 1e-6,    # If relative (True), empty_threshold is in percentage, if not, it is in MWh
     'include_legend': False,     # Include legend in the plot
@@ -291,7 +374,7 @@ plot_config = {
     'relative': True,               # Relative storage filling, True gives percentage
     "plot_by_year": 3,              # (1) Each year in individual plot, (2) Entire Timeline, (3) Each year show over 1 year timeline.
     "duration_curve": False,        # True: Plot duration curve, or False: Plot storage filling over time
-    "save_fig": False,              # True: Save plot as pdf
+    "save_fig": True,              # True: Save plot as pdf
     "interval": 1,                  # Number of months on x-axis. 1 = Step is one month, 12 = Step is 12 months
     'empty_threshold': 1e-6,        # If relative (True), empty_threshold is in percentage, if not, it is in MWh
     'include_legend': False,        # Include legend in the plot
@@ -394,31 +477,13 @@ print(f"Total production in {plot_config['area']}: {tot_prod:.2f} MWh")
 
 
 
-#%% Excel ###
-"""
-Production, consumption, and price data for specific nodes within a given time period.
+# %% === GET PRODUCTION (NODE/ZONE LEVEL) AND CONSUMPTION (ZONE LEVEL) DATA ===
 
-Main Features:
-- Handles time using Python's built-in datetime objects.
-- Retrieves simulated production, consumption, and price data from a given SQL file for selected nodes within a specified timeframe.
-- Organizes data and exports it to an Excel file for further analysis.
-"""
+START = {"year": 1991, "month": 2, "day": 6, "hour": 0}
+END = {"year": 1991, "month": 2, "day": 16, "hour": 23}
+time_period = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
 
-# === INITIALIZATIONS ===
-START = {"year": 1992, "month": 4, "day": 14, "hour": 0}
-END = {"year": 1992, "month": 5, "day": 31, "hour": 23}
-Nodes = ["DK1_2", "DK1_3", "SE3_3", "SE3_9"]
-SELECTED_BRANCHES  = [['SE3_1','FI_10'], ['SE3_3', 'FI_10']]
-# ======================================================================================================================
-
-start_hour, end_hour = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
-production_per_node, gen_idx, gen_type = GetProductionAtSpecificNodes(Nodes, data, database, start_hour, end_hour)
-
-
-consumption_per_node = GetConsumptionAtSpecificNodes(Nodes, data, database, start_hour, end_hour)
-nodal_prices_per_node = GetPriceAtSpecificNodes(Nodes, data, database, start_hour, end_hour)
 reservoir_filling_per_node, storage_cap = GetReservoirFillingAtSpecificNodes(Nodes, data, database, start_hour, end_hour)
-flow_data = getFlowDataOnBranches(data, database, [start_hour, end_hour], SELECTED_BRANCHES)
-excel_filename = ExportToExcel(Nodes, production_per_node, consumption_per_node, nodal_prices_per_node, reservoir_filling_per_node, storage_cap, flow_data, START, END, SCENARIO, VERSION, OUTPUT_PATH)
 
+save_production_to_excel(data, database, time_period, START, END, TIMEZONE, OUTPUT_PATH / 'data_files', VERSION)
 

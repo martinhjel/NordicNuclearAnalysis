@@ -8,6 +8,7 @@ import folium
 from folium.features import DivIcon
 import math
 from math import radians, degrees, atan2, cos, sin
+import logging
 
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
@@ -2534,3 +2535,152 @@ def getZonalPrices(data: GridData, database: Database, time_period, START, END):
 
     return zonal_prices
 
+
+
+def process_windoff_sensitivity(data, database, time_period) -> pd.DataFrame:
+    """
+    Process sensitivity data for offshore wind generators, including nodal prices and derived metrics.
+
+    Parameters:
+    -----------
+    data : object
+        Data object with 'generator' (DataFrame with 'type', 'node' columns) and 'node' (DataFrame with 'id' column).
+    database : object
+        Database object with methods 'getResultGeneratorSens' and 'getResultNodalPricesMean'.
+    sim_year_start : int
+        Start year of the simulation.
+    sim_year_end : int
+        End year of the simulation.
+    timezone : str
+        Timezone for the time period calculation.
+    start : dict
+        Start time with keys 'year', 'month', 'day', 'hour'.
+    end : dict
+        End time with keys 'year', 'month', 'day', 'hour'.
+
+    Returns:
+    --------
+    pd.DataFrame
+        Sorted DataFrame with columns: 'generator_idx', 'node', 'sensitivity_eur',
+        'sensitivity_avg_eur_h', 'nodal_price_avg_eur_mwh', 'sensitivity_diff_eur_mwh'.
+        Returns empty DataFrame if no data is available or on error.
+    """
+    try:
+        # Get offshore wind generator indices
+        generator_idx = data.generator[data.generator.type == 'wind_off'].index.tolist()
+        if not generator_idx:
+            logging.warning("No offshore wind generators found.")
+            return pd.DataFrame()
+
+        # Get time period
+        n_timesteps = time_period[1] - time_period[0]
+        if n_timesteps <= 0:
+            logging.error("Invalid time period: end time must be after start time.")
+            return pd.DataFrame()
+
+        # Retrieve and process sensitivity data
+        df_sens = database.getResultGeneratorSens(time_period, generator_idx)
+        if df_sens.empty:
+            logging.warning("No sensitivity data retrieved.")
+            return pd.DataFrame()
+
+        # Sum sensitivities and create DataFrame
+        df = df_sens.sum().to_frame(name='sensitivity_eur').reset_index().rename(columns={'indx': 'generator_idx'})
+        df['node'] = df['generator_idx'].map(data.generator['node'])
+
+        # Calculate average sensitivity per hour
+        df['sensitivity_avg_eur_h'] = df['sensitivity_eur'] / n_timesteps
+
+        # Map nodal prices
+        node_ids = list(data.node['id'])
+        avg_prices = database.getResultNodalPricesMean(time_period)
+        if len(avg_prices) != len(node_ids):
+            logging.warning(
+                f"Number of prices ({len(avg_prices)}) does not match number of nodes ({len(node_ids)}). "
+                f"Using first {min(len(node_ids), len(avg_prices))} nodes."
+            )
+        price_map = dict(zip(node_ids[:min(len(node_ids), len(avg_prices))], avg_prices[:min(len(node_ids), len(avg_prices))]))
+        df['nodal_price_avg_eur_mwh'] = df['node'].map(price_map)
+
+        # Calculate sensitivity difference
+        df['sensitivity_diff_eur_mwh'] = df['nodal_price_avg_eur_mwh'] + df['sensitivity_avg_eur_h']
+
+        # Select columns and sort by sensitivity
+        df = df[['generator_idx', 'node', 'sensitivity_eur', 'sensitivity_avg_eur_h',
+                 'nodal_price_avg_eur_mwh', 'sensitivity_diff_eur_mwh']]
+        df = df.sort_values('sensitivity_eur', ascending=True)
+
+        logging.info("Processed sensitivity data for %d generators.", len(generator_idx))
+        return df
+
+    except Exception as e:
+        logging.error("Error processing sensitivity data: %s", e)
+        return pd.DataFrame()
+
+
+def generatorSensitivityRanking(data, database, generator_type, time_period):
+    """
+    Ranks generators of a specified type based on their sensitivity and inflow profile.
+
+    Parameters:
+    - generator_type (str): Type of generator to investigate (e.g., 'hydro', 'wind', 'solar')
+    - data: Data object containing generator and profile information
+    - database: Database object to retrieve sensitivity data
+    - SIM_YEAR_START (int): Simulation start year
+    - SIM_YEAR_END (int): Simulation end year
+    - TIMEZONE (str): Timezone for the simulation
+    - START (dict): Start time dictionary with year, month, day, hour
+    - END (dict): End time dictionary with year, month, day, hour
+
+    Returns:
+    - pd.DataFrame: DataFrame with generator_idx, rank, and node, sorted by rank
+    """
+    # Get time period
+    min_time, max_time = time_period  # Unpack min, max from time_period
+
+    # Filter generators by type
+    generator_idx = data.generator[data.generator.type == generator_type].index.tolist()
+
+    # Get inflow ref to generator
+    generator_inflow = data.generator.inflow_ref[generator_idx].tolist()
+    gen_to_inflow_map = dict(zip(generator_idx, generator_inflow))
+
+    # Get inflow profile to generator
+    generator_inflow_profile = data.profiles[data.generator.inflow_ref[generator_idx].unique().tolist()].loc[
+                               min_time:max_time]
+
+    # Retrieve and process sensitivity data
+    df_sens = database.getResultGeneratorSens(time_period, generator_idx)
+
+    # Retrieve average nodal prices
+    avg_prices = database.getResultNodalPricesMean(time_period)
+    node_ids = data.generator.node.unique()  # Assuming node_ids come from unique nodes in generator data
+    price_map = dict(zip(node_ids[:min(len(node_ids), len(avg_prices))], avg_prices[:min(len(node_ids), len(avg_prices))]))
+
+    # Initialize results
+    ranks = []
+
+    for gen_idx, inflow_ref in gen_to_inflow_map.items():
+        sens = df_sens[gen_idx]
+        inflow = generator_inflow_profile[inflow_ref]
+
+        numerator = (inflow * sens).sum()
+        denominator = inflow.sum()
+
+        # Avoid division by zero
+        if denominator == 0:
+            rank = np.nan
+            print(f"Warning: Denominator is zero for generator {gen_idx}. Rank set to NaN.")
+        else:
+            rank = numerator / denominator
+
+        ranks.append({'generator_idx': gen_idx, 'sens': rank})
+
+    # Create and format output DataFrame
+    df = pd.DataFrame(ranks)
+    df['node'] = df['generator_idx'].map(data.generator['node'])
+    df['avg_nodal_price'] = df['node'].map(price_map)
+    df = df[['generator_idx', 'node', 'sens', 'avg_nodal_price']]
+    df = df.sort_values('sens', ascending=True)
+
+    return df

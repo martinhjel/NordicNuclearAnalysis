@@ -2343,39 +2343,41 @@ def save_production_to_excel(data, database, time_period, START, END, TIMEZONE, 
         ws = wb.create_sheet(title=sheet_name)
 
         if 'Production' in sheet_name:
-            # Write MultiIndex headers (two rows)
+            # Write single-row combined headers
             ws.cell(row=1, column=1).value = 'Time'
-            ws.cell(row=2, column=1).value = '' # Empty cell below Time
             if not df.columns.empty and isinstance(df.columns, pd.MultiIndex):
-                # First row: Zone or Node (repeated for each column)
-                for col_idx, (zone, _) in enumerate(df.columns, start=2):
-                    ws.cell(row=1, column=col_idx).value = zone
-                # Second row: Production Type
-                for col_idx, (_, prod_type) in enumerate(df.columns, start=2):
-                    ws.cell(row=2, column=col_idx).value = prod_type.replace(' ', '_')
+                # Combine Zone and Production Type into a single header
+                for col_idx, (zone, prod_type) in enumerate(df.columns, start=2):
+                    combined_header = f"{zone} {prod_type.replace(' ', '_')}"
+                    ws.cell(row=1, column=col_idx).value = combined_header
             else:
                 # Fallback for non-MultiIndex columns
                 for col_idx, col_name in enumerate(df.columns, start=2):
-                    ws.cell(row=2, column=col_idx).value = str(col_name)
+                    ws.cell(row=1, column=col_idx).value = str(col_name)
 
         elif 'Demand' in sheet_name:
-            # Write single header row for demand
+            # Write single-row combined headers
             ws.cell(row=1, column=1).value = 'Time'
             for col_idx, col_name in enumerate(df.columns, start=2):
-                ws.cell(row=1, column=col_idx).value = str(col_name)  # Column name in the first row
-                ws.cell(row=2, column=col_idx).value = 'Load'  # "Load" in the second row
-        elif 'Prices' in sheet_name:
-            # Write single header row for prices
-            ws.cell(row=1, column=1).value = 'Time'
-            for col_idx, col_name in enumerate(df.columns, start=2):
-                ws.cell(row=1, column=col_idx).value = str(col_name)
-                ws.cell(row=2, column=col_idx).value = 'Price'  # "Price" in the second row
+                combined_header = f"{col_name} Load"
+                ws.cell(row=1, column=col_idx).value = combined_header
 
-        # Write index (time) as YYYY-MM-DD HH:MM:SS strings and data
-        for row_idx, (time, row_data) in enumerate(df.iterrows(), start=3):
-            # Format time as YYYY-MM-DD HH:MM:SS
-            time_str = time.strftime('%Y-%m-%d %H:%M:%S')
-            ws.cell(row=row_idx, column=1).value = time_str
+        elif 'Prices' in sheet_name:
+            # Write single-row combined headers
+            ws.cell(row=1, column=1).value = 'Time'
+            for col_idx, col_name in enumerate(df.columns, start=2):
+                combined_header = f"{col_name} Price"
+                ws.cell(row=1, column=col_idx).value = combined_header
+
+        # Write index (time) as YYYY-MM-DD HH:MM strings and data
+        for row_idx, (time, row_data) in enumerate(df.iterrows(), start=2):
+            # Convert time to timezone-naive datetime
+            if time.tzinfo is not None:
+                time = time.replace(tzinfo=None)
+            # Write time as a datetime object
+            ws.cell(row=row_idx, column=1).value = time
+            # Set cell format to display as YYYY-MM-DD HH:MM
+            ws.cell(row=row_idx, column=1).number_format = 'yyyy-mm-dd hh:mm'
             for col_idx, value in enumerate(row_data, start=2):
                 ws.cell(row=row_idx, column=col_idx).value = float(value) if pd.notnull(value) else 0
 

@@ -149,12 +149,12 @@ Overview:
 areas = data.node.area.unique().tolist()  # List of areas in the system
 areas = areas[0:4]
 # === INITIALIZATIONS ===
-country = "GB"  # Country code
+country = "SE"  # Country code
 gen_dict = {}
 
 n_ideal_years = 30
 n_timesteps = int(8766.4 * n_ideal_years) # Ved full 30-års simuleringsperiode
-n_timesteps=8760
+# n_timesteps=8760
 
 df_gen, df_prices, total_production, df_gen_per_year = get_production_by_type_ideal_timestep(
         data=data,
@@ -225,7 +225,7 @@ END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
 # For at TEX-fonts skal kjøre, må du kjøre en test run først for å initialisere tex-fontene.
 # === PLOT CONFIGURATIONS ===
 plot_config = {
-    'areas': ['SE'],            # When plotting multiple years in one year, recommend to only use one area
+    'areas': ['NO'],            # When plotting multiple years in one year, recommend to only use one area
     'relative': True,           # Relative storage filling, True gives percentage
     "plot_by_year": True,       # True: One curve for each year in same plot, or False:all years collected in one plot over the whole simulation period
     "duration_curve": False,    # True: Plot duration curve, or False: Plot storage filling over time

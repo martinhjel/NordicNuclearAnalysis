@@ -1937,7 +1937,7 @@ def GetReservoirFillingAtSpecificNodes(Nodes, data: GridData, database: Database
     storage_data = data.generator[
         (data.generator["node"].isin(Nodes)) &
         (data.generator["storage_cap"] > 0) &
-        (data.generator["type"] == "hydro")
+        (data.generator["type"].isin(["hydro", "ror"]))
     ][["node", "storage_cap"]]
 
     storage_idx = storage_data.groupby("node").apply(lambda x: list(x.index)).to_dict()

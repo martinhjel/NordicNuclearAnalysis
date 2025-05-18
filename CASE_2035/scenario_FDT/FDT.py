@@ -8,7 +8,7 @@ from scripts.case_doc import *
 CASE_YEAR = 2035
 
 SCENARIO = 'FDT'
-VERSION = 'v1_sens'
+VERSION = 'v2_sens'
 
 SIM_YEAR_START = 1991
 SIM_YEAR_END = 2020

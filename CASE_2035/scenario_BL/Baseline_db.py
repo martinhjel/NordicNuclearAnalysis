@@ -3,15 +3,14 @@ from functions.global_functions import *  # Functions like 'read_grid_data', 'so
 from functions.database_functions import  * # Functions like 'getSystemCostFromDB' m.m.
 from zoneinfo import ZoneInfo
 from powergama.database import Database  # Import Database-Class specifically
-import pandas as pd
 
 
 # === General Configurations ===
 SIM_YEAR_START = 1991           # Start year for the main simulation  (SQL-file)
-SIM_YEAR_END = 1993             # End year for the main simulation  (SQL-file)
+SIM_YEAR_END = 2020             # End year for the main simulation  (SQL-file)
 CASE_YEAR = 2035
 SCENARIO = 'BL'
-VERSION = 'v38'
+VERSION = 'v40'
 TIMEZONE = ZoneInfo("UTC")  # Definerer UTC tidssone
 
 ####  PASS PÅ HARD KODING I SQL FIL
@@ -41,7 +40,19 @@ OUTPUT_PATH_PLOTS = BASE_DIR / 'results' / 'plots'
 data, time_max_min = setup_grid(VERSION, DATE_START, DATE_END, DATA_PATH, SCENARIO)
 database = Database(SQL_FILE)
 
+# Configure logging
+# logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
+
+
+
+# %% === GET WIND OFFSHORE SENSITIVITY ===
+
+# === INITIALIZATIONS ===
+START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
+END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
+time_period = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
+df_windoff = process_windoff_sensitivity(data, database, time_period)
 
 
 # %% === GET PRODUCTION (NODE/ZONE LEVEL) AND CONSUMPTION (ZONE LEVEL) DATA ===
@@ -50,7 +61,6 @@ START = {"year": 1991, "month": 2, "day": 6, "hour": 0}
 END = {"year": 1991, "month": 2, "day": 16, "hour": 23}
 time_period = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
 
-reservoir_filling_per_node, storage_cap = GetReservoirFillingAtSpecificNodes(Nodes, data, database, start_hour, end_hour)
 
 save_production_to_excel(data, database, time_period, START, END, TIMEZONE, OUTPUT_PATH / 'data_files', VERSION)
 
@@ -59,12 +69,35 @@ save_production_to_excel(data, database, time_period, START, END, TIMEZONE, OUTP
 
 # TODO: legg til mulighet for å ha øre/kwh
 zones = ['NO1', 'NO2', 'NO3', 'NO4', 'NO5', 'SE1', 'SE2', 'SE3', 'SE4',
-         'DK1', 'DK2', 'FI', 'DE', 'GB', 'NL', 'LT', 'PL', 'EE']
+         'DK1', 'DK2', 'FI'] #, 'DE', 'GB', 'NL', 'LT', 'PL', 'EE']
 year_range = list(range(SIM_YEAR_START, SIM_YEAR_END + 1))
 price_matrix, log = createZonePriceMatrix(data, database, zones, year_range, TIMEZONE, SIM_YEAR_START, SIM_YEAR_END)
 
 # Plot Zonal Price Matrix
-plotZonePriceMatrix(price_matrix, save_fig=True, OUTPUT_PATH_PLOTS=OUTPUT_PATH_PLOTS, start=SIM_YEAR_START, end=SIM_YEAR_END, version=VERSION)
+"""
+Colormap options:
+- 'YlOrRd': Yellow to Red
+- 'Blues': Blue shades
+- 'Greens': Green shades
+- 'Purples': Purple shades
+- 'Oranges': Orange shades
+- 'Greys': Grey shades
+- 'viridis': Viridis colormap
+- 'plasma': Plasma colormap
+- 'cividis': Cividis colormap
+- 'magma': Magma colormap
+- 'copper': Copper colormap
+- 'coolwarm': Coolwarm colormap
+- 'RdBu': Red to Blue colormap
+- 'Spectral': Spectral colormap
+- 'twilight': Twilight colormap
+- 'twilight_shifted': Twilight shifted colormap
+- 'cubehelix': Cubehelix colormap
+- 'terrain': Terrain colormap
+- 'ocean': Ocean colormap
+"""
+colormap = "plasma"
+plotZonePriceMatrix(price_matrix, save_fig=True, OUTPUT_PATH_PLOTS=OUTPUT_PATH_PLOTS, start=SIM_YEAR_START, end=SIM_YEAR_END, version=VERSION, colormap=colormap)
 
 
 # %% === GET INFLOW DEVIATION ===
@@ -74,7 +107,7 @@ average_inflow = plot_inflow_deviation(data)
 
 # === INITIALIZATIONS ===
 START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1991, "month": 1, "day": 31, "hour": 23}
+END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
 
 nordic_grid_map_fromDB(data, database, time_range = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END),
                        OUTPUT_PATH = OUTPUT_PATH / 'maps', version = VERSION, START = START, END = END, exchange_rate_NOK_EUR = 11.38)
@@ -83,14 +116,14 @@ nordic_grid_map_fromDB(data, database, time_range = get_hour_range(SIM_YEAR_STAR
 
 # %% === GET ENERGY MIX ===
 START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1993, "month": 12, "day": 31, "hour": 23}
+END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
 time_Shed = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
 dfplot = plotEnergyMix(data=data, database=database, areas=['NO', 'SE', 'FI', 'DK'],
                        timeMaxMin=time_Shed, variable="capacity").fillna(0)
 
 # %% === GET ENERGY BALANCE ON NODAL AND ZONAL LEVEL ===
 # === INITIALIZATIONS ===
-YEARS = 3          # Number of years to simulate
+YEARS = 30          # Number of years to simulate
 # Get energy balance for the specified years
 energyBalance, mean_balance = getEnergyBalance(data, database, SIM_YEAR_START, SIM_YEAR_END,
                                                TIMEZONE, OUTPUT_PATH, VERSION, YEARS)
@@ -116,12 +149,12 @@ Overview:
 areas = data.node.area.unique().tolist()  # List of areas in the system
 areas = areas[0:4]
 # === INITIALIZATIONS ===
-country = "EE"  # Country code
+country = "GB"  # Country code
 gen_dict = {}
 
-n_ideal_years = 3
+n_ideal_years = 30
 n_timesteps = int(8766.4 * n_ideal_years) # Ved full 30-års simuleringsperiode
-# n_timesteps=8760
+n_timesteps=8760
 
 df_gen, df_prices, total_production, df_gen_per_year = get_production_by_type_ideal_timestep(
         data=data,
@@ -192,7 +225,7 @@ END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
 # For at TEX-fonts skal kjøre, må du kjøre en test run først for å initialisere tex-fontene.
 # === PLOT CONFIGURATIONS ===
 plot_config = {
-    'areas': ['FI'],            # When plotting multiple years in one year, recommend to only use one area
+    'areas': ['SE'],            # When plotting multiple years in one year, recommend to only use one area
     'relative': True,           # Relative storage filling, True gives percentage
     "plot_by_year": True,       # True: One curve for each year in same plot, or False:all years collected in one plot over the whole simulation period
     "duration_curve": False,    # True: Plot duration curve, or False: Plot storage filling over time
@@ -220,7 +253,7 @@ END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
 
 # === PLOT CONFIGURATIONS ===
 plot_config = {
-    'zones': ['NO5'],               # When plotting multiple years in one year, recommend to only use one zone
+    'zones': ['SE4'],               # When plotting multiple years in one year, recommend to only use one zone
     'relative': True,               # Relative storage filling, True gives percentage
     "plot_by_year": 3,              # (1) Each year in individual plot, (2) Entire Timeline, (3) Each year show over 1 year timeline.
     "duration_curve": False,        # True: Plot duration curve, or False: Plot storage filling over time

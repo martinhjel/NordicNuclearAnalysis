@@ -133,8 +133,8 @@ import matplotlib.cm as cm
 from matplotlib.lines import Line2D
 import subprocess
 
-def plot_storage_filling_area(storfilling, DATE_START, DATE_END, areas, interval, title, OUTPUT_PATH_PLOTS,
-                              relative, plot_by_year, save_plot, duration_curve, tex_font,
+def plot_storage_filling_area(storfilling, DATE_START, DATE_END, areas, interval, title=None, OUTPUT_PATH_PLOTS=None,
+                              relative=None, plot_by_year=None, save_plot=None, duration_curve=None, tex_font=None,
                               legend=True, fig_size=(10, 6), plot_type=None, START=None, END=None):
     """
     Plots the storage filling levels for specified areas over a given date range.
@@ -256,7 +256,8 @@ def plot_storage_filling_area(storfilling, DATE_START, DATE_END, areas, interval
             ax.set_yticklabels(['0%', '20%', '40%', '60%', '80%', '100%'])
         ax.set_ylim(0, 100)
 
-    plt.title(title)
+    if title is not None:
+        plt.title(title)
     plt.grid(True)
     plt.tight_layout()
     # plt.subplots_adjust(bottom=0.3)  # Reserve space for legend
@@ -555,20 +556,49 @@ def plot_zonal_prices_FromDB(data: GridData, zone_prices, zones, DATE_START, DAT
 
 
 
-def plotZonePriceMatrix(price_matrix, save_fig, OUTPUT_PATH_PLOTS, start, end, version, colormap):
-    plt.figure(figsize=(12, 6))
-    ax = sns.heatmap(price_matrix.astype(float), annot=True,fmt='.0f', cmap=colormap, linewidths=0.5)
-    plt.title("Zonal Average Prices per Year")
+def plotZonePriceMatrix(price_matrix, plot_config):
+    import matplotlib.transforms as transforms
+    fig, ax = plt.subplots(figsize=plot_config['fig_size'])
+    heatmap = sns.heatmap(
+        price_matrix.astype(float),
+        annot=True,
+        fmt='.0f',
+        cmap=plot_config['colormap'],
+        linewidths=0.5,
+        cbar=False,
+        ax=ax
+    )
+    # Set the colorbar label
+    # Manually add the colorbar closer to the heatmap
+    cbar = fig.colorbar(heatmap.collections[0], ax=ax, location='right', pad=plot_config['cbar_xpos'])  # smaller pad = closer
+    cbar.set_label(plot_config['cbar_label'])
+
+    if plot_config['title'] is not None:
+        ax.set_title(plot_config['title'])
     plt.xlabel("Year")
     plt.ylabel("Zone")
-    ax.set_yticklabels(ax.get_yticklabels(), rotation=0, ha='right', va='center')
+    ax.set_yticklabels(ax.get_yticklabels(), rotation=plot_config['rotation_y'], ha=plot_config['ha_y'],
+                       va=plot_config['va_y'])
     ax.tick_params(axis='y', pad=10)  # Add padding to move labels away from plot
+    # ax.set_xticklabels(ax.get_xticklabels(), rotation=plot_config['rotation_x'], ha=plot_config['ha_x'],
+    #                   va=plot_config['va_x'])
+
+    dx = plot_config['x_label_xShift']  # Shift right by 5 points (1 point = 1/72 inch)
+    for label in ax.get_xticklabels():
+        label.set_horizontalalignment(plot_config['ha_x'])  # or 'left'/'center'
+        label.set_verticalalignment(plot_config['va_x'])  # or 'bottom'/'center'
+        label.set_rotation(plot_config['rotation_x'])  # example rotation
+        x, y = label.get_position()
+        label.set_position((x, y + plot_config['x_label_yShift']))  # y-shift
+        offset = transforms.ScaledTranslation(dx, 0, ax.figure.dpi_scale_trans)
+        label.set_transform(label.get_transform() + offset)
     # Adjust layout to allocate more space on the left
     # plt.subplots_adjust(left=0.2)  # Increase left margin
     plt.tight_layout()
-    if save_fig:
-        filename = f"ZonePriceMatrix_{version}_{start}_{end}.pdf"
-        plt.savefig(OUTPUT_PATH_PLOTS / filename)
+    if plot_config['save_fig']:
+        filename = f"ZonePriceMatrix_{plot_config['version']}_{plot_config['start']}_{plot_config['end']}.pdf"
+        plt.savefig(plot_config['OUTPUT_PATH_PLOTS'] / filename, dpi=plot_config['dpi'],
+                    bbox_inches=plot_config['bbox_inches'])
         return filename
     plt.show()
 
@@ -1366,26 +1396,27 @@ def plot_by_year(row, DATE_START, OUTPUT_PATH_PLOTS, save_fig, interval, tex_fon
         plt.show()
 
 
-def plot_duration_curve(row, OUTPUT_PATH_PLOTS, save_fig, duration_relative, tex_font):
-    plt.figure(figsize=(10, 6))
+def plot_duration_curve(row, OUTPUT_PATH_PLOTS, plot_config):
+    plt.figure(figsize=plot_config['fig_size'])
     sorted_flows = sorted(row['load [MW]'], reverse=True)
-    if duration_relative:
+    if plot_config['duration_relative']:
         # Calculate percentiles for the x-axis
         percentile = [100 * (i + 1) / len(sorted_flows) for i in range(len(sorted_flows))]
-
-        plt.plot(percentile, sorted_flows, label=f"From: {row['from']} To: {row['to']}", color='green')
         plt.axhline(y=row['capacity [MW]'], color='red', linestyle='--',
                     label=f"Max capacity: {row['capacity [MW]']:.2f} MW")
         plt.axhline(y=-row['capacity [MW]'], color='red', linestyle='--')
+        plt.plot(percentile, sorted_flows, label=f"From: {row['from'][:3]} To: {row['to'][:3]}", color='green')
 
-        plt.xlabel("Percentile [%]")
-        plt.title(f"Duration Curve for {row['type']} Connection {row['from']} → {row['to']}")
+
+        plt.xlabel("Percentile [\%]")
+        if plot_config['title'] is not None:
+            plt.title(f"Duration Curve for {row['type']} Connection {row['from']} → {row['to']}")
 
         ax = plt.gca()
         ax.xaxis.set_major_locator(plt.MultipleLocator(10))
         plt.setp(ax.xaxis.get_majorticklabels())
 
-        plt.ylabel("Load [MW]")
+        plt.ylabel("Flow [MW]")
 
     else:
         # X-axis represents the number of hours
@@ -1408,7 +1439,7 @@ def plot_duration_curve(row, OUTPUT_PATH_PLOTS, save_fig, duration_relative, tex
     plt.legend(loc='upper right')
     plt.grid(True)
     plt.tight_layout()
-    if tex_font:
+    if plot_config['tex_font']:
         plt.rcParams.update({
             "text.usetex": True,
             "font.family": "serif",
@@ -1425,13 +1456,13 @@ def plot_duration_curve(row, OUTPUT_PATH_PLOTS, save_fig, duration_relative, tex
         })
         print("Using default serif font (DejaVu Serif).")
     # Define the plot file name
-    if duration_relative:
+    if plot_config['duration_relative']:
         plot_file_name = OUTPUT_PATH_PLOTS / f"duration_curve_{row['from']}_{row['to']}.pdf"
     else:
         plot_file_name = OUTPUT_PATH_PLOTS / f"sorted_load_curve_{row['from']}_{row['to']}.pdf"
 
-    if save_fig:
-        plt.savefig(plot_file_name)
+    if plot_config['save_fig']:
+        plt.savefig(plot_file_name, dpi=plot_config['dpi'], bbox_inches=plot_config['bbox_inches'])
         print(f"Plot saved as: {plot_file_name}")
     plt.show()
 

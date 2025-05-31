@@ -2278,7 +2278,7 @@ def get_production_summary_full_period(data, database, time_Prod, START, END, TI
 
     return summed_df, summed_merged_df
 
-def save_production_to_excel(data, database, time_period, START, END, TIMEZONE, OUTPUT_PATH, VERSION):
+def save_production_to_excel(data, database, time_period, START, END, TIMEZONE, OUTPUT_PATH, VERSION, relative=True):
     '''
     Generates production summaries for both zone and node levels, and saves them to
     separate sheets in a single Excel file.
@@ -2316,6 +2316,9 @@ def save_production_to_excel(data, database, time_period, START, END, TIMEZONE, 
     nodal_prices_per_node = GetPriceAtSpecificNodes(Nodes, data, database, time_period[0], time_period[-1])
     nodal_prices_per_node = pd.DataFrame(nodal_prices_per_node, index=pd.date_range(start=start_time, end=end_time, freq='h'))
 
+    df_zone_flows = getFlowBetweenAllZones(data, database, time_period, START, END)
+
+    df_storagefilling = getStorageFilling(data, database, time_period, START, END, relative)
 
     # Define Excel file path
 
@@ -2335,6 +2338,8 @@ def save_production_to_excel(data, database, time_period, START, END, TIMEZONE, 
         'Node_Demand': node_demand,
         'Zonal_Prices': zonal_prices,
         'Nodal_Prices': nodal_prices_per_node,
+        'Zone_Flows': df_zone_flows,
+        'Storage_Filling': df_storagefilling
     }
 
     # Write each DataFrame to a separate sheet
@@ -2367,6 +2372,20 @@ def save_production_to_excel(data, database, time_period, START, END, TIMEZONE, 
             ws.cell(row=1, column=1).value = 'Time'
             for col_idx, col_name in enumerate(df.columns, start=2):
                 combined_header = f"{col_name} Price"
+                ws.cell(row=1, column=col_idx).value = combined_header
+
+        elif 'Flows' in sheet_name:
+            # Write single-row combined headers
+            ws.cell(row=1, column=1).value = 'Time'
+            for col_idx, col_name in enumerate(df.columns, start=2):
+                combined_header = f"{col_name} Flow"
+                ws.cell(row=1, column=col_idx).value = combined_header
+
+        elif 'Storage' in sheet_name:
+            # Write single-row combined headers
+            ws.cell(row=1, column=1).value = 'Time'
+            for col_idx, col_name in enumerate(df.columns, start=2):
+                combined_header = f"{col_name} Filling"
                 ws.cell(row=1, column=col_idx).value = combined_header
 
         # Write index (time) as YYYY-MM-DD HH:MM strings and data
@@ -2620,7 +2639,7 @@ def process_windoff_sensitivity(data, database, time_period) -> pd.DataFrame:
         return pd.DataFrame()
 
 
-def generatorSensitivityRanking(data, database, generator_type, time_period):
+def generatorSensitivityRanking(data, database, generator_type, time_period, weighted=True):
     """
     Ranks generators of a specified type based on their sensitivity and inflow profile.
 
@@ -2666,8 +2685,9 @@ def generatorSensitivityRanking(data, database, generator_type, time_period):
         sens = df_sens[gen_idx]
         inflow = generator_inflow_profile[inflow_ref]
 
-        numerator = (inflow * sens).sum()
-        denominator = inflow.sum()
+        numerator = (inflow * sens).sum() if weighted else sens.sum()
+        denominator = inflow.sum() if weighted else len(sens)
+
 
         # Avoid division by zero
         if denominator == 0:
@@ -2686,3 +2706,251 @@ def generatorSensitivityRanking(data, database, generator_type, time_period):
     df = df.sort_values('sens', ascending=True)
 
     return df
+
+
+
+def generatorSensitivityRankingALL(data, database, time_period, OUTPUT_PATH_PLOTS, inflow_weighted=True, save_fig=False,
+                                   include_fliers=False, area_filter=None):
+    """
+    Computes the normalized sensitivity of generators and ranks them by type.
+    This function retrieves the dual sensitivities for all generators over a specified time period,
+    calculates the normalized sensitivity, and generates a boxplot of the results.
+
+    Parameters:
+    - data: The grid data object containing generator and profile information.
+    - database: The database object to retrieve results from.
+    - gen_type: The type of generator to filter by (e.g., 'wind_off', 'solar').
+    - time_period: The time period for which to compute sensitivities.
+    - inflow_weighted: If True, the sensitivity is weighted by the inflow profile.
+    - save_fig: If True, saves the generated plot to a file.
+    - include_fliers: If True, includes outliers in the boxplot.
+    - area_filter: Optional string to filter generators by area (e.g., "NO1"). If None, all generators are included.
+
+    """
+    min_time, max_time = time_period
+    # Get all generator indices and types
+    all_gens = data.generator.index.tolist()
+
+    if area_filter is not None:
+        # Filter generator indices based on area (e.g., "NO1")
+        all_gens = data.generator[data.generator.node.str.startswith(area_filter)].index.tolist()
+
+    if len(all_gens) == 0:
+        print(f"No generators found in area '{area_filter}'.")
+        return pd.DataFrame()
+
+    gen_types = data.generator['type']
+
+    # Retrieve dual sensitivities for all generators over the time period
+    df_sens = database.getResultGeneratorSens(time_period, all_gens)
+
+    # Get inflow profile mapping
+    generator_inflow_refs = data.generator.loc[all_gens, 'inflow_ref']
+    gen_to_inflow_map = dict(zip(all_gens, generator_inflow_refs))
+
+    # Load inflow profiles
+    unique_inflows = generator_inflow_refs.unique().tolist()
+    inflow_profiles = data.profiles[unique_inflows].loc[min_time:max_time]
+
+    # Compute normalized sensitivity (R_i) for each generator
+    ranks = []
+    for gen_idx, inflow_ref in gen_to_inflow_map.items():
+        sens = df_sens[gen_idx].abs()
+        inflow = inflow_profiles[inflow_ref]
+
+        numerator = (inflow * sens).sum()
+        denominator = inflow.sum()
+
+        if denominator == 0:
+            rank = np.nan
+            print(f"Warning: Denominator is zero for generator {gen_idx}. Rank set to NaN.")
+        else:
+            if inflow_weighted:
+                # Normalized sensitivity
+                rank = numerator / denominator
+            else:
+                # Non-weighted sensitivity
+                rank = sens.mean()
+
+        ranks.append({
+            'generator_idx': gen_idx,
+            'sens': rank,
+            'type': gen_types.loc[gen_idx],
+            'node': data.generator.loc[gen_idx, 'node']
+        })
+
+    # Create DataFrame of results
+    df_sens_ranked = pd.DataFrame(ranks).dropna(subset=['sens'])
+
+    # Now you can group by type and create a boxplot
+    import seaborn as sns
+    import matplotlib.pyplot as plt
+
+    # Define a color palette that matches the nature of each generator type
+    custom_palette = {
+        'wind_off': '#1f77b4',    # Blue-ish for offshore wind
+        'wind_on': '#1f77b4',     # Same tone for onshore wind
+        'solar': '#ff7f0e',       # Orange for solar
+        'hydro': '#2ca02c',       # Green for hydro
+        'ror': '#17becf',         # Light blue for run-of-river
+        'biomass': '#8c564b',     # Brown/earthy for biomass
+        'fossil_gas': '#7f7f7f',  # Gray for fossil
+        'fossil_other': '#6E5849',  # Dark brown for other fossil fuels
+        'nuclear': '#9467bd',     # Purple for nuclear
+    }
+
+
+    # Step 1: Calculate the median sensitivity per generator type
+    type_order = (
+        df_sens_ranked.groupby('type')['sens']
+        .median()
+        .abs()                   # In case you've taken absolute values
+        .sort_values(ascending=False)
+        .index.tolist()
+    )
+
+    plt.figure(figsize=(12, 6))
+
+    sns.boxplot(
+        data=df_sens_ranked,
+        x='type',
+        y='sens',
+        palette=custom_palette,
+        order=type_order,        # Apply the custom order
+        showfliers=include_fliers
+    )
+    title_area = f" ({area_filter})" if area_filter else ""
+    title_weight = "Inflow Weighted" if inflow_weighted else "Not Weighted"
+    plt.title(f'Generator Sensitivities by Type{title_area} ({title_weight})')
+    plt.ylabel('Normalized Sensitivity EUR/MW')
+    plt.xlabel('Generator Type')
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    if save_fig:
+        area_tag = f"_{area_filter}" if area_filter else ""
+        weight_tag = "inflow_weighted" if inflow_weighted else "not_weighted"
+        filename = f'gen_sens_by_type{area_tag}_{weight_tag}_{VERSION}.pdf'
+        plt.savefig(OUTPUT_PATH_PLOTS / filename)
+    plt.show()
+    return df_sens_ranked
+
+
+def getFlowBetweenAllZones(data, database, time_period, START, END):
+    print(f'🔄 Collecting flow data between all zones from {START['year']} to {END['year']}...')
+
+    start_time = datetime(START['year'], START['month'], START['day'], START['hour'], 0)
+    end_time = datetime(END['year'], END['month'], END['day'], END['hour'], 0)
+    time_index = pd.date_range(start=start_time, end=end_time, freq='h')
+    flow_data = collectFlowDataOnALLBranches(data, database, time_period)
+
+    all_nodes = data.node.id.tolist()  # Get all node names from the grid data
+    node_names = [node for node in all_nodes]
+
+    # Create node-to-zone mapping
+    node_to_zone = {}
+    for node in node_names:
+        if '_' in node:
+            # Take prefix before first underscore (e.g., 'DK1_3' -> 'DK1', 'SE3_hub_east' -> 'SE3')
+            zone = node.split('_')[0]
+        else:
+            # No underscore (e.g., 'GB', 'DE') -> use full name as zone
+            zone = node
+        node_to_zone[node] = zone
+
+    # Assuming flow_data is a list of lists or a DataFrame
+    # Convert to DataFrame for easier handling if not already
+    if isinstance(flow_data, list):
+        flow_df = pd.DataFrame(flow_data[1:], columns=flow_data[0])
+    else:
+        flow_df = flow_data
+
+    # Dictionary to hold time series flow between zones
+    zone_to_zone_flow = defaultdict(lambda: np.zeros(len(time_period)))
+    line_flows = defaultdict(list)
+
+    # Optional: Set to hold all unique zone connections
+    zone_connections = set()
+    import ast
+    # Process each line in flow_data
+    for _, row in flow_df.iterrows():
+        from_node = row['from']
+        to_node = row['to']
+        loads = row['load [MW]']  # List of load values
+
+        # Convert load to array
+        if isinstance(loads, str):
+            loads = ast.literal_eval(loads)
+        loads = np.array(loads).flatten()
+
+        # if loads.shape[0] != 8760:
+        #     print(f"Invalid load shape for line {from_node}-{to_node}: {loads.shape}")
+        #     continue
+
+        line_flows[(from_node, to_node)].append(loads)
+
+        from_zone = node_to_zone.get(from_node)
+        to_zone = node_to_zone.get(to_node)
+
+        # Skip if same zone or undefined
+        if from_zone is None or to_zone is None or from_zone == to_zone:
+            continue
+
+        # Always sort zone names to make the key symmetric
+        key = tuple(sorted([from_zone, to_zone]))
+        zone_connections.add(key)
+
+        # Determine sign: +1 if direction matches key order, -1 otherwise
+        direction = 1 if (from_zone, to_zone) == key else -1
+
+        # Add signed flow
+        existing = zone_to_zone_flow[key]
+        if not isinstance(existing, np.ndarray) or existing.shape[0] != 8760:
+            existing = np.zeros(8760)
+
+        zone_to_zone_flow[key] = existing + direction * loads
+
+    # Convert keys to single string: "SE2→SE3"
+    flat_columns = {f"{k[0]}-{k[1]}": v for k, v in zone_to_zone_flow.items()}
+
+    df_zone_flows = pd.DataFrame.from_dict(flat_columns)
+    # Set index
+    df_zone_flows.index = time_index
+    df_zone_flows.index.name = "Time"
+
+    return df_zone_flows
+
+
+def getStorageFilling(data, database, time_period, START, END, relative=True):
+    """ Collects storage filling data for specified areas and zones. """
+    areas = ['NO', 'SE', 'FI']
+    storfilling = pd.DataFrame()
+    print(f"💧 Collecting storage filling data for areas: {', '.join(areas)}")
+
+    for area in areas:
+        storfilling[area] = getStorageFillingInAreaFromDB(data=data,
+                                                          db=database,
+                                                          areas=[area],
+                                                          generator_type=['hydro', 'ror'],
+                                                          relative_storage=relative,
+                                                          timeMaxMin=time_period)
+        if relative:
+            storfilling[area] = storfilling[area] * 100
+
+    zones = ['NO1', 'NO2', 'NO3', 'NO4', 'NO5', 'SE1', 'SE2', 'SE3', 'SE4']
+    print(f"💧 Collecting storage filling data for zones: {', '.join(zones)}")
+
+    for zone in zones:
+        storfilling[zone] = getStorageFillingInZoneFromDB(data=data,
+                                                          db=database,
+                                                          zones=[zone],
+                                                          generator_type=['hydro', 'ror'],
+                                                          relative_storage=relative,
+                                                          timeMaxMin=time_period)
+        if relative:
+            storfilling[zone] = storfilling[zone] * 100
+    # Compute the correct DATE_START for this year
+    start_time = datetime(START['year'], START['month'], START['day'], START['hour'], 0)
+    end_time = datetime(END['year'], END['month'], END['day'], END['hour'], 0)
+    storfilling.index = pd.date_range(start=start_time, end=end_time, freq='h')
+    storfilling.index.name = "Time"
+    return storfilling

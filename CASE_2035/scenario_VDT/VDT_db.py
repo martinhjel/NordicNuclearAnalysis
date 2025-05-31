@@ -8,10 +8,10 @@ import pandas as pd
 
 # === General Configurations ===
 SIM_YEAR_START = 1991           # Start year for the main simulation  (SQL-file)
-SIM_YEAR_END = 2020             # End year for the main simulation  (SQL-file)
+SIM_YEAR_END = 1993             # End year for the main simulation  (SQL-file)
 CASE_YEAR = 2035
 SCENARIO = 'VDT'
-VERSION = 'v8_sens'
+VERSION = 'FINAL'
 TIMEZONE = ZoneInfo("UTC")  # Definerer UTC tidssone
 
 ####  PASS PÅ HARD KODING I SQL FIL
@@ -41,148 +41,39 @@ OUTPUT_PATH_PLOTS = BASE_DIR / 'results' / 'plots'
 data, time_max_min = setup_grid(VERSION, DATE_START, DATE_END, DATA_PATH, SCENARIO)
 database = Database(SQL_FILE)
 
+plt.rcParams.update({
+            "text.usetex": True,
+            "font.family": "serif",
+            "font.serif": ['cmr10'],
+            "axes.formatter.use_mathtext": True,  # Fix cmr10 warning
+            "axes.unicode_minus": False  # Fix minus sign rendering
+        })
 
 
-# %% === GET SENSIBILITY RANKING ===
 
+# %% === PRODUCTION / DEMAND / PRICE / FLOW / RESERVOIR ===
+
+START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
+END = {"year": 1991, "month": 12, "day": 31, "hour": 23}
+time_period = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
+relative_storage = True # True if relative storage in percentage
+
+save_production_to_excel(data, database, time_period, START, END, TIMEZONE,
+                         OUTPUT_PATH / 'data_files', VERSION, relative_storage)
+
+
+
+
+# %% === GET SENSIBILITY RANKING FOR SPECIFIC GEN TYPE ===
 
 # === INITIALIZATIONS ===
 GEN_TYPE = 'wind_off'
 START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
 END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
 time_period = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
-sensitivity_rank = generatorSensitivityRanking(data, database, GEN_TYPE, time_period)
+sensitivity_rank = generatorSensitivityRanking(data, database, GEN_TYPE, time_period, weighted=True)
 
 # %% === GET Sensitivity for All Generators and Rank by Type ===
-
-
-
-def generatorSensitivityRankingALL(data, database, time_period, inflow_weighted=True, save_fig=False, include_fliers=False, area_filter=None):
-    """
-    Computes the normalized sensitivity of generators and ranks them by type.
-    This function retrieves the dual sensitivities for all generators over a specified time period,
-    calculates the normalized sensitivity, and generates a boxplot of the results.
-
-    Parameters:
-    - data: The grid data object containing generator and profile information.
-    - database: The database object to retrieve results from.
-    - gen_type: The type of generator to filter by (e.g., 'wind_off', 'solar').
-    - time_period: The time period for which to compute sensitivities.
-    - inflow_weighted: If True, the sensitivity is weighted by the inflow profile.
-    - save_fig: If True, saves the generated plot to a file.
-
-    """
-    min_time, max_time = time_period
-    # Get all generator indices and types
-    all_gens = data.generator.index.tolist()
-
-    if area_filter is not None:
-        # Filter generator indices based on area (e.g., "NO1")
-        all_gens = data.generator[data.generator.node.str.startswith(area_filter)].index.tolist()
-
-    if len(all_gens) == 0:
-        print(f"No generators found in area '{area_filter}'.")
-        return pd.DataFrame()
-
-    gen_types = data.generator['type']
-
-    # Retrieve dual sensitivities for all generators over the time period
-    df_sens = database.getResultGeneratorSens(time_period, all_gens)
-
-    # Get inflow profile mapping
-    generator_inflow_refs = data.generator.loc[all_gens, 'inflow_ref']
-    gen_to_inflow_map = dict(zip(all_gens, generator_inflow_refs))
-
-    # Load inflow profiles
-    unique_inflows = generator_inflow_refs.unique().tolist()
-    inflow_profiles = data.profiles[unique_inflows].loc[min_time:max_time]
-
-    # Compute normalized sensitivity (R_i) for each generator
-    ranks = []
-    for gen_idx, inflow_ref in gen_to_inflow_map.items():
-        sens = df_sens[gen_idx].abs()
-        inflow = inflow_profiles[inflow_ref]
-
-        numerator = (inflow * sens).sum()
-        denominator = inflow.sum()
-
-        if denominator == 0:
-            rank = np.nan
-            print(f"Warning: Denominator is zero for generator {gen_idx}. Rank set to NaN.")
-        else:
-            if inflow_weighted:
-                # Normalized sensitivity
-                rank = numerator / denominator
-            else:
-                # Non-weighted sensitivity
-                rank = sens.mean()
-
-        ranks.append({
-            'generator_idx': gen_idx,
-            'sens': rank,
-            'type': gen_types.loc[gen_idx],
-            'node': data.generator.loc[gen_idx, 'node']
-        })
-
-    # Create DataFrame of results
-    df_sens_ranked = pd.DataFrame(ranks).dropna(subset=['sens'])
-
-    # Now you can group by type and create a boxplot
-    import seaborn as sns
-    import matplotlib.pyplot as plt
-
-    # Define a color palette that matches the nature of each generator type
-    custom_palette = {
-        'wind_off': '#1f77b4',    # Blue-ish for offshore wind
-        'wind_on': '#1f77b4',     # Same tone for onshore wind
-        'solar': '#ff7f0e',       # Orange for solar
-        'hydro': '#2ca02c',       # Green for hydro
-        'ror': '#17becf',         # Light blue for run-of-river
-        'biomass': '#8c564b',     # Brown/earthy for biomass
-        'fossil_gas': '#7f7f7f',  # Gray for fossil
-        'nuclear': '#9467bd',     # Purple for nuclear
-    }
-
-
-    # Step 1: Calculate the median sensitivity per generator type
-    type_order = (
-        df_sens_ranked.groupby('type')['sens']
-        .median()
-        .abs()                   # In case you've taken absolute values
-        .sort_values(ascending=False)
-        .index.tolist()
-    )
-
-    plt.figure(figsize=(12, 6))
-    plt.rcParams.update({
-                "text.usetex": True,
-                "font.family": "serif",
-                "font.serif": ['cmr10'],
-                "axes.formatter.use_mathtext": True,  # Fix cmr10 warning
-                "axes.unicode_minus": False  # Fix minus sign rendering
-            })
-    sns.boxplot(
-        data=df_sens_ranked,
-        x='type',
-        y='sens',
-        palette=custom_palette,
-        order=type_order,        # Apply the custom order
-        showfliers=include_fliers
-    )
-    title_area = f" ({area_filter})" if area_filter else ""
-    title_weight = "Inflow Weighted" if inflow_weighted else "Not Weighted"
-    plt.title(f'Generator Sensitivities by Type{title_area} ({title_weight})')
-    plt.ylabel('Normalized Sensitivity EUR/MW')
-    plt.xlabel('Generator Type')
-    plt.xticks(rotation=45)
-    plt.tight_layout()
-    if save_fig:
-        area_tag = f"_{area_filter}" if area_filter else ""
-        weight_tag = "inflow_weighted" if inflow_weighted else "not_weighted"
-        filename = f'gen_sens_by_type{area_tag}_{weight_tag}_{VERSION}.pdf'
-        plt.savefig(OUTPUT_PATH_PLOTS / filename)
-    plt.show()
-    return df_sens_ranked
 
 START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
 END = {"year": 1991, "month": 12, "day": 31, "hour": 23}
@@ -190,40 +81,70 @@ time_period = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
 sens = generatorSensitivityRankingALL(data,
                                       database,
                                       time_period,
+                                      OUTPUT_PATH_PLOTS,
                                       inflow_weighted=True,
                                       save_fig=True,
                                       include_fliers=True,
                                       area_filter=None)
 
 
-# %% === ZONAL PRICE MAP ===
+# %% === GET ZONAL PRICE MATRIX ===
 
 # TODO: legg til mulighet for å ha øre/kwh
 zones = ['NO1', 'NO2', 'NO3', 'NO4', 'NO5', 'SE1', 'SE2', 'SE3', 'SE4',
-         'DK1', 'DK2', 'FI']# , 'DE', 'GB', 'NL', 'LT', 'PL', 'EE']
+         'DK1', 'DK2', 'FI', 'DE', 'GB', 'NL', 'LT', 'PL', 'EE']
 year_range = list(range(SIM_YEAR_START, SIM_YEAR_END + 1))
 price_matrix, log = createZonePriceMatrix(data, database, zones, year_range, TIMEZONE, SIM_YEAR_START, SIM_YEAR_END)
+
 # Plot Zonal Price Matrix
-plotZonePriceMatrix(price_matrix, save_fig=True, OUTPUT_PATH_PLOTS=OUTPUT_PATH_PLOTS, start=SIM_YEAR_START, end=SIM_YEAR_END, version=VERSION)
+"""
+Colormap options:
+- 'YlOrRd': Yellow to Red
+- 'Blues': Blue shades
+- 'Greens': Green shades
+- 'Purples': Purple shades
+- 'Oranges': Orange shades
+- 'Greys': Grey shades
+- 'viridis': Viridis colormap
+- 'plasma': Plasma colormap
+- 'cividis': Cividis colormap
+- 'magma': Magma colormap
+- 'copper': Copper colormap
+- 'coolwarm': Coolwarm colormap
+- 'RdBu': Red to Blue colormap
+- 'Spectral': Spectral colormap
+- 'twilight': Twilight colormap
+- 'twilight_shifted': Twilight shifted colormap
+- 'cubehelix': Cubehelix colormap
+- 'terrain': Terrain colormap
+- 'ocean': Ocean colormap
+"""
+colormap = "YlOrRd"
+title_map = None # "Average Zonal Price Map"
+plot_config = {
+    'save_fig': True,  # Save the figure
+    'OUTPUT_PATH_PLOTS': OUTPUT_PATH_PLOTS,
+    'start': SIM_YEAR_START,
+    'end': SIM_YEAR_END,
+    'version': VERSION,
+    'colormap': colormap,
+    'title': title_map,
+    'fig_size': (10, 5),  # Figure size in inches
+    'dpi': 300,  # Dots per inch for the saved figure
+    'cbar_label': "Price [€/MWh]",  # Colorbar label
+    'cbar_xpos': 0.02,  # Colorbar x-position padding
+    'bbox_inches': 'tight',  # Bounding box for saving the figure,
+    'rotation_x': 65,  # Rotation for x-axis labels
+    'rotation_y': 0,  # Rotation for y-axis labels
+    'ha_x': 'right',  # Horizontal alignment for x-axis labels
+    'va_x': 'top',  # Vertical alignment for x-axis labels
+    'ha_y': 'right',  # Horizontal alignment for y-axis labels
+    'va_y': 'center',  # Vertical alignment for y-axis labels
+    'x_label_xShift': 5 / 72,  # X-axis label x-shift
+    'x_label_yShift': 0.01,  # X-axis label y-shift
 
-
-# %% === GET WIND OFFSHORE SENSITIVITY ===
-
-# === INITIALIZATIONS ===
-START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
-time_period = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
-df_windoff = process_windoff_sensitivity(data, database, time_period)
-
-
-# %% === GET PRODUCTION (NODE/ZONE LEVEL) AND CONSUMPTION (ZONE LEVEL) DATA ===
-
-START = {"year": 1991, "month": 2, "day": 6, "hour": 0}
-END = {"year": 1991, "month": 2, "day": 16, "hour": 23}
-time_period = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
-
-
-save_production_to_excel(data, database, time_period, START, END, TIMEZONE, OUTPUT_PATH / 'data_files', VERSION)
+}
+plotZonePriceMatrix(price_matrix, plot_config)
 
 
 # %% === GET ENERGY MIX ===
@@ -241,14 +162,6 @@ energyBalance, mean_balance = getEnergyBalance(data, database, SIM_YEAR_START, S
                                                TIMEZONE, OUTPUT_PATH, VERSION, YEARS)
 
 
-# %%
-START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1991, "month": 12, "day": 31, "hour": 23}
-time_EB = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
-all_nodes = data.node.id.tolist()
-production, gen_idx, gen_type = GetProductionAtSpecificNodes(all_nodes, data, database, time_EB[0], time_EB[1])
-
-
 
 # %% TETS - NY APPROACH BASERT PÅ TIDSSTEG OG IKKE DATO! National-level electricity production and consumption
 """
@@ -260,7 +173,7 @@ Overview:
 """
 
 # === INITIALIZATIONS ===
-country = "DK"  # Country code
+country = "EE"  # Country code
 
 n_ideal_years = 30
 n_timesteps = int(8766.4 * n_ideal_years) # Ved full 30-års simuleringsperiode
@@ -272,28 +185,6 @@ df_gen, df_prices, total_production, df_gen_per_year = get_production_by_type_id
     area_OP=country,
     n_timesteps=n_timesteps
 )
-
-
-# %% === CHECK SPILLED VS PRODUCED ===
-START = {"year": 2020, "month": 1, "day": 1, "hour": 0}
-END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
-time_EB = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
-gen_idx = [385]
-sum_spilled, sum_produced = checkSpilled_vs_ProducedAtGen(database, gen_idx, time_EB)
-
-
-# %% === GET IMPORTS/EXPORTS FOR EACH ZONE ===
-
-START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1994, "month": 12, "day": 31, "hour": 23}
-time_EB = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
-flow_data = getFlowDataOnALLBranches(data, database, time_EB)
-
-zone_imports, zone_exports = getZoneImportExports(data, flow_data)
-# Example: Print results
-print("Zone Imports (importer, exporter): Total Import [MWh]")
-for (importer, exporter), total in zone_imports.items():
-    print(f"{importer} importing from {exporter}: {total:.2f} MWh")
 
 
 
@@ -309,56 +200,35 @@ nordic_grid_map_fromDB(data, database, time_range = get_hour_range(SIM_YEAR_STAR
 
 
 
-# %% Check Total Consumption for a given period.
-# Demand Response
-# === INITIALIZATIONS ===
-START = {"year": 2020, "month": 1, "day": 1, "hour": 0}
-END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
-area = 'NO'
-
-time_Demand = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
-demandTotal = getDemandPerAreaFromDB(data, database, area=area, timeMaxMin=time_Demand)
-print(sum(demandTotal['sum']))
-
-
-# %% === Get Production Data ===
-# === INITIALIZATIONS ===
-START = {"year": 2020, "month": 1, "day": 1, "hour": 0}
-END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
-area = 'PL'
-
-time_Prod = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
-total_Production = getProductionPerAreaFromDB(data, database, time_Prod, area)
-print(total_Production)
-
-
 
 # %% PLOT STORAGE FILLING FOR AREAS
 
 # === INITIALIZATIONS ===
 START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
-
+END = {"year": 1993, "month": 12, "day": 31, "hour": 23}
+areas = ['NO', 'SE', 'FI']  # Areas for plotting
 # For at TEX-fonts skal kjøre, må du kjøre en test run først for å initialisere tex-fontene.
 # === PLOT CONFIGURATIONS ===
-plot_config = {
-    'areas': ['FI'],            # When plotting multiple years in one year, recommend to only use one area
-    'relative': True,           # Relative storage filling, True gives percentage
-    "plot_by_year": True,       # True: One curve for each year in same plot, or False:all years collected in one plot over the whole simulation period
-    "duration_curve": False,    # True: Plot duration curve, or False: Plot storage filling over time
-    "save_fig": True,           # True: Save plot as pdf
-    "interval": 1,              # Number of months on x-axis. 1 = Step is one month, 12 = Step is 12 months
-    'empty_threshold': 1e-6,    # If relative (True), empty_threshold is in percentage, if not, it is in MWh
-    'include_legend': False,     # Include legend in the plot
-    'fig_size': (12, 6),        # Figure size in inches
-    'tex_font': True,          # Keep false unless tex packages are installed.
-                                # Kan hende må kjøres et par ganger for å få det til å funke med texfont.
-}
+for area in areas:
+    plot_config = {
+        'areas': [area],            # When plotting multiple years in one year, recommend to only use one area
+        'relative': True,           # Relative storage filling, True gives percentage
+        "plot_by_year": True,       # True: One curve for each year in same plot, or False:all years collected in one plot over the whole simulation period
+        "duration_curve": False,    # True: Plot duration curve, or False: Plot storage filling over time
+        "save_fig": False,           # True: Save plot as pdf
+        "interval": 1,              # Number of months on x-axis. 1 = Step is one month, 12 = Step is 12 months
+        'empty_threshold': 1e-6,    # If relative (True), empty_threshold is in percentage, if not, it is in MWh
+        'include_legend': False,     # Include legend in the plot
+        'fig_size': (12, 6),        # Figure size in inches
+        'tex_font': True,          # Keep false unless tex packages are installed.
+        'title': 1
+                                    # Kan hende må kjøres et par ganger for å få det til å funke med texfont.
+    }
 
-# === COMPUTE TIMERANGE AND PLOT FLOW ===
-time_SF = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
-OUTPUT_PATH_PLOTS_RESERVOIR = OUTPUT_PATH_PLOTS / 'reservoir'
-plot_SF_Areas_FromDB(data, database, time_SF, OUTPUT_PATH_PLOTS_RESERVOIR, DATE_START, plot_config, START, END)
+    # === COMPUTE TIMERANGE AND PLOT FLOW ===
+    time_SF = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
+    OUTPUT_PATH_PLOTS_RESERVOIR = OUTPUT_PATH_PLOTS / 'reservoir'
+    plot_SF_Areas_FromDB(data, database, time_SF, OUTPUT_PATH_PLOTS_RESERVOIR, DATE_START, plot_config, START, END)
 
 # %% PLOT STORAGE FILLING ZONES
 # Todo: Trengs det fortsatt litt jobb med scaleringen av selve plottet, men det er ikke krise enda.
@@ -366,28 +236,29 @@ plot_SF_Areas_FromDB(data, database, time_SF, OUTPUT_PATH_PLOTS_RESERVOIR, DATE_
 
 # === INITIALIZATIONS ===
 START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
-
+END = {"year": 1993, "month": 12, "day": 31, "hour": 23}
+zones = ['NO1', 'NO2', 'NO3', 'NO4', 'NO5', 'SE1', 'SE2', 'SE3', 'SE4']
 # === PLOT CONFIGURATIONS ===
-plot_config = {
-    'zones': ['NO5'],               # When plotting multiple years in one year, recommend to only use one zone
-    'relative': True,               # Relative storage filling, True gives percentage
-    "plot_by_year": 3,              # (1) Each year in individual plot, (2) Entire Timeline, (3) Each year show over 1 year timeline.
-    "duration_curve": False,        # True: Plot duration curve, or False: Plot storage filling over time
-    "save_fig": True,              # True: Save plot as pdf
-    "interval": 1,                  # Number of months on x-axis. 1 = Step is one month, 12 = Step is 12 months
-    'empty_threshold': 1e-6,        # If relative (True), empty_threshold is in percentage, if not, it is in MWh
-    'include_legend': False,        # Include legend in the plot
-    'fig_size': (12, 6),            # Figure size in inches
-    'tex_font': True,              # Keep false unless tex packages are installed
-}
+for zone in zones:
+    plot_config = {
+        'zones': [zone],               # When plotting multiple years in one year, recommend to only use one zone
+        'relative': True,               # Relative storage filling, True gives percentage
+        "plot_by_year": 3,              # (1) Each year in individual plot, (2) Entire Timeline, (3) Each year show over 1 year timeline.
+        "duration_curve": False,        # True: Plot duration curve, or False: Plot storage filling over time
+        "save_fig": False,              # True: Save plot as pdf
+        "interval": 1,                  # Number of months on x-axis. 1 = Step is one month, 12 = Step is 12 months
+        'empty_threshold': 1e-6,        # If relative (True), empty_threshold is in percentage, if not, it is in MWh
+        'include_legend': False,        # Include legend in the plot
+        'fig_size': (12, 6),            # Figure size in inches
+        'tex_font': True,              # Keep false unless tex packages are installed
+        'title': 1                   # To include title, set to arbitrary value/string/whatever
+    }
 
-# If you want to go in and change title, follow the function from here to its source location and change it there.
-# Remember that you then have to reset the console run
-# === COMPUTE TIMERANGE AND PLOT FLOW ===
-time_SF = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
-OUTPUT_PATH_PLOTS_RESERVOIR = OUTPUT_PATH_PLOTS / 'reservoir'
-plot_SF_Zones_FromDB(data, database, time_SF, OUTPUT_PATH_PLOTS_RESERVOIR, DATE_START, plot_config, START, END)
+    # Remember that you then have to reset the console run
+    # === COMPUTE TIMERANGE AND PLOT FLOW ===
+    time_SF = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
+    OUTPUT_PATH_PLOTS_RESERVOIR = OUTPUT_PATH_PLOTS / 'reservoir'
+    plot_SF_Zones_FromDB(data, database, time_SF, OUTPUT_PATH_PLOTS_RESERVOIR, DATE_START, plot_config, START, END)
 
 
 
@@ -446,44 +317,4 @@ plot_config = {
 # === COMPUTE TIMERANGE AND PLOT FLOW ===
 time_ZP = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
 calcPlot_ZonalPrices_FromDB(data, database, time_ZP, OUTPUT_PATH_PLOTS, DATE_START, plot_config)
-
-
-# %% Load, generation by type in AREA
-
-# Siden det er ukes aggregert, bør man trekke fra 23 timer for vanlig år, og 1d23t for skuddår
-# for et godt plot.
-# === INITIALIZATIONS ===
-START = {"year": 1994, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1994, "month": 12, "day": 31, "hour": 0}
-
-# === PLOT CONFIGURATIONS ===
-plot_config = {
-    'area': 'GB',
-    'title': 'Production, Consumption and Price in GB',
-    "fig_size": (15, 10),
-    "plot_full_timeline": True,
-    "duration_curve": False,
-    "box_in_frame": False,
-    "save_fig": True,                      # True: Save plot as pdf
-    "interval": 1                           # Number of months on x-axis. 1 = Step is one month, 12 = Step is 12 months
-}
-
-
-# === COMPUTE TIMERANGE AND PLOT FLOW ===
-time_LGT = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
-df_gen_re, df_prices, tot_prod = calcPlot_LG_FromDB(data, database, time_LGT, OUTPUT_PATH_PLOTS, DATE_START, plot_config)
-tot_prod = df_gen_re.drop('Load', axis=1).sum(axis=1).sum()
-print(f"Total production in {plot_config['area']}: {tot_prod:.2f} MWh")
-
-
-
-# %% === GET PRODUCTION (NODE/ZONE LEVEL) AND CONSUMPTION (ZONE LEVEL) DATA ===
-
-START = {"year": 1991, "month": 2, "day": 6, "hour": 0}
-END = {"year": 1991, "month": 2, "day": 16, "hour": 23}
-time_period = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
-
-reservoir_filling_per_node, storage_cap = GetReservoirFillingAtSpecificNodes(Nodes, data, database, start_hour, end_hour)
-
-save_production_to_excel(data, database, time_period, START, END, TIMEZONE, OUTPUT_PATH / 'data_files', VERSION)
 

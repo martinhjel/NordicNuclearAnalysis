@@ -10,7 +10,7 @@ import pandas as pd
 
 # === INPUT ===
 file_path = r"C:\Users\einar\NTNU\MSc. - Kjernekraft og PowerGAMA - General\TET4900\Data\timeseries_profiles_stock.csv"
-region = ["DK1", "DK2", "SE4", "DE", "NL", "GB"]
+region = ["DK1", "DK2", "SE4", "DE", "NL", "PL"]
 tech = ["windoff", "windon", "solar"]
 aggregation_days_list = list(range(1, 15))  # eller f.eks. [3, 4, 5]
 

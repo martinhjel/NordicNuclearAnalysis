@@ -13,7 +13,7 @@ SIM_YEAR_START = 1991           # Start year for the main simulation  (SQL-file)
 SIM_YEAR_END = 2020            # End year for the main simulation  (SQL-file)
 CASE_YEAR = 2035
 SCENARIO = 'FDT'
-VERSION = 'v1_sens'
+VERSION = 'v1'
 TIMEZONE = ZoneInfo("UTC")  # Definerer UTC tidssone
 
 DATE_START = pd.Timestamp(f'{SIM_YEAR_START}-01-01 00:00:00', tz='UTC')
@@ -57,7 +57,31 @@ zones = ['NO1', 'NO2', 'NO3', 'NO4', 'NO5', 'SE1', 'SE2', 'SE3', 'SE4',
 year_range = list(range(SIM_YEAR_START, SIM_YEAR_END + 1))
 price_matrix, log = createZonePriceMatrix(data, database, zones, year_range, TIMEZONE, SIM_YEAR_START, SIM_YEAR_END)
 # Plot Zonal Price Matrix
-plotZonePriceMatrix(price_matrix, save_fig=True, OUTPUT_PATH_PLOTS=OUTPUT_PATH_PLOTS, start=SIM_YEAR_START, end=SIM_YEAR_END, version=VERSION)
+"""
+Colormap options:
+- 'YlOrRd': Yellow to Red
+- 'Blues': Blue shades
+- 'Greens': Green shades
+- 'Purples': Purple shades
+- 'Oranges': Orange shades
+- 'Greys': Grey shades
+- 'viridis': Viridis colormap
+- 'plasma': Plasma colormap
+- 'cividis': Cividis colormap
+- 'magma': Magma colormap
+- 'copper': Copper colormap
+- 'coolwarm': Coolwarm colormap
+- 'RdBu': Red to Blue colormap
+- 'Spectral': Spectral colormap
+- 'twilight': Twilight colormap
+- 'twilight_shifted': Twilight shifted colormap
+- 'cubehelix': Cubehelix colormap
+- 'terrain': Terrain colormap
+- 'ocean': Ocean colormap
+"""
+colormap = "plasma"
+
+plotZonePriceMatrix(price_matrix, save_fig=True, OUTPUT_PATH_PLOTS=OUTPUT_PATH_PLOTS, start=SIM_YEAR_START, end=SIM_YEAR_END, version=VERSION, colormap=colormap)
 
 
 # %% STORAGE - PLOT STORAGE FILLING FOR AREAS
@@ -273,31 +297,31 @@ mean_balance = {
 mean_balance = pd.DataFrame(mean_balance).T
 
 
-#%% Excel ###
-"""
-Production, consumption, and price data for specific nodes within a given time period.
-
-Main Features:
-- Handles time using Python's built-in datetime objects.
-- Retrieves simulated production, consumption, and price data from a given SQL file for selected nodes within a specified timeframe.
-- Organizes data and exports it to an Excel file for further analysis.
-"""
-
-# === INITIALIZATIONS ===
-START = {"year": 1993, "month": 4, "day": 1, "hour": 0}
-END = {"year": 1993, "month": 9, "day": 30, "hour": 23}
-Nodes = ["SE3_1", "SE3_2", "SE3_3", "SE3_4", "SE3_5", "SE3_6", "SE3_7", "SE3_8","SE3_9", "SE3_10"]
-
-SELECTED_BRANCHES  = None
-# ======================================================================================================================
-
-start_hour, end_hour = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
-production_per_node, gen_idx, gen_type = GetProductionAtSpecificNodes(Nodes, data, database, start_hour, end_hour)
-consumption_per_node = GetConsumptionAtSpecificNodes(Nodes, data, database, start_hour, end_hour)
-nodal_prices_per_node = GetPriceAtSpecificNodes(Nodes, data, database, start_hour, end_hour)
-reservoir_filling_per_node, storage_cap = GetReservoirFillingAtSpecificNodes(Nodes, data, database, start_hour, end_hour)
-flow_data = getFlowDataOnBranches(data, database, [start_hour, end_hour], SELECTED_BRANCHES)
-excel_filename = ExportToExcel(Nodes, production_per_node, consumption_per_node, nodal_prices_per_node, reservoir_filling_per_node, storage_cap, flow_data, START, END, SCENARIO, VERSION, OUTPUT_PATH)
+# #%% Excel ###
+# """
+# Production, consumption, and price data for specific nodes within a given time period.
+#
+# Main Features:
+# - Handles time using Python's built-in datetime objects.
+# - Retrieves simulated production, consumption, and price data from a given SQL file for selected nodes within a specified timeframe.
+# - Organizes data and exports it to an Excel file for further analysis.
+# """
+#
+# # === INITIALIZATIONS ===
+# START = {"year": 1993, "month": 4, "day": 1, "hour": 0}
+# END = {"year": 1993, "month": 9, "day": 30, "hour": 23}
+# Nodes = ["SE3_1", "SE3_2", "SE3_3", "SE3_4", "SE3_5", "SE3_6", "SE3_7", "SE3_8","SE3_9", "SE3_10"]
+#
+# SELECTED_BRANCHES  = None
+# # ======================================================================================================================
+#
+# start_hour, end_hour = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
+# production_per_node, gen_idx, gen_type = GetProductionAtSpecificNodes(Nodes, data, database, start_hour, end_hour)
+# consumption_per_node = GetConsumptionAtSpecificNodes(Nodes, data, database, start_hour, end_hour)
+# nodal_prices_per_node = GetPriceAtSpecificNodes(Nodes, data, database, start_hour, end_hour)
+# reservoir_filling_per_node, storage_cap = GetReservoirFillingAtSpecificNodes(Nodes, data, database, start_hour, end_hour)
+# flow_data = getFlowDataOnBranches(data, database, [start_hour, end_hour], SELECTED_BRANCHES)
+# excel_filename = ExportToExcel(Nodes, production_per_node, consumption_per_node, nodal_prices_per_node, reservoir_filling_per_node, storage_cap, flow_data, START, END, SCENARIO, VERSION, OUTPUT_PATH)
 
 
 # %%# === Hent ut total produksjon ===
@@ -418,8 +442,15 @@ def get_zone_production_summary_full_period(data, database, time_Prod, START, EN
 
     return zone_summed_df, zone_summed_merged_df
 
-START = {"year": 1993, "month": 4, "day": 1, "hour": 0}
-END = {"year": 1993, "month": 7, "day": 30, "hour": 23}
+START = {"year": 2007, "month": 1, "day": 1, "hour": 0}
+END = {"year": 2007, "month": 12, "day": 31, "hour": 23}
 time_Prod = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
 # ======================================================================================================================
 zone_summed_df, zone_summed_merged_df = get_zone_production_summary_full_period(data, database, time_Prod, START, END, OUTPUT_PATH / 'data_files')
+
+# %%# === Hent ut total produksjon ===
+START = {"year": 2007, "month": 1, "day": 1, "hour": 0}
+END = {"year": 2007, "month": 12, "day": 31, "hour": 23}
+time_period = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
+
+save_production_to_excel(data, database, time_period, START, END, TIMEZONE, OUTPUT_PATH / 'data_files', VERSION)

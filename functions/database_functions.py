@@ -682,6 +682,59 @@ def collectDemandForAllNodesFromDB(data: GridData, db: Database, timeMaxMin):
 
     return total_per_node
 
+def collectDemandForAllNodesAllTimeStepsFromDB(data: GridData, db: Database, timeMaxMin):
+    """
+    Returns demand timeseries for given zone, as dictionary fields "fixed", "flex", and "sum"
+
+    Parameters
+    ----------
+    timeMaxMin : list (default = None)
+        [min, max] - lower and upper time interval
+
+    Returns
+    -------
+    total_per_node : dict
+        The total demand per node, linked to node id
+    """
+    timerange = range(timeMaxMin[0], timeMaxMin[-1])
+    consumer = data.consumer
+    demands_per_node = {}
+    node = data.consumer.node
+
+    # assume getConsumersPerArea() returns { area_code: [id, id, ...], ... }
+    for area, id_list in data.getConsumersPerArea().items():
+        for i in id_list:
+            # --- 1) fixed demand profile for node i ---
+            ref_profile = consumer.demand_ref[i]
+            fixed_i = [
+                consumer.demand_avg[i]
+                * (1 - consumer.flex_fraction[i])
+                * data.profiles[ref_profile][t - timeMaxMin[0]]
+                for t in timerange
+            ]
+
+            # --- 2) flex demand profile for node i (or zeros if none) ---
+            flex_i = db.getResultFlexloadPower(i, timeMaxMin)
+            if not flex_i:
+                flex_i = [0] * len(timerange)
+
+            # --- 3) sum them up ---
+            sum_i = [f + x for f, x in zip(fixed_i, flex_i)]
+
+            # --- 4) store in our master dict ---
+            demands_per_node[i] = {
+                "node": node[i],
+                "fixed": fixed_i,
+                "flex": flex_i,
+                "sum": sum_i
+            }
+
+    demand = {
+        info["node"]: info["sum"]
+        for info in demands_per_node.values()
+    }
+
+    return demand
 
 
 

@@ -12,7 +12,7 @@ SIM_YEAR_START = 1991           # Start year for the main simulation  (SQL-file)
 SIM_YEAR_END = 2020             # End year for the main simulation  (SQL-file)
 CASE_YEAR = 2025
 SCENARIO = 'BM'
-VERSION = 'v107_sens'
+VERSION = 'v130_sens'
 TIMEZONE = ZoneInfo("UTC")  # Definerer UTC tidssone
 
 DATE_START = pd.Timestamp(f'{SIM_YEAR_START}-01-01 00:00:00', tz='UTC')
@@ -39,7 +39,6 @@ OUTPUT_PATH_PLOTS = BASE_DIR / 'results' / 'plots'
 # === Initialize Database and Grid Data ===
 data, time_max_min = setup_grid(VERSION, DATE_START, DATE_END, DATA_PATH, SCENARIO)
 database = Database(SQL_FILE)
-
 
 
 # %% Nordic Grid Map
@@ -74,9 +73,9 @@ print(sum(demandTotal['sum']))
 
 # %% === Get Production Data ===
 # === INITIALIZATIONS ===
-START = {"year": 1991, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1991, "month": 12, "day": 31, "hour": 23}
-area = 'NO'
+START = {"year": 2020, "month": 1, "day": 1, "hour": 0}
+END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
+area = 'DK'
 
 time_Prod = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
 total_Production = getProductionPerAreaFromDB(data, database, time_Prod, area)
@@ -107,15 +106,14 @@ plot_Map(data, database, time_Map, DATE_START, OUTPUT_PATH, version)
 # %% GET FLOW ON CHOSEN BRANCHES
 
 # === INITIALIZATIONS ===
-START = {"year": 1992, "month": 1, "day": 1, "hour": 0}
-END = {"year": 1993, "month": 1, "day": 1, "hour": 0}
+START = {"year": 2020, "month": 1, "day": 1, "hour": 0}
+END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
 
 # === PLOT CONFIGURATIONS ===
 
 plot_config = {
-    'areas': ['NO'],            # When plotting multiple years in one year, recommend to only use one area
     "plot_by_year": False,      # Each year in individual plot or all years collected in one plot
-    "duration_curve": True,     # True: Plot duration curve, or False: Plot storage filling over time
+    "duration_curve": False,     # True: Plot duration curve, or False: Plot storage filling over time
     "duration_relative": False, # Hours(False) or Percentage(True)
     "save_fig": False,          # True: Save plot as pdf
     "interval": 1,              # Number of months on x-axis. 1 = Step is one month, 12 = Step is 12 months
@@ -124,13 +122,11 @@ plot_config = {
 }
 
 # === CHOOSE BRANCHES TO CHECK ===
-SELECTED_BRANCHES  = [['NL','NO2_4'],['NO2_4','DE'], ['NO2_1','GB'], ['DK1_1','NO2_5']] # See branch CSV files for correct connections
+SELECTED_BRANCHES  = [['NO1_5', 'SE3_5'],['NO3_1','SE2_4'], ['NO4_3','SE2_1'], ['NO4_1','SE1_1']] # See branch CSV files for correct connections
 
 # === COMPUTE TIMERANGE AND PLOT FLOW ===
 time_Lines = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
 plot_Flow_fromDB(data, database, DATE_START, time_Lines, OUTPUT_PATH_PLOTS, plot_config, SELECTED_BRANCHES)
-
-
 
 # %% PLOT STORAGE FILLING FOR AREAS
 
@@ -355,7 +351,7 @@ Overview:
 """
 
 # === INITIALIZATIONS ===
-country = "NO"  # Country code
+country = "FI"  # Country code
 
 n_ideal_years = 30
 n_timesteps = int(8766.4 * n_ideal_years) # Ved full 30-års simuleringsperiode
@@ -463,7 +459,8 @@ Main Features:
 START = {"year": 2020, "month": 1, "day": 1, "hour": 0}
 END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
 Nodes = ["DK1_2", "DK1_3", "DK2_2"]
-SELECTED_BRANCHES  = [['NO2_1','GB']]
+
+SELECTED_BRANCHES  = None
 # ======================================================================================================================
 
 start_hour, end_hour = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
@@ -606,3 +603,11 @@ totalProduction = getProductionForAllNodesFromDB(data, database, time_EB)   # TA
 totalLoadShedding = database.getResultLoadheddingSum(timeMaxMin=time_EB)
 node_energyBalance = getEnergyBalanceNodeLevel(all_nodes, totalDemand, totalProduction, totalLoadShedding, flow_data, OUTPUT_PATH, VERSION, START)
 zone_energyBalance = getEnergyBalanceZoneLevel(all_nodes, totalDemand, totalProduction, totalLoadShedding, flow_data, OUTPUT_PATH, VERSION, START)
+
+
+# %% FRA baseline
+START = {"year": 2020, "month": 1, "day": 1, "hour": 0}
+END = {"year": 2020, "month": 12, "day": 31, "hour": 23}
+time_period = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
+
+save_production_to_excel(data, database, time_period, START, END, TIMEZONE, OUTPUT_PATH / 'data_files', VERSION)

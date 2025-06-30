@@ -8,6 +8,7 @@ import folium
 from folium.features import DivIcon
 import math
 from math import radians, degrees, atan2, cos, sin
+import logging
 
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
@@ -288,13 +289,212 @@ def createZonePriceMatrix(data, database, zones, year_range, TIMEZONE, SIM_YEAR_
 
 ########################################### MAP FUNCTIONS ######################################################
 
+# def nordic_grid_map_fromDB(data, db: Database, time_range, OUTPUT_PATH, version, START, END, exchange_rate_NOK_EUR=11.38):
+#     """
+#     Generate an interactive map displaying nodal prices and branch utilization.
+#
+#     This function creates a folium map that visualizes:
+#     - Nodes representing average nodal prices.
+#     - Branches representing line utilization for both AC and DC connections.
+#
+#     The generated map is saved as an HTML file for easy visualization.
+#
+#     Parameters:
+#         data (Scenario):
+#             The simulation data containing node and branch information.
+#         db (Database):
+#             Database object used to retrieve average prices, utilization rates, and flow data.
+#         time_range (list):
+#             List specifying the start and end time steps for the simulation.
+#         OUTPUT_PATH (str):
+#             Directory path where the HTML map file will be saved.
+#         version (str):
+#             Version identifier for the map output file.
+#         START (dict):
+#             Dictionary specifying the start date and time (e.g., {'year': 2023, 'month': 1, 'day': 1, 'hour': 0}).
+#         END (dict):
+#             Dictionary specifying the end date and time in the same format as START.
+#         exchange_rate_NOK_EUR (float, optional):
+#             Conversion rate from EUR to NOK for displaying prices in both currencies.
+#             Default is 11.38.
+#
+#     Returns:
+#         None: The generated map is saved directly to the specified `OUTPUT_PATH`.
+#     """
+#     # Assuming data.node.zone is a pandas Series or list
+#     # Filter out SINK nodes from data.node
+#     data.node = data.node[data.node['zone'] != 'SINK']
+#
+#     # Get the indices of the remaining nodes
+#     valid_node_indices = data.node.id
+#
+#     # Filter out branches in data.dcbranch connected to SINK nodes
+#     data.dcbranch = data.dcbranch[
+#         data.dcbranch['node_from'].isin(valid_node_indices) &
+#         data.dcbranch['node_to'].isin(valid_node_indices)
+#         ]
+#
+#     # Filter out consumers in data.consumer connected to SINK nodes
+#     data.consumer = data.consumer[data.consumer['node'].isin(valid_node_indices)]
+#
+#     avg_nodal_prices = list(map(float, getAverageNodalPricesFromDB(db, time_range)))
+#     avg_area_price = {key: float(value) for key, value in getAreaPricesAverageFromDB(data, db, timeMaxMin=time_range).items()}
+#     avg_zone_price = getZonePricesAverageFromDB(data, db, time_range)
+#     ac_utilisation = list(map(float, getAverageUtilisationFromDB(data, db, time_range, branchtype="ac")))
+#     dc_utilisation = list(map(float, getAverageUtilisationFromDB(data, db, time_range, branchtype="dc")))
+#     ac_flows = convert_to_float(getAverageBranchFlowsFromDB(db, time_range, branchtype="ac"))
+#     dc_flows = convert_to_float(getAverageBranchFlowsFromDB(db, time_range, branchtype="dc"))
+#
+#     f = folium.Figure(width=700, height=800)
+#     m = folium.Map(location=[data.node["lat"].mean(), data.node["lon"].mean()], zoom_start=4.4)
+#     m.add_to(f)
+#
+#     colormap = cm.LinearColormap(['green', 'yellow', 'red'], vmin=min(avg_nodal_prices), vmax=max(avg_nodal_prices))
+#     colormap.caption = 'Nodal Prices'
+#     colormap.add_to(m)
+#
+#     for i, price in enumerate(avg_nodal_prices):
+#         add_node_marker(data, i, price, avg_area_price, avg_zone_price, m, colormap,exchange_rate_NOK_EUR)
+#
+#     line_colormap = cm.LinearColormap(['green', 'yellow', 'red'], vmin=0, vmax=1)
+#     line_colormap.caption = 'Branch Utilisation'
+#     line_colormap.add_to(m)
+#
+#     add_branch_lines(data, ac_utilisation, ac_flows, 'AC', m, line_colormap)
+#     add_branch_lines(data, dc_utilisation, dc_flows, 'DC', m, line_colormap, dashed=True)
+#
+#     start_str = f"{START['year']}_{START['month']}_{START['day']}_{START['hour']}"
+#     end_str = f"{END['year']}_{END['month']}_{END['day']}_{END['hour']}"
+#     output_path = OUTPUT_PATH / f'nordic_grid_map_{version}_{start_str}__to__{end_str}.html'
+#     m.save(output_path)
+#
+
+
+#
+# def nordic_grid_map_fromDB(data, db: Database, time_range, OUTPUT_PATH, version, START, END, exchange_rate_NOK_EUR=11.38):
+#     """
+#     Generate an interactive map displaying nodal prices and branch utilization, excluding SINK nodes.
+#
+#     This function creates a folium map that visualizes:
+#     - Nodes representing average nodal prices (excluding nodes in SINK area).
+#     - Branches representing line utilization for both AC and DC connections (excluding branches connected to SINK nodes).
+#
+#     The generated map is saved as an HTML file for easy visualization.
+#
+#     Parameters:
+#         data (Scenario):
+#             The simulation data containing node and branch information.
+#         db (Database):
+#             Database object used to retrieve average prices, utilization rates, and flow data.
+#         time_range (list):
+#             List specifying the start and end time steps for the simulation.
+#         OUTPUT_PATH (str):
+#             Directory path where the HTML map file will be saved.
+#         version (str):
+#             Version identifier for the map output file.
+#         START (dict):
+#             Dictionary specifying the start date and time (e.g., {'year': 2023, 'month': 1, 'day': 1, 'hour': 0}).
+#         END (dict):
+#             Dictionary specifying the end date and time in the same format as START.
+#         exchange_rate_NOK_EUR (float, optional):
+#             Conversion rate from EUR to NOK for displaying prices in both currencies.
+#             Default is 11.38.
+#
+#     Returns:
+#         None: The generated map is saved directly to the specified `OUTPUT_PATH`.
+#     """
+#     # Find indices where zone is SINK
+#     sink_index = data.node.zone[data.node.zone == 'SINK'].index.tolist()
+#
+#     # Filter out SINK nodes from data.node
+#     sink_ids = data.node.loc[sink_index, 'id'].to_numpy()
+#     valid_dc_branch_mask = ~(
+#             data.dcbranch['node_from'].isin(sink_ids) |
+#             data.dcbranch['node_to'].isin(sink_ids)
+#     )
+#     data.node = data.node[data.node['zone'] != 'SINK']
+#
+#     # Get the indices of the remaining nodes
+#     valid_node_indices = data.node.id
+#
+#     # Filter out branches in data.dcbranch connected to SINK nodes
+#     data.dcbranch = data.dcbranch[
+#         data.dcbranch['node_from'].isin(valid_node_indices) &
+#         data.dcbranch['node_to'].isin(valid_node_indices)
+#         ].reset_index(drop=True)
+#
+#     # Filter out consumers in data.consumer connected to SINK nodes
+#     data.consumer = data.consumer[data.consumer['node'].isin(valid_node_indices)]
+#
+#     # Get data from database
+#     avg_nodal_prices = list(map(float, getAverageNodalPricesFromDB(db, time_range)))
+#     avg_area_price = {key: float(value) for key, value in getAreaPricesAverageFromDB(data, db, timeMaxMin=time_range).items()}
+#     avg_zone_price = getZonePricesAverageFromDB(data, db, time_range)
+#     ac_utilisation = list(map(float, getAverageUtilisationFromDB(data, db, time_range, branchtype="ac")))
+#     dc_utilisation = list(map(float, getAverageUtilisationFromDB(data, db, time_range, branchtype="dc")))
+#     ac_flows = convert_to_float(getAverageBranchFlowsFromDB(db, time_range, branchtype="ac"))
+#     dc_flows = convert_to_float(getAverageBranchFlowsFromDB(db, time_range, branchtype="dc"))
+#
+#     # Filter out SINK nodes from avg_nodal_prices
+#     avg_nodal_prices_filtered = [price for i, price in enumerate(avg_nodal_prices) if i not in sink_index]
+#
+#     # Initialize folium map
+#     # Use non-SINK nodes for centering the map
+#     non_sink_nodes = data.node[~data.node.index.isin(sink_index)]
+#     f = folium.Figure(width=700, height=800)
+#     m = folium.Map(location=[non_sink_nodes["lat"].mean(), non_sink_nodes["lon"].mean()], zoom_start=4.4)
+#     m.add_to(f)
+#
+#     # Set up colormap for nodal prices (based on filtered prices)
+#     colormap = cm.LinearColormap(['green', 'yellow', 'red'],
+#                                vmin=min(avg_nodal_prices_filtered) if avg_nodal_prices_filtered else 0,
+#                                vmax=max(avg_nodal_prices_filtered) if avg_nodal_prices_filtered else 1)
+#     colormap.caption = 'Nodal Prices'
+#     colormap.add_to(m)
+#
+#     # Add node markers only for non-SINK nodes
+#     for i, price in enumerate(avg_nodal_prices_filtered):
+#         if i not in sink_index:
+#             add_node_marker(data, i, price, avg_area_price, avg_zone_price, m, colormap, exchange_rate_NOK_EUR)
+#
+#     # Set up colormap for branch utilization
+#     line_colormap = cm.LinearColormap(['green', 'yellow', 'red'], vmin=0, vmax=1)
+#     line_colormap.caption = 'Branch Utilisation'
+#     line_colormap.add_to(m)
+#
+#     # Filter branches to exclude those connected to SINK nodes
+#     try:
+#         # Filter AC and DC utilisation and flows
+#         # valid_dc_branch_mask = valid_dc_branch_mask.reindex(data.dcbranch.index, fill_value=False)
+#         ac_utilisation_filtered = ac_utilisation
+#         dc_utilisation_filtered = dc_utilisation
+#         ac_flows_filtered = ac_flows
+#         dc_flows_filtered = [flow for i, flow in enumerate(dc_flows) if i in data.dcbranch[valid_dc_branch_mask].index]
+#     except (AttributeError, KeyError) as e:
+#         print(f"Warning: Could not filter branches; branch data unavailable or misconfigured: {e}")
+#         ac_utilisation_filtered = ac_utilisation
+#         dc_utilisation_filtered = dc_utilisation
+#         ac_flows_filtered = ac_flows
+#         dc_flows_filtered = dc_flows
+#
+#     # Add branch lines using filtered data
+#     add_branch_lines(data, ac_utilisation_filtered, ac_flows_filtered, 'AC', m, line_colormap)
+#     add_branch_lines(data, dc_utilisation_filtered, dc_flows_filtered, 'DC', m, line_colormap, dashed=True)
+#
+#     # Save the map
+#     start_str = f"{START['year']}_{START['month']}_{START['day']}_{START['hour']}"
+#     end_str = f"{END['year']}_{END['month']}_{END['day']}_{END['hour']}"
+#     output_path = OUTPUT_PATH / f'nordic_grid_map_{version}_{start_str}__to__{end_str}.html'
+#     m.save(output_path)
+#
+
 def nordic_grid_map_fromDB(data, db: Database, time_range, OUTPUT_PATH, version, START, END, exchange_rate_NOK_EUR=11.38):
     """
-    Generate an interactive map displaying nodal prices and branch utilization.
+    Generate an interactive map displaying nodal prices and branch utilization, excluding SINK nodes.
 
     This function creates a folium map that visualizes:
-    - Nodes representing average nodal prices.
-    - Branches representing line utilization for both AC and DC connections.
+    - Nodes representing average nodal prices (excluding nodes in SINK area).
+    - Branches representing line utilization for both AC and DC connections (excluding branches connected to SINK nodes).
 
     The generated map is saved as an HTML file for easy visualization.
 
@@ -320,7 +520,38 @@ def nordic_grid_map_fromDB(data, db: Database, time_range, OUTPUT_PATH, version,
     Returns:
         None: The generated map is saved directly to the specified `OUTPUT_PATH`.
     """
+    # Find indices where zone is SINK
+    sink_index = data.node.zone[data.node.zone == 'SINK'].index.tolist()
 
+    # Filter out SINK nodes from data.node
+    sink_ids = data.node.loc[sink_index, 'id'].to_numpy()
+    data.node = data.node[data.node['zone'] != 'SINK'].reset_index(drop=True)
+
+    # Get the indices of the remaining nodes
+    valid_node_indices = data.node['id'].to_numpy()
+
+    # Filter out branches in data.dcbranch connected to SINK nodes
+    valid_dc_branch_mask = ~(
+        data.dcbranch['node_from'].isin(sink_ids) |
+        data.dcbranch['node_to'].isin(sink_ids)
+    )
+    data.dcbranch = data.dcbranch[valid_dc_branch_mask].reset_index(drop=True)
+
+    # Filter out branches in data.branch (for AC branches) connected to SINK nodes
+    try:
+        valid_ac_branch_mask = ~(
+            data.branch['node_from'].isin(sink_ids) |
+            data.branch['node_to'].isin(sink_ids)
+        )
+        data.branch = data.branch[valid_ac_branch_mask].reset_index(drop=True)
+    except (AttributeError, KeyError) as e:
+        print(f"Warning: Could not filter AC branches; data.branch unavailable or misconfigured: {e}")
+        valid_ac_branch_mask = pd.Series([True] * len(data.branch), index=data.branch.index)
+
+    # Filter out consumers in data.consumer connected to SINK nodes
+    data.consumer = data.consumer[data.consumer['node'].isin(valid_node_indices)].reset_index(drop=True)
+
+    # Get data from database
     avg_nodal_prices = list(map(float, getAverageNodalPricesFromDB(db, time_range)))
     avg_area_price = {key: float(value) for key, value in getAreaPricesAverageFromDB(data, db, timeMaxMin=time_range).items()}
     avg_zone_price = getZonePricesAverageFromDB(data, db, time_range)
@@ -329,24 +560,58 @@ def nordic_grid_map_fromDB(data, db: Database, time_range, OUTPUT_PATH, version,
     ac_flows = convert_to_float(getAverageBranchFlowsFromDB(db, time_range, branchtype="ac"))
     dc_flows = convert_to_float(getAverageBranchFlowsFromDB(db, time_range, branchtype="dc"))
 
+    # Filter out SINK nodes from avg_nodal_prices
+    avg_nodal_prices_filtered = [price for i, price in enumerate(avg_nodal_prices) if i not in sink_index]
+
+    # Initialize folium map
     f = folium.Figure(width=700, height=800)
     m = folium.Map(location=[data.node["lat"].mean(), data.node["lon"].mean()], zoom_start=4.4)
     m.add_to(f)
 
-    colormap = cm.LinearColormap(['green', 'yellow', 'red'], vmin=min(avg_nodal_prices), vmax=max(avg_nodal_prices))
+    # Set up colormap for nodal prices (based on filtered prices)
+    colormap = cm.LinearColormap(
+        ['green', 'yellow', 'red'],
+        vmin=min(avg_nodal_prices_filtered) if avg_nodal_prices_filtered else 0,
+        vmax=max(avg_nodal_prices_filtered) if avg_nodal_prices_filtered else 1
+    )
     colormap.caption = 'Nodal Prices'
     colormap.add_to(m)
 
-    for i, price in enumerate(avg_nodal_prices):
-        add_node_marker(data, i, price, avg_area_price, avg_zone_price, m, colormap,exchange_rate_NOK_EUR)
+    # Add node markers for non-SINK nodes
+    valid_node_indices_list = data.node.index.tolist()  # Indices of non-SINK nodes
+    for i, idx in enumerate(valid_node_indices_list):
+        price = avg_nodal_prices_filtered[i]
+        add_node_marker(data, idx, price, avg_area_price, avg_zone_price, m, colormap, exchange_rate_NOK_EUR)
 
+    # Set up colormap for branch utilization
     line_colormap = cm.LinearColormap(['green', 'yellow', 'red'], vmin=0, vmax=1)
     line_colormap.caption = 'Branch Utilisation'
     line_colormap.add_to(m)
 
-    add_branch_lines(data, ac_utilisation, ac_flows, 'AC', m, line_colormap)
-    add_branch_lines(data, dc_utilisation, dc_flows, 'DC', m, line_colormap, dashed=True)
+    # Filter utilisation and flows for branches
+    try:
+        # Filter AC utilisation and flows
+        ac_utilisation_filtered = [util for i, util in enumerate(ac_utilisation) if valid_ac_branch_mask.iloc[i]]
+        ac_flows_filtered = [flow for i, flow in enumerate(ac_flows) if valid_ac_branch_mask.iloc[i]]
+        # Filter DC utilisation and flows
+        dc_utilisation_filtered = dc_utilisation # [util for i, util in enumerate(dc_utilisation) if valid_dc_branch_mask.iloc[i]]
+        # dc_flows_filtered = [flow for i, flow in enumerate(dc_flows) if valid_dc_branch_mask.iloc[i]]
+        dc_flows_filtered = [
+            [flow for i, flow in enumerate(flow_sublist) if valid_dc_branch_mask.iloc[i]]
+            for flow_sublist in dc_flows
+        ]
+    except (AttributeError, KeyError, IndexError) as e:
+        print(f"Warning: Could not filter branches; branch data unavailable or misconfigured: {e}")
+        ac_utilisation_filtered = ac_utilisation
+        dc_utilisation_filtered = dc_utilisation
+        ac_flows_filtered = ac_flows
+        dc_flows_filtered = dc_flows
 
+    # Add branch lines using filtered data
+    add_branch_lines(data, ac_utilisation_filtered, ac_flows_filtered, 'AC', m, line_colormap)
+    add_branch_lines(data, dc_utilisation_filtered, dc_flows_filtered, 'DC', m, line_colormap, dashed=True)
+
+    # Save the map
     start_str = f"{START['year']}_{START['month']}_{START['day']}_{START['hour']}"
     end_str = f"{END['year']}_{END['month']}_{END['day']}_{END['hour']}"
     output_path = OUTPUT_PATH / f'nordic_grid_map_{version}_{start_str}__to__{end_str}.html'
@@ -1026,7 +1291,8 @@ def getEnergyBalanceZoneLevel(all_nodes, totalDemand, totalProduction, totalLoad
 
     # Create the zone-level energyBalance DataFrame
     zone_energyBalance = pd.DataFrame(EBDataZoneLevel)
-    zone_energyBalance['Balance'] = zone_energyBalance['Production'] - zone_energyBalance['Demand'] + zone_energyBalance['Load Shedding']
+    zone_energyBalance['Balance_mls'] = zone_energyBalance['Production'] - zone_energyBalance['Demand'] + zone_energyBalance['Load Shedding']
+    zone_energyBalance['Balance_uls'] = zone_energyBalance['Production'] - zone_energyBalance['Demand']
     zone_energyBalance['NetExport'] = zone_energyBalance['Export'] - zone_energyBalance['Import']
     zone_energyBalance.to_csv(OUTPUT_PATH / f'zone_energy_balance_{VERSION}_{START['year']}.csv', index=False)
     return zone_energyBalance
@@ -1092,7 +1358,8 @@ def getEnergyBalanceNodeLevel(all_nodes, totalDemand, totalProduction, totalLoad
 
     # Create the energyBalance DataFrame
     energyBalance = pd.DataFrame(EBData)
-    energyBalance['Balance'] = energyBalance['Production'] - energyBalance['Demand'] + energyBalance['Load Shedding']
+    energyBalance['Balance_mls'] = energyBalance['Production'] - energyBalance['Demand'] + energyBalance['Load Shedding']
+    energyBalance['Balance_uls'] = energyBalance['Production'] - energyBalance['Demand']
     energyBalance['NetExport'] = energyBalance['Export'] - energyBalance['Import']
     # Save the DataFrame to a CSV file for reference
     energyBalance.to_csv(OUTPUT_PATH / f'node_energy_balance_{VERSION}_{START['year']}.csv', index=False)
@@ -1459,6 +1726,8 @@ def GetPriceAtSpecificNodes(Nodes, data: GridData, database: Database, start_hou
 
 
 
+
+
 # def GetPriceAtSpecificNodes(Nodes, data: GridData, database: Database, start_hour, end_hour):
 #     """
 #     Henter nodalpris for spesifikke noder i et gitt tidsintervall.
@@ -1482,6 +1751,8 @@ def GetPriceAtSpecificNodes(Nodes, data: GridData, database: Database, start_hou
 #     nodal_prices = {node: database.getResultNodalPrice(idx, (start_hour, end_hour)) for node, idx in zip(Nodes, node_idx)}
 #
 #     return nodal_prices
+
+
 
 
 
@@ -1666,7 +1937,7 @@ def GetReservoirFillingAtSpecificNodes(Nodes, data: GridData, database: Database
     storage_data = data.generator[
         (data.generator["node"].isin(Nodes)) &
         (data.generator["storage_cap"] > 0) &
-        (data.generator["type"] == "hydro")
+        (data.generator["type"].isin(["hydro", "ror"]))
     ][["node", "storage_cap"]]
 
     storage_idx = storage_data.groupby("node").apply(lambda x: list(x.index)).to_dict()
@@ -1869,8 +2140,8 @@ def get_zone_production_summary(SELECTED_NODES, START, END, TIMEZONE, SIM_YEAR_S
 
 
 
-def getDemandInAllZonesFromDB(data, database, time_Demand, START, END, TIMEZONE, OUTPUT_PATH):
-    zones = data.node.zone.unique().tolist()
+def getDemandInAllZonesFromDB(data, database, time_Demand, START, END, TIMEZONE, OUTPUT_PATH=None):
+    zones = [zone for zone in data.node.zone.unique().tolist() if zone != 'SINK']
     demand={}
     for zone in zones:
         demand[zone] = getDemandPerZoneFromDB(data, database, area=zone[0:2], zone=zone, timeMaxMin=time_Demand)['sum']
@@ -1879,7 +2150,807 @@ def getDemandInAllZonesFromDB(data, database, time_Demand, START, END, TIMEZONE,
     year_end = datetime(END['year'], END['month'], END['day'], END['hour'], 0, tzinfo=TIMEZONE)
     df_demand = pd.DataFrame(demand, index=pd.date_range(start=year_start, end=year_end, freq='h'))
     # df_demand['time'] = pd.date_range(start=year_start, end=year_end, freq='h')
-    df_demand.to_csv(OUTPUT_PATH / f'demand_all_zones_{year_start.year}_{year_end.year}.csv')
+    if OUTPUT_PATH is not None:
+        df_demand.to_csv(OUTPUT_PATH / f'demand_all_zones_{year_start.year}_{year_end.year}.csv')
     return df_demand
 
 
+def get_production_summary_full_period(data, database, time_Prod, START, END, TIMEZONE, level='zone'):
+    '''
+    Retrieves production data for the specified level (zone or node) over the given time period,
+    returns production by level and by type, converts to TWh for zones, and merges selected
+    production types into broader categories. Excludes SINK nodes/zones and saves results to
+    an Excel file with separate sheets for merged and non-merged DataFrames.
+
+    Parameters:
+        data (object): Data object containing node information.
+        database (object): Database connection or access object for production data.
+        time_Prod (tuple): Time range for production data.
+        START (dict): Dictionary defining the start time with keys "year", "month", "day", "hour".
+        END (dict): Dictionary defining the end time with keys "year", "month", "day", "hour".
+        OUTPUT_PATH (Path): Path to save output Excel file.
+        level (str): 'zone' or 'node' to specify the aggregation level.
+
+    Returns:
+        summed_df (pd.DataFrame): Production per original production type, in TWh (zone) or MWh (node).
+        summed_merged_df (pd.DataFrame): Production per merged production type with total, in TWh (zone) or MWh (node).
+    '''
+    # Validate level
+    if level not in ['zone', 'node']:
+        raise ValueError("Level must be 'zone' or 'node'")
+
+    # Get list of nodes and filter out SINK
+    Nodes = [n for n in data.node["id"].dropna().unique().tolist() if 'SINK' not in n]
+
+    # Get production data
+    production_per_node, gen_idx, gen_type = GetProductionAtSpecificNodes(Nodes, data, database, time_Prod[0], time_Prod[1])
+
+    # Create time index
+    start_time = datetime(START['year'], START['month'], START['day'], START['hour'], 0)
+    end_time = datetime(END['year'], END['month'], END['day'], END['hour'], 0)
+    time_index = pd.date_range(start=start_time, end=end_time, freq='h')
+    num_timesteps = len(time_index)
+
+    # Initialize dictionary to store time-series data
+    production_data = {}
+
+    # Process production data
+    for node, prodtypes in production_per_node.items():
+        # Extract key based on level (zone or node)
+        key = node.split("_")[0] if level == 'zone' else node
+        if key not in production_data:
+            production_data[key] = {}
+
+        for prodtype, values_list in prodtypes.items():
+            # Handle empty or null values
+            if not values_list or not values_list[0]:
+                values = [0] * num_timesteps
+            else:
+                values = values_list[0]
+                if len(values) != num_timesteps:
+                    raise ValueError(
+                        f"Production data for node {node}, type {prodtype} has incorrect length: {len(values)} vs {num_timesteps}")
+
+            # Store or sum time-series data
+            if prodtype not in production_data[key]:
+                production_data[key][prodtype] = values
+            else:
+                production_data[key][prodtype] = [sum(x) for x in zip(production_data[key][prodtype], values)]
+
+    # Convert to DataFrame with multi-level columns
+    columns = pd.MultiIndex.from_tuples(
+        [(key, prodtype) for key in production_data for prodtype in production_data[key]],
+        names=[level.capitalize(), 'Production Type']
+    )
+    summed_df = pd.DataFrame(
+        data=[[production_data[key][prodtype][t] for key in production_data for prodtype in production_data[key]]
+              for t in range(num_timesteps)],
+        index=time_index,
+        columns=columns
+    )
+
+    # # Convert to TWh for zones
+    # if level == 'zone':
+    #     summed_df = summed_df / 1e6
+
+    # Drop columns with all zero values
+    # summed_df = summed_df.loc[:, (summed_df != 0).any(axis=0)]
+
+    # Merge production types
+    merge_mapping = {
+        "Hydro": ["hydro", "ror"],
+        "Nuclear": ["nuclear"],
+        "Solar": ["solar"],
+        "Thermal": ["fossil_gas", "fossil_other", "biomass"],
+        "Wind Onshore": ["wind_on"],
+        "Wind Offshore": ["wind_off"]
+    }
+
+    # Initialize merged DataFrame
+    merged_data = {}
+    for key in production_data:
+        for new_type, old_types in merge_mapping.items():
+            valid_types = [t for t in old_types if (key, t) in summed_df.columns]
+            if valid_types:
+                merged_data[(key, new_type)] = summed_df[key][valid_types].sum(axis=1, skipna=True)
+                if merged_data[(key, new_type)].eq(0).all():
+                    del merged_data[(key, new_type)]
+
+        # Add total production
+        merged_data[(key, "Production Total")] = summed_df[key].sum(axis=1, skipna=True)
+
+    # Create merged columns
+    merged_columns = pd.MultiIndex.from_tuples(
+        [col for col in merged_data.keys()],
+        names=[level.capitalize(), 'Production Type']
+    )
+    summed_merged_df = pd.DataFrame(
+        data={col: merged_data[col] for col in merged_columns},
+        index=time_index
+    )
+
+    # Convert to TWh for zones in merged DataFrame
+    # if level == 'zone':
+    #     summed_merged_df = summed_merged_df / 1e6
+
+    # Drop columns with all zero values in merged DataFrame
+    # summed_merged_df = summed_merged_df.loc[:, (summed_merged_df != 0).any(axis=0)]
+
+    return summed_df, summed_merged_df
+
+def save_production_to_excel(data, database, time_period, START, END, TIMEZONE, OUTPUT_PATH, VERSION, relative=True):
+    '''
+    Generates production summaries for both zone and node levels, and saves them to
+    separate sheets in a single Excel file.
+
+    Parameters:
+        data (object): Data object containing node information.
+        database (object): Database connection or access object for production data.
+        time_Prod (tuple): Time range for production data.
+        START (dict): Dictionary defining the start time with keys "year", "month", "day", "hour".
+        END (dict): Dictionary defining the end time with keys "year", "month", "day", "hour".
+        OUTPUT_PATH (Path): Path to save output Excel file.
+    '''
+    # Generate DataFrames for zone and node levels
+
+    start_time = datetime(START['year'], START['month'], START['day'], START['hour'], 0)
+    end_time = datetime(END['year'], END['month'], END['day'], END['hour'], 0)
+
+
+    zone_summed_df, zone_summed_merged_df = get_production_summary_full_period(
+        data, database, time_period, START, END, TIMEZONE, level='zone'
+    )
+    node_summed_df, node_summed_merged_df = get_production_summary_full_period(
+        data, database, time_period, START, END, TIMEZONE, level='node'
+    )
+
+    zone_demand_df = getDemandInAllZonesFromDB(data, database, time_period, START, END, TIMEZONE, OUTPUT_PATH=None)
+
+    node_demand = collectDemandForAllNodesAllTimeStepsFromDB(data, database, time_period)
+    node_demand = pd.DataFrame(node_demand, index=pd.date_range(start=start_time, end=end_time, freq='h'))
+
+    # Get zonal prices for the selected zones
+    zonal_prices = getZonalPrices(data, database, time_period, START, END)
+
+    Nodes = data.node[data.node.zone != 'SINK'].id
+    nodal_prices_per_node = GetPriceAtSpecificNodes(Nodes, data, database, time_period[0], time_period[-1])
+    nodal_prices_per_node = pd.DataFrame(nodal_prices_per_node, index=pd.date_range(start=start_time, end=end_time, freq='h'))
+
+    df_zone_flows = getFlowBetweenAllZones(data, database, time_period, START, END)
+
+    df_storagefilling = getStorageFilling(data, database, time_period, START, END, relative)
+
+    # Define Excel file path
+
+    excel_path = OUTPUT_PATH / f'production_summary_{VERSION}_{start_time.year}_{end_time.year}.xlsx'
+
+    # Create workbook
+    wb = Workbook()
+    wb.remove(wb.active)  # Remove default sheet
+
+    # Dictionary of DataFrames and sheet names
+    dfs = {
+        'Zone_Production': zone_summed_df,
+        'Zone_Production_Merged': zone_summed_merged_df,
+        'Node_Production': node_summed_df,
+        'Node_Production_Merged': node_summed_merged_df,
+        'Zone_Demand': zone_demand_df,
+        'Node_Demand': node_demand,
+        'Zonal_Prices': zonal_prices,
+        'Nodal_Prices': nodal_prices_per_node,
+        'Zone_Flows': df_zone_flows,
+        'Storage_Filling': df_storagefilling
+    }
+
+    # Write each DataFrame to a separate sheet
+    for sheet_name, df in dfs.items():
+        print(f"Writing sheet: {sheet_name}")
+        ws = wb.create_sheet(title=sheet_name)
+
+        if 'Production' in sheet_name:
+            # Write single-row combined headers
+            ws.cell(row=1, column=1).value = 'Time'
+            if not df.columns.empty and isinstance(df.columns, pd.MultiIndex):
+                # Combine Zone and Production Type into a single header
+                for col_idx, (zone, prod_type) in enumerate(df.columns, start=2):
+                    combined_header = f"{zone} {prod_type.replace(' ', '_')}"
+                    ws.cell(row=1, column=col_idx).value = combined_header
+            else:
+                # Fallback for non-MultiIndex columns
+                for col_idx, col_name in enumerate(df.columns, start=2):
+                    ws.cell(row=1, column=col_idx).value = str(col_name)
+
+        elif 'Demand' in sheet_name:
+            # Write single-row combined headers
+            ws.cell(row=1, column=1).value = 'Time'
+            for col_idx, col_name in enumerate(df.columns, start=2):
+                combined_header = f"{col_name} Load"
+                ws.cell(row=1, column=col_idx).value = combined_header
+
+        elif 'Prices' in sheet_name:
+            # Write single-row combined headers
+            ws.cell(row=1, column=1).value = 'Time'
+            for col_idx, col_name in enumerate(df.columns, start=2):
+                combined_header = f"{col_name} Price"
+                ws.cell(row=1, column=col_idx).value = combined_header
+
+        elif 'Flows' in sheet_name:
+            # Write single-row combined headers
+            ws.cell(row=1, column=1).value = 'Time'
+            for col_idx, col_name in enumerate(df.columns, start=2):
+                combined_header = f"{col_name} Flow"
+                ws.cell(row=1, column=col_idx).value = combined_header
+
+        elif 'Storage' in sheet_name:
+            # Write single-row combined headers
+            ws.cell(row=1, column=1).value = 'Time'
+            for col_idx, col_name in enumerate(df.columns, start=2):
+                combined_header = f"{col_name} Filling"
+                ws.cell(row=1, column=col_idx).value = combined_header
+
+        # Write index (time) as YYYY-MM-DD HH:MM strings and data
+        for row_idx, (time, row_data) in enumerate(df.iterrows(), start=2):
+            # Convert time to timezone-naive datetime
+            if time.tzinfo is not None:
+                time = time.replace(tzinfo=None)
+            # Write time as a datetime object
+            ws.cell(row=row_idx, column=1).value = time
+            # Set cell format to display as YYYY-MM-DD HH:MM
+            ws.cell(row=row_idx, column=1).number_format = 'yyyy-mm-dd hh:mm'
+            for col_idx, value in enumerate(row_data, start=2):
+                ws.cell(row=row_idx, column=col_idx).value = float(value) if pd.notnull(value) else 0
+
+        print(f"Sheet {sheet_name} written with {df.shape[0]} rows and {df.shape[1]} columns")
+
+    # Save workbook
+    try:
+        wb.save(excel_path)
+        print(f"Excel file saved: {excel_path}")
+    except Exception as e:
+        print(f"Failed to save Excel file: {e}")
+        raise
+
+
+    # zone_summed_df.to_csv(OUTPUT_PATH / 'zone_summed_df.csv')
+    # zone_summed_merged_df.to_csv(OUTPUT_PATH / 'zone_summed_merged_df.csv')
+    # node_summed_df.to_csv(OUTPUT_PATH / 'node_summed_df.csv')
+    # node_summed_merged_df.to_csv(OUTPUT_PATH / 'node_summed_merged_df.csv')
+
+
+def getEnergyBalance(data, database, SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, OUTPUT_PATH, VERSION, YEARS):
+    energyBalance = {}
+
+    for i in range(0, YEARS):
+        year = 1991 + i
+        print(year)
+
+        START = {"year": year, "month": 1, "day": 1, "hour": 0}
+        END = {"year": year, "month": 12, "day": 31, "hour": 23}
+        time_EB = get_hour_range(SIM_YEAR_START, SIM_YEAR_END, TIMEZONE, START, END)
+        all_nodes = data.node.id
+
+        totalProduction = collectProductionForAllNodesFromDB(data, database, time_EB)
+        flow_data = collectFlowDataOnALLBranches(data, database, time_EB)
+
+        totalDemand = collectDemandForAllNodesFromDB(data, database, time_EB)
+        # Remove all keys containing 'SINK'
+        totalDemand = {key: value for key, value in totalDemand.items() if 'SINK' not in key}
+        totalLoadShedding = database.getResultLoadheddingSum(timeMaxMin=time_EB)
+
+        # Calculate energy balance at node and zone levels
+        node_energyBalance = getEnergyBalanceNodeLevel(all_nodes, totalDemand, totalProduction, totalLoadShedding,
+                                                       flow_data, OUTPUT_PATH / 'data_files/energy_balance', VERSION,
+                                                       START)
+        zone_energyBalance = getEnergyBalanceZoneLevel(all_nodes, totalDemand, totalProduction, totalLoadShedding,
+                                                       flow_data, OUTPUT_PATH / 'data_files/energy_balance', VERSION,
+                                                       START)
+        # Store energy balance results in the dictionary
+        energyBalance[year] = {
+            "node_level": node_energyBalance,
+            "zone_level": zone_energyBalance
+        }
+
+    # get average balance in each country
+    # Initialize dictionary to store yearly sums for each country and metric
+    sumBalance = {
+        'NO': {'Production': [], 'Demand': [], 'Balance_mls': [], 'Balance_uls': []},
+        'SE': {'Production': [], 'Demand': [], 'Balance_mls': [], 'Balance_uls': []},
+        'FI': {'Production': [], 'Demand': [], 'Balance_mls': [], 'Balance_uls': []},
+        'DK': {'Production': [], 'Demand': [], 'Balance_mls': [], 'Balance_uls': []},
+        'GB': {'Production': [], 'Demand': [], 'Balance_mls': [], 'Balance_uls': []},
+        'DE': {'Production': [], 'Demand': [], 'Balance_mls': [], 'Balance_uls': []},
+        'NL': {'Production': [], 'Demand': [], 'Balance_mls': [], 'Balance_uls': []},
+        'LT': {'Production': [], 'Demand': [], 'Balance_mls': [], 'Balance_uls': []},
+        'PL': {'Production': [], 'Demand': [], 'Balance_mls': [], 'Balance_uls': []},
+        'EE': {'Production': [], 'Demand': [], 'Balance_mls': [], 'Balance_uls': []},
+    }
+    countries = data.node.area.unique()
+    countries = countries[countries != 'SINK'].tolist()
+
+    all_zones = data.node.zone.unique()
+    all_zones = all_zones[all_zones != 'SINK'].tolist()
+    metrics = {
+        'Balance_mls': 'Balance_mls',
+        'Balance_uls': 'Balance_uls',
+        'Production': 'Production',
+        'Demand': 'Demand'
+    }
+
+    # Iterate over years and compute sums
+    for year in energyBalance:
+        df = energyBalance[year]['zone_level']  # DataFrame for the year
+        for country in countries:
+            # Filter zones for the country
+            mask = df['Zone'].str.contains(country, na=False)
+            for sum_key, df_col in metrics.items():
+                # Sum the relevant column for filtered zones
+                sumBalance[f'{country}'][sum_key].append(
+                    df[mask][df_col].astype(float).fillna(0).sum()
+                )
+
+    # Calculate mean for each country and metric
+    mean_balance = {
+        f'{country}': {
+            metric: sum(values) / len(values) if values else 0
+            for metric, values in metrics_dict.items()
+        }
+        for country, metrics_dict in sumBalance.items()
+    }
+    mean_balance = pd.DataFrame(mean_balance).T
+
+    return energyBalance, mean_balance
+
+
+
+def getZonalPrices(data: GridData, database: Database, time_period, START, END):
+    """
+    Calculate zonal prices as the average of nodal prices within each zone, excluding SINK nodes.
+
+    Args:
+        data (GridData): Grid data containing node and zone information.
+        database (Database): Database connection to fetch nodal prices.
+        start_hour (int): Start index for the time range.
+        end_hour (int): End index for the time range.
+
+    Returns:
+        dict: Zonal prices with zone names as keys and lists of average prices as values.
+              Format: {zone: [avg_price_t1, avg_price_t2, ...]} for non-SINK zones.
+    """
+    print("💰 Collecting nodal prices for non-SINK nodes...")
+
+    # Filter out SINK nodes
+    non_sink_nodes = data.node[data.node['zone'] != 'SINK']
+
+    # Map nodes to their respective zones
+    zone_to_nodes = non_sink_nodes.groupby('zone')['id'].apply(list).to_dict()
+
+    # Collect node indices for non-SINK nodes
+    node_idx_map = {node: int(non_sink_nodes[non_sink_nodes['id'] == node].index[0]) for node in non_sink_nodes['id']}
+    node_indices = list(node_idx_map.values())
+
+    # Fetch all nodal prices in one query
+    prices_by_index = database.getResultNodalPricesPerNode(node_indices, time_period)
+
+    # Map prices back to nodes
+    inverse_index_map = {v: k for k, v in node_idx_map.items()}
+    nodal_prices = {inverse_index_map[idx]: prices for idx, prices in prices_by_index.items()}
+
+    # Calculate zonal prices as time-series averages
+    zonal_prices = {}
+    for zone, nodes in zone_to_nodes.items():
+        # Get prices for all nodes in the zone
+        valid_prices = [nodal_prices[node] for node in nodes if node in nodal_prices]
+        if not valid_prices:
+            zonal_prices[zone] = [0] * (time_period[-1] - time_period[1] + 1)  # Fallback for empty zones
+            continue
+
+        # Convert to numpy array for efficient averaging
+        prices_array = np.array(valid_prices)  # Shape: (n_nodes, n_timesteps)
+        # Compute mean across nodes for each time step
+        avg_prices = np.mean(prices_array, axis=0).tolist()  # Shape: (n_timesteps,)
+        zonal_prices[zone] = avg_prices
+
+    year_start = datetime(START['year'], START['month'], START['day'], START['hour'], 0)
+    year_end = datetime(END['year'], END['month'], END['day'], END['hour'], 0)
+    zonal_prices = pd.DataFrame(zonal_prices, index=pd.date_range(start=year_start, end=year_end, freq='h'))
+
+    return zonal_prices
+
+
+
+def process_windoff_sensitivity(data, database, time_period) -> pd.DataFrame:
+    """
+    Process sensitivity data for offshore wind generators, including nodal prices and derived metrics.
+
+    Parameters:
+    -----------
+    data : object
+        Data object with 'generator' (DataFrame with 'type', 'node' columns) and 'node' (DataFrame with 'id' column).
+    database : object
+        Database object with methods 'getResultGeneratorSens' and 'getResultNodalPricesMean'.
+    sim_year_start : int
+        Start year of the simulation.
+    sim_year_end : int
+        End year of the simulation.
+    timezone : str
+        Timezone for the time period calculation.
+    start : dict
+        Start time with keys 'year', 'month', 'day', 'hour'.
+    end : dict
+        End time with keys 'year', 'month', 'day', 'hour'.
+
+    Returns:
+    --------
+    pd.DataFrame
+        Sorted DataFrame with columns: 'generator_idx', 'node', 'sensitivity_eur',
+        'sensitivity_avg_eur_h', 'nodal_price_avg_eur_mwh', 'sensitivity_diff_eur_mwh'.
+        Returns empty DataFrame if no data is available or on error.
+    """
+    try:
+        # Get offshore wind generator indices
+        generator_idx = data.generator[data.generator.type == 'wind_off'].index.tolist()
+        if not generator_idx:
+            logging.warning("No offshore wind generators found.")
+            return pd.DataFrame()
+
+        # Get time period
+        n_timesteps = time_period[1] - time_period[0]
+        if n_timesteps <= 0:
+            logging.error("Invalid time period: end time must be after start time.")
+            return pd.DataFrame()
+
+        # Retrieve and process sensitivity data
+        df_sens = database.getResultGeneratorSens(time_period, generator_idx)
+        if df_sens.empty:
+            logging.warning("No sensitivity data retrieved.")
+            return pd.DataFrame()
+
+        # Sum sensitivities and create DataFrame
+        df = df_sens.sum().to_frame(name='sensitivity_eur').reset_index().rename(columns={'indx': 'generator_idx'})
+        df['node'] = df['generator_idx'].map(data.generator['node'])
+
+        # Calculate average sensitivity per hour
+        df['sensitivity_avg_eur_h'] = df['sensitivity_eur'] / n_timesteps
+
+        # Map nodal prices
+        node_ids = list(data.node['id'])
+        avg_prices = database.getResultNodalPricesMean(time_period)
+        if len(avg_prices) != len(node_ids):
+            logging.warning(
+                f"Number of prices ({len(avg_prices)}) does not match number of nodes ({len(node_ids)}). "
+                f"Using first {min(len(node_ids), len(avg_prices))} nodes."
+            )
+        price_map = dict(zip(node_ids[:min(len(node_ids), len(avg_prices))], avg_prices[:min(len(node_ids), len(avg_prices))]))
+        df['nodal_price_avg_eur_mwh'] = df['node'].map(price_map)
+
+        # Calculate sensitivity difference
+        df['sensitivity_diff_eur_mwh'] = df['nodal_price_avg_eur_mwh'] + df['sensitivity_avg_eur_h']
+
+        # Select columns and sort by sensitivity
+        df = df[['generator_idx', 'node', 'sensitivity_eur', 'sensitivity_avg_eur_h',
+                 'nodal_price_avg_eur_mwh', 'sensitivity_diff_eur_mwh']]
+        df = df.sort_values('sensitivity_eur', ascending=True)
+
+        logging.info("Processed sensitivity data for %d generators.", len(generator_idx))
+        return df
+
+    except Exception as e:
+        logging.error("Error processing sensitivity data: %s", e)
+        return pd.DataFrame()
+
+
+def generatorSensitivityRanking(data, database, generator_type, time_period, weighted=True):
+    """
+    Ranks generators of a specified type based on their sensitivity and inflow profile.
+
+    Parameters:
+    - generator_type (str): Type of generator to investigate (e.g., 'hydro', 'wind', 'solar')
+    - data: Data object containing generator and profile information
+    - database: Database object to retrieve sensitivity data
+    - SIM_YEAR_START (int): Simulation start year
+    - SIM_YEAR_END (int): Simulation end year
+    - TIMEZONE (str): Timezone for the simulation
+    - START (dict): Start time dictionary with year, month, day, hour
+    - END (dict): End time dictionary with year, month, day, hour
+
+    Returns:
+    - pd.DataFrame: DataFrame with generator_idx, rank, and node, sorted by rank
+    """
+    # Get time period
+    min_time, max_time = time_period  # Unpack min, max from time_period
+
+    # Filter generators by type
+    generator_idx = data.generator[data.generator.type == generator_type].index.tolist()
+
+    # Get inflow ref to generator
+    generator_inflow = data.generator.inflow_ref[generator_idx].tolist()
+    gen_to_inflow_map = dict(zip(generator_idx, generator_inflow))
+
+    # Get inflow profile to generator
+    generator_inflow_profile = data.profiles[data.generator.inflow_ref[generator_idx].unique().tolist()].loc[
+                               min_time:max_time]
+
+    # Retrieve and process sensitivity data
+    df_sens = database.getResultGeneratorSens(time_period, generator_idx)
+
+    # Retrieve average nodal prices
+    avg_prices = database.getResultNodalPricesMean(time_period)
+    node_ids = data.generator.node.unique()  # Assuming node_ids come from unique nodes in generator data
+    price_map = dict(zip(node_ids[:min(len(node_ids), len(avg_prices))], avg_prices[:min(len(node_ids), len(avg_prices))]))
+
+    # Initialize results
+    ranks = []
+
+    for gen_idx, inflow_ref in gen_to_inflow_map.items():
+        sens = df_sens[gen_idx]
+        inflow = generator_inflow_profile[inflow_ref]
+
+        numerator = (inflow * sens).sum() if weighted else sens.sum()
+        denominator = inflow.sum() if weighted else len(sens)
+
+
+        # Avoid division by zero
+        if denominator == 0:
+            rank = np.nan
+            print(f"Warning: Denominator is zero for generator {gen_idx}. Rank set to NaN.")
+        else:
+            rank = numerator / denominator
+
+        ranks.append({'generator_idx': gen_idx, 'sens': rank})
+
+    # Create and format output DataFrame
+    df = pd.DataFrame(ranks)
+    df['node'] = df['generator_idx'].map(data.generator['node'])
+    df['avg_nodal_price'] = df['node'].map(price_map)
+    df = df[['generator_idx', 'node', 'sens', 'avg_nodal_price']]
+    df = df.sort_values('sens', ascending=True)
+
+    return df
+
+
+
+def generatorSensitivityRankingALL(data, database, time_period, OUTPUT_PATH_PLOTS, inflow_weighted=True, save_fig=False,
+                                   include_fliers=False, area_filter=None):
+    """
+    Computes the normalized sensitivity of generators and ranks them by type.
+    This function retrieves the dual sensitivities for all generators over a specified time period,
+    calculates the normalized sensitivity, and generates a boxplot of the results.
+
+    Parameters:
+    - data: The grid data object containing generator and profile information.
+    - database: The database object to retrieve results from.
+    - gen_type: The type of generator to filter by (e.g., 'wind_off', 'solar').
+    - time_period: The time period for which to compute sensitivities.
+    - inflow_weighted: If True, the sensitivity is weighted by the inflow profile.
+    - save_fig: If True, saves the generated plot to a file.
+    - include_fliers: If True, includes outliers in the boxplot.
+    - area_filter: Optional string to filter generators by area (e.g., "NO1"). If None, all generators are included.
+
+    """
+    min_time, max_time = time_period
+    # Get all generator indices and types
+    all_gens = data.generator.index.tolist()
+
+    if area_filter is not None:
+        # Filter generator indices based on area (e.g., "NO1")
+        all_gens = data.generator[data.generator.node.str.startswith(area_filter)].index.tolist()
+
+    if len(all_gens) == 0:
+        print(f"No generators found in area '{area_filter}'.")
+        return pd.DataFrame()
+
+    gen_types = data.generator['type']
+
+    # Retrieve dual sensitivities for all generators over the time period
+    df_sens = database.getResultGeneratorSens(time_period, all_gens)
+
+    # Get inflow profile mapping
+    generator_inflow_refs = data.generator.loc[all_gens, 'inflow_ref']
+    gen_to_inflow_map = dict(zip(all_gens, generator_inflow_refs))
+
+    # Load inflow profiles
+    unique_inflows = generator_inflow_refs.unique().tolist()
+    inflow_profiles = data.profiles[unique_inflows].loc[min_time:max_time]
+
+    # Compute normalized sensitivity (R_i) for each generator
+    ranks = []
+    for gen_idx, inflow_ref in gen_to_inflow_map.items():
+        sens = df_sens[gen_idx].abs()
+        inflow = inflow_profiles[inflow_ref]
+
+        numerator = (inflow * sens).sum()
+        denominator = inflow.sum()
+
+        if denominator == 0:
+            rank = np.nan
+            print(f"Warning: Denominator is zero for generator {gen_idx}. Rank set to NaN.")
+        else:
+            if inflow_weighted:
+                # Normalized sensitivity
+                rank = numerator / denominator
+            else:
+                # Non-weighted sensitivity
+                rank = sens.mean()
+
+        ranks.append({
+            'generator_idx': gen_idx,
+            'sens': rank,
+            'type': gen_types.loc[gen_idx],
+            'node': data.generator.loc[gen_idx, 'node']
+        })
+
+    # Create DataFrame of results
+    df_sens_ranked = pd.DataFrame(ranks).dropna(subset=['sens'])
+
+    # Now you can group by type and create a boxplot
+    import seaborn as sns
+    import matplotlib.pyplot as plt
+
+    # Define a color palette that matches the nature of each generator type
+    custom_palette = {
+        'wind_off': '#1f77b4',    # Blue-ish for offshore wind
+        'wind_on': '#1f77b4',     # Same tone for onshore wind
+        'solar': '#ff7f0e',       # Orange for solar
+        'hydro': '#2ca02c',       # Green for hydro
+        'ror': '#17becf',         # Light blue for run-of-river
+        'biomass': '#8c564b',     # Brown/earthy for biomass
+        'fossil_gas': '#7f7f7f',  # Gray for fossil
+        'fossil_other': '#6E5849',  # Dark brown for other fossil fuels
+        'nuclear': '#9467bd',     # Purple for nuclear
+    }
+
+
+    # Step 1: Calculate the median sensitivity per generator type
+    type_order = (
+        df_sens_ranked.groupby('type')['sens']
+        .median()
+        .abs()                   # In case you've taken absolute values
+        .sort_values(ascending=False)
+        .index.tolist()
+    )
+
+    plt.figure(figsize=(12, 6))
+
+    sns.boxplot(
+        data=df_sens_ranked,
+        x='type',
+        y='sens',
+        palette=custom_palette,
+        order=type_order,        # Apply the custom order
+        showfliers=include_fliers
+    )
+    title_area = f" ({area_filter})" if area_filter else ""
+    title_weight = "Inflow Weighted" if inflow_weighted else "Not Weighted"
+    plt.title(f'Generator Sensitivities by Type{title_area} ({title_weight})')
+    plt.ylabel('Normalized Sensitivity EUR/MW')
+    plt.xlabel('Generator Type')
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    if save_fig:
+        area_tag = f"_{area_filter}" if area_filter else ""
+        weight_tag = "inflow_weighted" if inflow_weighted else "not_weighted"
+        filename = f'gen_sens_by_type{area_tag}_{weight_tag}_{VERSION}.pdf'
+        plt.savefig(OUTPUT_PATH_PLOTS / filename)
+    plt.show()
+    return df_sens_ranked
+
+
+def getFlowBetweenAllZones(data, database, time_period, START, END):
+    print(f'🔄 Collecting flow data between all zones from {START['year']} to {END['year']}...')
+
+    start_time = datetime(START['year'], START['month'], START['day'], START['hour'], 0)
+    end_time = datetime(END['year'], END['month'], END['day'], END['hour'], 0)
+    time_index = pd.date_range(start=start_time, end=end_time, freq='h')
+    flow_data = collectFlowDataOnALLBranches(data, database, time_period)
+
+    all_nodes = data.node.id.tolist()  # Get all node names from the grid data
+    node_names = [node for node in all_nodes]
+
+    # Create node-to-zone mapping
+    node_to_zone = {}
+    for node in node_names:
+        if '_' in node:
+            # Take prefix before first underscore (e.g., 'DK1_3' -> 'DK1', 'SE3_hub_east' -> 'SE3')
+            zone = node.split('_')[0]
+        else:
+            # No underscore (e.g., 'GB', 'DE') -> use full name as zone
+            zone = node
+        node_to_zone[node] = zone
+
+    # Assuming flow_data is a list of lists or a DataFrame
+    # Convert to DataFrame for easier handling if not already
+    if isinstance(flow_data, list):
+        flow_df = pd.DataFrame(flow_data[1:], columns=flow_data[0])
+    else:
+        flow_df = flow_data
+
+    # Dictionary to hold time series flow between zones
+    zone_to_zone_flow = defaultdict(lambda: np.zeros(len(time_period)))
+    line_flows = defaultdict(list)
+
+    # Optional: Set to hold all unique zone connections
+    zone_connections = set()
+    import ast
+    # Process each line in flow_data
+    for _, row in flow_df.iterrows():
+        from_node = row['from']
+        to_node = row['to']
+        loads = row['load [MW]']  # List of load values
+
+        # Convert load to array
+        if isinstance(loads, str):
+            loads = ast.literal_eval(loads)
+        loads = np.array(loads).flatten()
+
+        # if loads.shape[0] != 8760:
+        #     print(f"Invalid load shape for line {from_node}-{to_node}: {loads.shape}")
+        #     continue
+
+        line_flows[(from_node, to_node)].append(loads)
+
+        from_zone = node_to_zone.get(from_node)
+        to_zone = node_to_zone.get(to_node)
+
+        # Skip if same zone or undefined
+        if from_zone is None or to_zone is None or from_zone == to_zone:
+            continue
+
+        # Always sort zone names to make the key symmetric
+        key = tuple(sorted([from_zone, to_zone]))
+        zone_connections.add(key)
+
+        # Determine sign: +1 if direction matches key order, -1 otherwise
+        direction = 1 if (from_zone, to_zone) == key else -1
+
+        # Add signed flow
+        existing = zone_to_zone_flow[key]
+        if not isinstance(existing, np.ndarray) or existing.shape[0] != 8760:
+            existing = np.zeros(8760)
+
+        zone_to_zone_flow[key] = existing + direction * loads
+
+    # Convert keys to single string: "SE2→SE3"
+    flat_columns = {f"{k[0]}-{k[1]}": v for k, v in zone_to_zone_flow.items()}
+
+    df_zone_flows = pd.DataFrame.from_dict(flat_columns)
+    # Set index
+    df_zone_flows.index = time_index
+    df_zone_flows.index.name = "Time"
+
+    return df_zone_flows
+
+
+def getStorageFilling(data, database, time_period, START, END, relative=True):
+    """ Collects storage filling data for specified areas and zones. """
+    areas = ['NO', 'SE', 'FI']
+    storfilling = pd.DataFrame()
+    print(f"💧 Collecting storage filling data for areas: {', '.join(areas)}")
+
+    for area in areas:
+        storfilling[area] = getStorageFillingInAreaFromDB(data=data,
+                                                          db=database,
+                                                          areas=[area],
+                                                          generator_type=['hydro', 'ror'],
+                                                          relative_storage=relative,
+                                                          timeMaxMin=time_period)
+        if relative:
+            storfilling[area] = storfilling[area] * 100
+
+    zones = ['NO1', 'NO2', 'NO3', 'NO4', 'NO5', 'SE1', 'SE2', 'SE3', 'SE4']
+    print(f"💧 Collecting storage filling data for zones: {', '.join(zones)}")
+
+    for zone in zones:
+        storfilling[zone] = getStorageFillingInZoneFromDB(data=data,
+                                                          db=database,
+                                                          zones=[zone],
+                                                          generator_type=['hydro', 'ror'],
+                                                          relative_storage=relative,
+                                                          timeMaxMin=time_period)
+        if relative:
+            storfilling[zone] = storfilling[zone] * 100
+    # Compute the correct DATE_START for this year
+    start_time = datetime(START['year'], START['month'], START['day'], START['hour'], 0)
+    end_time = datetime(END['year'], END['month'], END['day'], END['hour'], 0)
+    storfilling.index = pd.date_range(start=start_time, end=end_time, freq='h')
+    storfilling.index.name = "Time"
+    return storfilling

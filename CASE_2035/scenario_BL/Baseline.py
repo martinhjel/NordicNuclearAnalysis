@@ -3,7 +3,7 @@ from functions.global_functions import *
 # Define global variables
 CASE_YEAR = 2035
 SCENARIO = 'BL'
-VERSION = 'v35'
+VERSION = 'v41'
 
 SIM_YEAR_START = 1991
 SIM_YEAR_END = 2020

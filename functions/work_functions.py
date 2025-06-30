@@ -73,7 +73,7 @@ def plot_Flow_fromDB(data, db, DATE_START, time_max_min, OUTPUT_PATH_PLOTS, plot
         elif plot_config['plot_by_year'] and not plot_config['duration_curve']:
             plot_by_year(row, DATE_START, OUTPUT_PATH_PLOTS, plot_config['save_fig'], plot_config['interval'], plot_config['tex_font'])
         elif plot_config['duration_curve'] and not plot_config['plot_by_year']:
-            plot_duration_curve(row, OUTPUT_PATH_PLOTS, plot_config['save_fig'], plot_config['duration_relative'], plot_config['tex_font'])
+            plot_duration_curve(row, OUTPUT_PATH_PLOTS, plot_config)
         else:
             plot_time_series(row, DATE_START, OUTPUT_PATH_PLOTS, plot_config['save_fig'], plot_config['interval'], plot_config['tex_font'])
 
@@ -94,9 +94,9 @@ def plot_SF_Areas_FromDB(data: GridData, database: Database, time_SF, OUTPUT_PAT
         if plot_config['relative']:
             storfilling[area] = storfilling[area] * 100
     # Compute the correct DATE_START for this year
-    correct_date_start_SF = DATE_START + pd.Timedelta(hours=time_SF[0])
-    correct_date_end_SF = DATE_START + pd.Timedelta(hours=time_SF[-1])
-    storfilling.index = pd.date_range(correct_date_start_SF, periods=time_SF[-1] - time_SF[0], freq='h')
+    start_time = datetime(START['year'], START['month'], START['day'], START['hour'], 0)
+    end_time = datetime(END['year'], END['month'], END['day'], END['hour'], 0)
+    storfilling.index = pd.date_range(start=start_time, end=end_time, freq='h')
     storfilling['year'] = storfilling.index.year  # Add year column to DataFrame
 
     # Threshold for considering reservoir empty
@@ -122,11 +122,13 @@ def plot_SF_Areas_FromDB(data: GridData, database: Database, time_SF, OUTPUT_PAT
             print(f"Year {year}: {hours} hours empty")
         if empty_periods.empty:
             print("No periods where reservoir was completely empty.")
-
-    title_storage_filling = f"Reservoir Filling in {'Area: ' + ', '.join(plot_config['areas'])} for period {correct_date_start_SF.year}-{correct_date_end_SF.year-1}"
+    if plot_config['title'] is not None:
+        title_storage_filling = f"Reservoir Filling in {'Area: ' + ', '.join(plot_config['areas'])} for period {start_time.year}-{end_time.year-1}"
+    else:
+        title_storage_filling = None
     plot_storage_filling_area(storfilling=storfilling,
-                              DATE_START=correct_date_start_SF,
-                              DATE_END=correct_date_end_SF,
+                              DATE_START=start_time,
+                              DATE_END=end_time,
                               areas=plot_config['areas'],
                               interval=plot_config['interval'],
                               title=title_storage_filling,
@@ -158,9 +160,9 @@ def plot_SF_Zones_FromDB(data: GridData, database: Database, time_SF ,OUTPUT_PAT
         if plot_config['relative']:
             storfilling[zone] = storfilling[zone] * 100
     # Compute the correct DATE_START for this year
-    correct_date_start_SF = DATE_START + pd.Timedelta(hours=time_SF[0])
-    correct_date_end_SF = DATE_START + pd.Timedelta(hours=time_SF[-1])
-    storfilling.index = pd.date_range(correct_date_start_SF, periods=time_SF[-1] - time_SF[0], freq='h')
+    start_time = datetime(START['year'], START['month'], START['day'], START['hour'], 0)
+    end_time = datetime(END['year'], END['month'], END['day'], END['hour'], 0)
+    storfilling.index = pd.date_range(start=start_time, end=end_time, freq='h')
     storfilling['year'] = storfilling.index.year    # Add year column to DataFrame
 
     # Threshold for considering reservoir empty
@@ -189,12 +191,15 @@ def plot_SF_Zones_FromDB(data: GridData, database: Database, time_SF ,OUTPUT_PAT
 
     if plot_config['plot_by_year'] == 1:
         for year in storfilling['year'].unique():
-            title_storage_filling = f"Reservoir Filling in {'Zones: ' + ', '.join(plot_config['zones'])}"
+            if plot_config['title'] is not None:
+                title_storage_filling = f"Reservoir Filling in {'Zones: ' + ', '.join(plot_config['zones'])} for year {year}"
+            else:
+                title_storage_filling = None
             storfilling_year = storfilling[storfilling['year'] == year]
-            storfilling_year.index = pd.date_range(correct_date_start_SF, periods=storfilling_year.shape[0], freq='h')
+            storfilling_year.index = pd.date_range(start_time, periods=storfilling_year.shape[0], freq='h')
             plot_storage_filling_area(storfilling=storfilling_year,
-                                      DATE_START=correct_date_start_SF,
-                                      DATE_END=correct_date_end_SF,
+                                      DATE_START=start_time,
+                                      DATE_END=end_time,
                                       areas=plot_config['zones'],
                                       interval=plot_config['interval'],
                                       title=title_storage_filling,
@@ -210,10 +215,13 @@ def plot_SF_Zones_FromDB(data: GridData, database: Database, time_SF ,OUTPUT_PAT
                                       END=END)
 
     elif plot_config['plot_by_year'] == 2:
-        title_storage_filling = f"Reservoir Filling in {plot_config['zones']} for period {correct_date_start_SF.year}-{correct_date_end_SF.year}"
+        if plot_config['title'] is not None:
+            title_storage_filling = f"Reservoir Filling in {plot_config['zones']} for period {start_time.year}-{end_time.year}"
+        else:
+            title_storage_filling = None
         plot_storage_filling_area(storfilling=storfilling,
-                                  DATE_START=correct_date_start_SF,
-                                  DATE_END=correct_date_end_SF,
+                                  DATE_START=start_time,
+                                  DATE_END=end_time,
                                   areas=plot_config['zones'],
                                   interval=plot_config['interval'],
                                   title=title_storage_filling,
@@ -229,10 +237,13 @@ def plot_SF_Zones_FromDB(data: GridData, database: Database, time_SF ,OUTPUT_PAT
                                   END=END)
 
     elif plot_config['plot_by_year'] == 3:
-        title_storage_filling = f"Reservoir Filling in {'Zones: ' + ', '.join(plot_config['zones'])}"
+        if plot_config['title'] is not None:
+            title_storage_filling = f"Reservoir Filling in {'Zones: ' + ', '.join(plot_config['zones'])}"
+        else:
+            title_storage_filling = None
         plot_storage_filling_area(storfilling=storfilling,
-                                  DATE_START=correct_date_start_SF,
-                                  DATE_END=correct_date_end_SF,
+                                  DATE_START=start_time,
+                                  DATE_END=end_time,
                                   areas=plot_config['zones'],
                                   interval=plot_config['interval'],
                                   title=title_storage_filling,

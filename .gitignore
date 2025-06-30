@@ -176,3 +176,8 @@ cython_debug/
 
 # Timeseries profile
 timeseries_profiles.csv
+CASE_2025/scenario_BM/data/system/combined/branch_BM_v100.csv
+CASE_2025/scenario_BM/data/system/combined/consumer_BM_v100.csv
+CASE_2025/scenario_BM/data/system/combined/generator_BM_v100.csv
+CASE_2025/scenario_BM/data/system/combined/node_BM_v100.csv
+CASE_2025/scenario_NPNO2/data/system/generator_NPNO2_v1.csv
